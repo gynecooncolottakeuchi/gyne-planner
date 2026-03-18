@@ -371,67 +371,51 @@ const SHORT=LABELS;
 const DAYS=['日','月','火','水','木','金','土'];
 const HOLIDAYS=new Set(['2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24','2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06','2025-07-21','2025-08-11','2025-09-15','2025-09-22','2025-09-23','2025-10-13','2025-11-03','2025-11-23','2025-11-24','2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06','2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23','2026-12-23']);
 
-let records=[], logs=[], currentUser='';
-let cal3BaseMonday=null; // 週間カレンダーの基準月曜日
-let cal1Year, cal1Month, cal2Year, cal2Month;
+// ===== 状態 =====
+let records=[];
+let logs=[];
+let currentUser='';
+let cal1Year,cal1Month,cal2Year,cal2Month,cal3BaseMonday;
+let isSyncing=false;
 
 // ===== ユーティリティ =====
-function safeGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
-function safeSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 function genId(){return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
-
-function normalizeRecord(r){
-  if(!r)return r;
-  ['opDate','admitDate','dischargeDate'].forEach(key=>{
-    if(r[key]!==undefined&&r[key]!==null&&r[key]!==''){
-      const d=parseDate(r[key]);
-      r[key]=d?ymd(d):'';
-    }
-  });
-  if(!r.id)r.id=genId();
-  return r;
-}
 
 function parseDate(s){
   if(!s) return null;
-  // 数値（Excelシリアル値）の場合
   if(typeof s==='number'){
-    // Googleシートのシリアル値（1900年1月1日起点）→ UTC基準で計算後ローカル日付に変換
     const utc=new Date((s-25569)*86400000);
-    // UTC日付をローカル日付として解釈（タイムゾーンずれを防ぐ）
-    return new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate());
+    return new Date(utc.getUTCFullYear(),utc.getUTCMonth(),utc.getUTCDate());
   }
   const str=String(s).trim();
   if(!str) return null;
-  // YYYY-MM-DD形式（最も一般的）
+  // YYYY-MM-DD
   if(str.match(/^\d{4}-\d{2}-\d{2}$/)){
-    const parts=str.split('-');
-    return new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+    const p=str.split('-');
+    return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
   }
-  // YYYY/MM/DD形式
+  // YYYY/MM/DD
   if(str.match(/^\d{4}\/\d{2}\/\d{2}$/)){
-    const parts=str.split('/');
-    return new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+    const p=str.split('/');
+    return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
   }
-  // ISO形式 (2025-06-10T00:00:00.000Z など)
+  // ISO: 2025-06-10T...
   if(str.match(/^\d{4}-\d{2}-\d{2}T/)){
-    // UTC日付部分のみ取り出してローカル日付として扱う
-    const parts=str.slice(0,10).split('-');
-    return new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+    const p=str.slice(0,10).split('-');
+    return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
   }
-  // "Thu Mar 19 2026" 形式（GASのDate.toString()）を安全にパース
-  const MONTHS={'Jan':0,'Feb':1,'Mar':2,'Apr':3,'May':4,'Jun':5,'Jul':6,'Aug':7,'Sep':8,'Oct':9,'Nov':10,'Dec':11};
-  const mGAS=str.match(/^\w{3}\s+(\w{3})\s+(\d{1,2})\s+(\d{4})/);
-  if(mGAS&&MONTHS[mGAS[1]]!==undefined){
-    return new Date(parseInt(mGAS[3]),MONTHS[mGAS[1]],parseInt(mGAS[2]));
+  // "Thu Mar 19 2026" (GAS Date.toString())
+  const MONTHS={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  const m=str.match(/^\w{3}\s+(\w{3})\s+(\d{1,2})\s+(\d{4})/);
+  if(m&&MONTHS[m[1]]!==undefined){
+    return new Date(parseInt(m[3]),MONTHS[m[1]],parseInt(m[2]));
   }
-  // その他の形式
+  // fallback
   const d=new Date(str);
-  if(!isNaN(d.getTime())){
-    return new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());
-  }
+  if(!isNaN(d.getTime())) return new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());
   return null;
 }
+
 function ymd(d){
   if(!d||isNaN(d.getTime())) return '';
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -451,18 +435,18 @@ function badgeClass(d){
 }
 function today0(){const t=new Date();t.setHours(0,0,0,0);return t;}
 
-// ===== ストレージ =====
-function save(){safeSet('gyn2_records',JSON.stringify(records));}
-function saveLogs(){safeSet('gyn2_logs',JSON.stringify(logs));}
-function load(){
-  const s=safeGet('gyn2_records');
-  if(s)try{records=JSON.parse(s);}catch(e){records=[];}
-  records=records.filter(r=>r&&r.patientId).map(normalizeRecord);
-  const l=safeGet('gyn2_logs');
-  if(l)try{logs=JSON.parse(l);}catch(e){logs=[];}
+function normalizeRecord(r){
+  if(!r) return r;
+  ['opDate','admitDate','dischargeDate'].forEach(k=>{
+    if(r[k]){const d=parseDate(r[k]);r[k]=d?ymd(d):'';}
+  });
+  if(!r.id) r.id=genId();
+  return r;
 }
 
-// ===== ログ =====
+// ===== ログ（localStorageのみ） =====
+function saveLogs(){try{localStorage.setItem('gyn_logs',JSON.stringify(logs));}catch(e){}}
+function loadLogs(){try{const s=localStorage.getItem('gyn_logs');if(s)logs=JSON.parse(s);}catch(e){}}
 function addLog(action,pid,detail){
   const now=new Date();
   const pad=n=>String(n).padStart(2,'0');
@@ -483,94 +467,60 @@ function toast(msg,ok){
   setTimeout(()=>{if(el.parentNode)el.parentNode.removeChild(el);},3000);
 }
 
+// ===== スピナー =====
+function setSpin(on){
+  document.querySelectorAll('.spinner').forEach(s=>s.style.display=on?'inline-block':'none');
+}
+
 // ===== GAS通信 =====
-async function gasGet(){
+async function gasGetAll(){
   const r=await fetch(GAS_URL+'?action=getAll&t='+Date.now());
   const d=await r.json();
-  if(!d.records||!Array.isArray(d.records))throw new Error('bad response');
-  return d.records.filter(r=>r&&r.patientId); // idやopDateは後で補完
+  if(!d.records||!Array.isArray(d.records)) throw new Error('invalid response');
+  return d.records.map(normalizeRecord).filter(r=>r&&r.patientId&&r.opDate);
 }
 async function gasPut(record){
   await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsert',record})});
 }
-async function gasDel(id){
+async function gasDelete(id){
   await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'delete',id})});
 }
 
-// GASとローカルをマージ（両方の全データを保持、同一IDはGAS優先）
-function merge(gasRecs){
-  const map={};
-  records.forEach(r=>{map[r.id]=r;});
-  gasRecs.forEach(r=>{map[r.id]=r;});
-  return Object.values(map);
-}
-
-function applyAndRender(recs){
-  records=recs;
-  save();
-  refreshUI();
-}
-
-function refreshUI(){
-  updateCounter();
-  // 現在表示中のタブに応じて再描画
-  const tabs=['calc','cal1','cal2','cal3','list','edit','log'];
-  const active=tabs.find(t=>document.getElementById('tab-'+t)&&document.getElementById('tab-'+t).style.display!=='none');
-  if(active==='cal1')renderCal('cal1');
-  if(active==='cal2')renderCal('cal2');
-  if(active==='cal3')renderWeekCal();
-  if(active==='list')renderList();
-  if(active==='edit')renderEdit();
-  if(active==='log')renderLog();
-}
-
-async function syncNow(){
-  setSpin(true);
+// ===== GASからデータ取得して画面更新 =====
+async function fetchAndRender(showSpinner){
+  if(isSyncing) return;
+  isSyncing=true;
+  if(showSpinner) setSpin(true);
   try{
-    const gasRecs=(await gasGet()).map(normalizeRecord);
-    // ローカルにあってGASにないものをGASへ
-    const gasIds=new Set(gasRecs.map(r=>r.id));
-    const toUpload=records.filter(r=>!gasIds.has(r.id));
-    for(const r of toUpload)await gasPut(r);
-    // マージして適用
-    const merged=merge(gasRecs.concat(toUpload));
-    applyAndRender(merged);
-    setSpin(false);
-    toast('✓ 同期完了（'+merged.length+'件）',true);
+    records=await gasGetAll();
+    refreshUI();
+    if(showSpinner){setSpin(false);toast('✓ 最新データを取得（'+records.length+'件）',true);}
   }catch(e){
-    setSpin(false);
-    toast('⚠ 同期失敗',false);
+    if(showSpinner){setSpin(false);toast('⚠ 取得失敗：ネットワークを確認してください',false);}
   }
-}
-function setSpin(on){
-  document.querySelectorAll('.spinner').forEach(s=>s.style.display=on?'inline-block':'none');
+  isSyncing=false;
 }
 
 // ===== ログイン =====
 function fillSelects(){
   ['loginDoctor','doctorName','surgeon','surgeon2','assist1','assist2'].forEach(id=>{
     const sel=document.getElementById(id);
-    if(!sel)return;
+    if(!sel) return;
     const cur=sel.value;
-    while(sel.options.length>1)sel.remove(1);
+    while(sel.options.length>1) sel.remove(1);
     DOCTORS.forEach(n=>{const o=document.createElement('option');o.textContent=n;sel.appendChild(o);});
-    if(cur)sel.value=cur;
+    if(cur) sel.value=cur;
   });
 }
 document.addEventListener('DOMContentLoaded',()=>{
   fillSelects();
   // セッション復元（30分以内なら自動ログイン）
   try{
-    const saved=sessionStorage.getItem('gyn_session');
-    if(saved){
-      const s=JSON.parse(saved);
-      const age=(Date.now()-s.ts)/1000/60; // 分
-      if(age<30 && s.user && s.pw===PASSWORD){
-        document.getElementById('loginDoctor').value=s.user;
-        document.getElementById('pwInput').value=s.pw;
-        checkPw();
-        return;
-      }
+    const s=JSON.parse(sessionStorage.getItem('gyn_session')||'null');
+    if(s&&(Date.now()-s.ts)/60000<30&&s.user&&s.pw===PASSWORD){
+      document.getElementById('loginDoctor').value=s.user;
+      document.getElementById('pwInput').value=s.pw;
+      checkPw();
     }
   }catch(e){}
 });
@@ -583,22 +533,24 @@ function checkPw(){
     document.getElementById('lockScreen').style.display='none';
     document.getElementById('app').style.display='block';
     document.getElementById('header-user').textContent=doc+' 先生';
-    // セッション保存（30分間有効）
-    try{ sessionStorage.setItem('gyn_session', JSON.stringify({user:doc,pw:pw,ts:Date.now()})); }catch(e){}
     const t=new Date();
     document.getElementById('opDate').value=ymd(t);
     cal1Year=cal2Year=t.getFullYear();
     cal1Month=cal2Month=t.getMonth();
     cal3BaseMonday=getMonday(t);
     fillSelects();
-    load();
-    refreshUI();
-    // バックグラウンドでGASと同期
-    syncNow();
+    loadLogs();
+    // GASから最新データ取得
+    fetchAndRender(false);
   }else{
     document.getElementById('pwError').style.display='block';
     document.getElementById('pwInput').value='';
   }
+  try{
+    if(document.getElementById('app').style.display==='block'){
+      sessionStorage.setItem('gyn_session',JSON.stringify({user:currentUser,pw:document.getElementById('pwInput').value||PASSWORD,ts:Date.now()}));
+    }
+  }catch(e){}
 }
 function logout(){
   currentUser='';
@@ -607,7 +559,7 @@ function logout(){
   document.getElementById('pwInput').value='';
   document.getElementById('loginDoctor').value='';
   document.getElementById('pwError').style.display='none';
-  try{ sessionStorage.removeItem('gyn_session'); }catch(e){}
+  try{sessionStorage.removeItem('gyn_session');}catch(e){}
 }
 
 // ===== タブ切り替え =====
@@ -616,14 +568,27 @@ function switchTab(t){
     document.getElementById('tab-'+name).style.display=t===name?'block':'none';
   });
   document.querySelectorAll('.tab-btn').forEach(btn=>{
-    btn.classList.toggle('active', btn.getAttribute('data-tab')===t);
+    btn.classList.toggle('active',btn.getAttribute('data-tab')===t);
   });
-  if(t==='cal1')setTimeout(()=>renderCal('cal1'),50);
-  if(t==='cal2')setTimeout(()=>renderCal('cal2'),50);
-  if(t==='cal3')setTimeout(()=>renderWeekCal(),50);
-  if(t==='list')renderList();
-  if(t==='edit')renderEdit();
-  if(t==='log')renderLog();
+  if(t==='cal1') setTimeout(()=>renderCal('cal1'),50);
+  if(t==='cal2') setTimeout(()=>renderCal('cal2'),50);
+  if(t==='cal3') setTimeout(()=>renderWeekCal(),50);
+  if(t==='list') renderList();
+  if(t==='edit') renderEdit();
+  if(t==='log')  renderLog();
+}
+
+// ===== 画面更新 =====
+function refreshUI(){
+  updateCounter();
+  const tabs=['calc','cal1','cal2','cal3','list','edit','log'];
+  const active=tabs.find(t=>{const el=document.getElementById('tab-'+t);return el&&el.style.display!=='none';});
+  if(active==='cal1') renderCal('cal1');
+  if(active==='cal2') renderCal('cal2');
+  if(active==='cal3') renderWeekCal();
+  if(active==='list') renderList();
+  if(active==='edit') renderEdit();
+  if(active==='log')  renderLog();
 }
 
 // ===== カウンター =====
@@ -631,10 +596,10 @@ function updateCounter(){
   const satD={},sunD={};
   records.forEach(r=>{
     const d=parseDate(r.admitDate);
-    if(!d)return;
+    if(!d) return;
     const w=d.getDay();
-    if(w===6)satD[r.admitDate]=(satD[r.admitDate]||0)+1;
-    if(w===0)sunD[r.admitDate]=(sunD[r.admitDate]||0)+1;
+    if(w===6) satD[r.admitDate]=(satD[r.admitDate]||0)+1;
+    if(w===0) sunD[r.admitDate]=(sunD[r.admitDate]||0)+1;
   });
   const sMax=Math.max(0,...Object.values(satD),0);
   const suMax=Math.max(0,...Object.values(sunD),0);
@@ -669,7 +634,7 @@ function renderList(){
     html+='</div><div style="overflow-x:auto"><table class="reg-table" style="border-radius:0 0 8px 8px"><thead><tr><th>患者ID</th><th>主治医</th><th>術式</th><th>退院日</th><th></th></tr></thead><tbody>';
     grp[key].forEach(r=>{
       const dd=parseDate(r.dischargeDate);
-      html+='<tr><td style="font-weight:600">'+r.patientId+'</td><td>'+(r.doctor||'—')+'</td><td style="font-size:11px">'+(SHORT[r.surgery]||r.surgery||'—')+'</td><td>'+(dd?'<span class="badge '+badgeClass(dd)+'" style="font-size:11px">'+fmt(dd)+'</span>':'—')+'</td><td><button class="btn btn-sm btn-danger" data-id="'+r.id+'" onclick="del(this.dataset.id)">削除</button></td></tr>';
+      html+='<tr><td style="font-weight:600">'+r.patientId+'</td><td>'+(r.doctor||'—')+'</td><td style="font-size:11px">'+(SHORT[r.surgery]||r.surgery||'—')+'</td><td>'+(dd?'<span class="badge '+badgeClass(dd)+'" style="font-size:11px">'+fmt(dd)+'</span>':'—')+'</td><td><button class="btn btn-sm btn-danger" data-id="'+r.id+'" onclick="delRecord(this.dataset.id)">削除</button></td></tr>';
     });
     html+='</tbody></table></div></div>';
   });
@@ -685,14 +650,14 @@ function renderEdit(){
   sorted.forEach(r=>{
     const ad=parseDate(r.admitDate),od=parseDate(r.opDate),dd=parseDate(r.dischargeDate);
     const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'—';
-    rows+='<tr><td style="font-weight:600">'+r.patientId+'</td><td>'+(r.doctor||'—')+'</td><td style="white-space:nowrap;font-size:11px">'+fmt(ad)+'</td><td style="white-space:nowrap;font-size:11px">'+fmt(od)+'</td><td style="font-size:11px;max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(SHORT[r.surgery]||r.surgery||'—')+'</td><td><span class="badge '+(r.opCol==='A'?'badge-blue':'badge-purple')+'" style="font-size:11px">'+ord+'</span></td><td>'+(dd?'<span class="badge '+badgeClass(dd)+'" style="font-size:11px">'+fmt(dd)+'</span>':'—')+'</td><td style="white-space:nowrap"><button class="btn btn-sm btn-edit" data-id="'+r.id+'" onclick="editRecord(this.dataset.id)">修正</button> <button class="btn btn-sm btn-danger" data-id="'+r.id+'" onclick="del(this.dataset.id)">削除</button></td></tr>';
+    rows+='<tr><td style="font-weight:600">'+r.patientId+'</td><td>'+(r.doctor||'—')+'</td><td style="white-space:nowrap;font-size:11px">'+fmt(ad)+'</td><td style="white-space:nowrap;font-size:11px">'+fmt(od)+'</td><td style="font-size:11px;max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(SHORT[r.surgery]||r.surgery||'—')+'</td><td><span class="badge '+(r.opCol==='A'?'badge-blue':'badge-purple')+'" style="font-size:11px">'+ord+'</span></td><td>'+(dd?'<span class="badge '+badgeClass(dd)+'" style="font-size:11px">'+fmt(dd)+'</span>':'—')+'</td><td style="white-space:nowrap"><button class="btn btn-sm btn-edit" data-id="'+r.id+'" onclick="editRecord(this.dataset.id)">修正</button> <button class="btn btn-sm btn-danger" data-id="'+r.id+'" onclick="delRecord(this.dataset.id)">削除</button></td></tr>';
   });
   el.innerHTML='<div style="overflow-x:auto"><table class="reg-table"><thead><tr><th>ID</th><th>主治医</th><th>入院日</th><th>手術日</th><th>術式</th><th>列/順</th><th>退院日</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
 function editRecord(id){
   const r=records.find(x=>x.id===id);
-  if(!r)return;
+  if(!r) return;
   document.getElementById('patientId').value=r.patientId||'';
   document.getElementById('doctorName').value=r.doctor||'';
   document.getElementById('surgeon').value=r.surgeon||'';
@@ -711,9 +676,9 @@ function editRecord(id){
 }
 
 function autoLoad(pid){
-  if(!pid)return;
+  if(!pid) return;
   const r=records.find(x=>x.patientId===pid.trim());
-  if(!r)return;
+  if(!r) return;
   document.getElementById('doctorName').value=r.doctor||'';
   document.getElementById('surgeon').value=r.surgeon||'';
   document.getElementById('surgeon2').value=r.surgeon2||'';
@@ -728,26 +693,42 @@ function autoLoad(pid){
   document.getElementById('output').innerHTML='<div class="alert alert-info">既存データを読み込みました。修正後「退院日を計算・登録」を押してください</div>';
 }
 
-async function del(id){
+// ===== 削除 =====
+async function delRecord(id){
   const r=records.find(x=>x.id===id);
-  if(r)addLog('削除',r.patientId,SHORT[r.surgery]||r.surgery||'');
-  records=records.filter(x=>x.id!==id);
-  save();refreshUI();
-  try{await gasDel(id);}catch(e){}
+  if(!r) return;
+  if(!confirm('患者ID「'+r.patientId+'」を削除しますか？')) return;
+  addLog('削除',r.patientId,SHORT[r.surgery]||r.surgery||'');
+  setSpin(true);
+  try{
+    await gasDelete(id);
+    await fetchAndRender(false);
+    setSpin(false);
+    toast('✓ 削除しました',true);
+  }catch(e){
+    setSpin(false);
+    toast('⚠ 削除に失敗しました',false);
+  }
 }
 
 function clearAll(){
-  if(!confirm('全データを削除しますか？'))return;
-  records=[];save();refreshUI();
+  if(!confirm('全データを削除しますか？')) return;
+  // GASの全データを削除
+  Promise.all(records.map(r=>gasDelete(r.id))).then(()=>{
+    records=[];refreshUI();toast('✓ 全件削除しました',true);
+  }).catch(()=>toast('⚠ 削除に失敗しました',false));
 }
+
 function clearForm(){
-  ['patientId','doctorName','surgeon','surgeon2','assist1','assist2','surgerySelect','opCol','opNum','opTime','editingId'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['patientId','doctorName','surgeon','surgeon2','assist1','assist2','surgerySelect','opCol','opNum','opTime','editingId'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
   document.getElementById('opDate').value=ymd(new Date());
   document.getElementById('output').innerHTML='';
 }
 
-// ===== 退院日計算 =====
-function calculate(){
+// ===== 退院日計算・登録 =====
+async function calculate(){
   const pid=document.getElementById('patientId').value.trim();
   const doc=document.getElementById('doctorName').value;
   const opStr=document.getElementById('opDate').value;
@@ -763,30 +744,27 @@ function calculate(){
   const out=document.getElementById('output');
 
   if(!pid){out.innerHTML='<div class="alert alert-warn">患者IDを入力してください</div>';return;}
-
-  // 同一患者ID・同一手術日の重複チェック
-  if(!editingId&&opStr){
-    const dup=records.find(r=>r.patientId===pid&&r.opDate===opStr);
-    if(dup){
-      if(!confirm('患者ID「'+pid+'」の'+opStr+'の手術はすでに登録されています。\n上書きしますか？')){
-        out.innerHTML='<div class="alert alert-info">登録をキャンセルしました。「一覧・修正」タブから既存データを修正できます。</div>';
-        return;
-      }
-      // 上書きの場合は既存IDを引き継ぐ
-      document.getElementById('editingId').value=dup.id;
-    }
-  }
   if(!doc){out.innerHTML='<div class="alert alert-warn">主治医を選択してください</div>';return;}
   if(!opStr||!surgery){out.innerHTML='<div class="alert alert-warn">手術日と術式を選択してください</div>';return;}
 
   const opDate=parseDate(opStr);
   if(!opDate){out.innerHTML='<div class="alert alert-warn">手術日が正しくありません</div>';return;}
 
+  // 重複チェック（修正モード以外）
+  if(!editingId){
+    const dup=records.find(r=>r.patientId===pid&&r.opDate===opStr);
+    if(dup){
+      if(!confirm('患者ID「'+pid+'」の'+opStr+'の手術はすでに登録されています。\n上書きしますか？')){
+        out.innerHTML='<div class="alert alert-info">登録をキャンセルしました</div>';return;
+      }
+      document.getElementById('editingId').value=dup.id;
+    }
+  }
+
   const isEctopic=surgery==='ectopic';
   const isExcluded=EXCLUDED.has(surgery);
   const admitDate=isEctopic?new Date(opDate):addDays(opDate,-1);
-  const id=editingId||genId();
-
+  const id=document.getElementById('editingId').value||genId();
   let alertsHTML='';
 
   // 土日入院チェック
@@ -809,7 +787,6 @@ function calculate(){
     dischargeDate=new Date(earliest);
     let adjusted=false;
     if(!isFixed&&isBad(dischargeDate)){dischargeDate=nextWorkday(dischargeDate);adjusted=true;}
-    const actualNights=Math.round((dischargeDate-admitDate)/86400000);
     if(isFixed){
       adjustNote='<div class="alert alert-warn" style="margin-top:10px;margin-bottom:0">この術式は'+nights+'泊'+(nights+1)+'日固定です</div>';
     }else if(adjusted){
@@ -823,16 +800,19 @@ function calculate(){
 
   const record={id,patientId:pid,doctor:doc,surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',surgery,opCol:opCol||'',opNum:opNum||'',opTime:opTime||'',opDate:ymd(opDate),admitDate:ymd(admitDate),dischargeDate:dischargeDate?ymd(dischargeDate):''};
 
-  const idx=records.findIndex(x=>x.id===id);
-  const isUpdate=idx>=0;
-  if(isUpdate)records[idx]=record;else records.push(record);
-  save();
-  document.getElementById('editingId').value=id;
-  addLog(isUpdate?'修正':'登録',pid,SHORT[surgery]||surgery);
-  refreshUI();
-
-  // GASへ非同期保存
-  gasPut(record).catch(()=>{});
+  // GASに保存してから最新データを取得
+  setSpin(true);
+  try{
+    await gasPut(record);
+    addLog(editingId?'修正':'登録',pid,SHORT[surgery]||surgery);
+    document.getElementById('editingId').value=record.id;
+    await fetchAndRender(false);
+    setSpin(false);
+    toast('✓ 登録しました',true);
+  }catch(e){
+    setSpin(false);
+    toast('⚠ 保存に失敗しました',false);
+  }
 
   const orderStr=opCol&&opNum?opCol+opNum:'';
   out.innerHTML=alertsHTML+`<div class="result-card">
@@ -853,7 +833,12 @@ function calculate(){
     ${!isExcluded?'<div class="detail-row"><span class="detail-key">退院曜日</span><span class="badge '+badgeClass(dischargeDate)+'">'+DAYS[dischargeDate.getDay()]+'曜日</span></div>':''}
     ${adjustNote}
   </div>`;
-  if(isExcluded){out.innerHTML+='<div class="alert alert-info">カレンダー②に表示されます（退院日計算は除外対象）</div>';}
+  if(isExcluded) out.innerHTML+='<div class="alert alert-info">カレンダー②③に表示されます（退院日計算は除外対象）</div>';
+}
+
+// ===== 同期ボタン =====
+async function syncNow(){
+  await fetchAndRender(true);
 }
 
 // ===== カレンダー =====
@@ -863,13 +848,12 @@ function moveMonth(cal,d){
   renderCal(cal);
 }
 window.addEventListener('resize',()=>{
-  if(document.getElementById('tab-cal1').style.display!=='none')renderCal('cal1');
-  if(document.getElementById('tab-cal2').style.display!=='none')renderCal('cal2');
+  if(document.getElementById('tab-cal1').style.display!=='none') renderCal('cal1');
+  if(document.getElementById('tab-cal2').style.display!=='none') renderCal('cal2');
+  if(document.getElementById('tab-cal3').style.display!=='none') renderWeekCal();
 });
 
-function renderCal(cal){
-  try{_renderCal(cal);}catch(e){console.error('renderCal:',e);}
-}
+function renderCal(cal){try{_renderCal(cal);}catch(e){console.error('renderCal:',e);}}
 function _renderCal(cal){
   const isCal1=cal==='cal1';
   const year=isCal1?cal1Year:cal2Year;
@@ -879,83 +863,71 @@ function _renderCal(cal){
   grid.innerHTML='';
   ['日','月','火','水','木','金','土'].forEach((h,i)=>{
     const el=document.createElement('div');
-    el.className='cal-day-hdr'+(['sun','','','','','','sat'][i]?' '+['sun','','','','','','sat'][i]:'');
+    el.className='cal-day-hdr'+([' sun','','','','','','sat'][i]||'');
     el.textContent=h;grid.appendChild(el);
   });
   const firstDay=new Date(year,month,1).getDay();
   const daysInMonth=new Date(year,month+1,0).getDate();
   const daysInPrev=new Date(year,month,0).getDate();
   const todayD=today0();
-
-  // イベント収集
   const evs={};
   const addEv=(key,type,r)=>{
-    if(!key)return;
-    if(!evs[key])evs[key]=[];
+    if(!key) return;
+    if(!evs[key]) evs[key]=[];
     evs[key].push({type,patientId:r.patientId,doctor:r.doctor||'',surgeon:r.surgeon||'',surgeon2:r.surgeon2||'',assist1:r.assist1||'',assist2:r.assist2||'',surgery:r.surgery,opCol:r.opCol||'',opNum:r.opNum||'',opTime:r.opTime||''});
   };
   records.forEach(r=>{
-    if(!r.opDate)return;
+    if(!r.opDate) return;
     if(isCal1){
       if(!EXCLUDED.has(r.surgery)){
-        if(r.admitDate)addEv(r.admitDate,'admit',r);
+        if(r.admitDate) addEv(r.admitDate,'admit',r);
         addEv(r.opDate,'op',r);
-        if(r.dischargeDate)addEv(r.dischargeDate,'discharge',r);
+        if(r.dischargeDate) addEv(r.dischargeDate,'discharge',r);
       }
     }else{
       addEv(r.opDate,'op',r);
     }
   });
-
   const w=window.innerWidth;
   const maxShow=isCal1?(w>=900?99:w>=600?4:2):(w>=900?99:w>=600?5:3);
   const fs=w>=1200?'11px':w>=900?'10px':'9px';
   const total=Math.ceil((firstDay+daysInMonth)/7)*7;
-
   for(let i=0;i<total;i++){
     let day,date,isCur=true;
     if(i<firstDay){day=daysInPrev-firstDay+i+1;date=new Date(year,month-1,day);isCur=false;}
     else if(i>=firstDay+daysInMonth){day=i-firstDay-daysInMonth+1;date=new Date(year,month+1,day);isCur=false;}
     else{day=i-firstDay+1;date=new Date(year,month,day);}
-
     const key=ymd(date);
     const dow=date.getDay();
     let cls='cal-cell';
-    if(!isCur)cls+=' other-month';
-    if(date.getTime()===todayD.getTime())cls+=' today';
-    if(dow===0)cls+=' sun';
-    else if(dow===6)cls+=' sat';
-    else if(isCur&&isHoliday(date))cls+=' holiday';
-
+    if(!isCur) cls+=' other-month';
+    if(date.getTime()===todayD.getTime()) cls+=' today';
+    if(dow===0) cls+=' sun';
+    else if(dow===6) cls+=' sat';
+    else if(isCur&&isHoliday(date)) cls+=' holiday';
     const cell=document.createElement('div');
     cell.className=cls;
     const dateDiv=document.createElement('div');
     dateDiv.className='cal-date';
     dateDiv.textContent=day;
     cell.appendChild(dateDiv);
-
     const dayEvs=evs[key]||[];
     const sorted=[...dayEvs].sort((a,b)=>{
       const o={op:0,admit:1,discharge:2};
-      if(o[a.type]!==o[b.type])return o[a.type]-o[b.type];
+      if(o[a.type]!==o[b.type]) return o[a.type]-o[b.type];
       return ((a.opCol||'Z')+(a.opNum||'9'))<((b.opCol||'Z')+(b.opNum||'9'))?-1:1;
     });
-
     sorted.slice(0,maxShow).forEach(ev=>{
-      const isOp=ev.type==='op';
-      const isA=isOp&&ev.opCol==='A';
-      const isB=isOp&&ev.opCol==='B';
+      const isOp=ev.type==='op',isA=isOp&&ev.opCol==='A',isB=isOp&&ev.opCol==='B';
       const cls2='cal-ev '+(ev.type==='admit'?'ev-admit':isA?'ev-A':isB?'ev-B':'ev-discharge');
       const div=document.createElement('div');
       div.className=cls2;
       div.onclick=(()=>{
-        const rec=records.find(x=>x.patientId===ev.patientId&&x.opDate&&parseDate(x.opDate)&&ymd(parseDate(x.opDate))===key);
-        return ()=>showDetail(rec||{patientId:ev.patientId,doctor:ev.doctor,surgeon:ev.surgeon,surgeon2:ev.surgeon2,assist1:ev.assist1,assist2:ev.assist2,surgery:ev.surgery,opCol:ev.opCol,opNum:ev.opNum,opTime:ev.opTime,opDate:key,admitDate:ev.type==='admit'?key:'',dischargeDate:ev.type==='discharge'?key:''});
+        const rec=records.find(x=>x.patientId===ev.patientId&&x.opDate===key)||(()=>{const x={...ev};x.opDate=key;return x;})();
+        return ()=>showDetail(rec);
       })();
       const ord=ev.opCol&&ev.opNum?ev.opCol+ev.opNum:'';
-
       if(isOp){
-        // 行1: ピル+ID+術式
         const l1=document.createElement('div');
         l1.style.cssText='display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;font-size:'+fs+';font-weight:600';
         if(ord){const p=document.createElement('span');p.className='order-pill '+(isA?'pill-A':'pill-B');p.textContent=ord;l1.appendChild(p);}
@@ -963,17 +935,15 @@ function _renderCal(cal){
         t1.textContent=ev.patientId+' '+(SHORT[ev.surgery]||'');
         l1.appendChild(t1);div.appendChild(l1);
         if(isCal1){
-          // カレンダー①入退院日確認: 主治医を1行で
           if(ev.doctor){const l2=document.createElement('div');l2.style.cssText='font-size:9px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=ev.doctor;div.appendChild(l2);}
         }else{
-          // カレンダー②: 担当者を2行目
           const staff=[];
-          if(ev.doctor)staff.push('主:'+ev.doctor);
-          if(ev.surgeon)staff.push('執1:'+ev.surgeon);
-          if(ev.surgeon2)staff.push('執2:'+ev.surgeon2);
-          if(ev.assist1)staff.push('助1:'+ev.assist1);
-          if(ev.assist2)staff.push('助2:'+ev.assist2);
-          if(ev.opTime)staff.push(ev.opTime+'h');
+          if(ev.doctor) staff.push('主:'+ev.doctor);
+          if(ev.surgeon) staff.push('執1:'+ev.surgeon);
+          if(ev.surgeon2) staff.push('執2:'+ev.surgeon2);
+          if(ev.assist1) staff.push('助1:'+ev.assist1);
+          if(ev.assist2) staff.push('助2:'+ev.assist2);
+          if(ev.opTime) staff.push(ev.opTime+'h');
           if(staff.length){const l2=document.createElement('div');l2.style.cssText='font-size:9px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=staff.join(' ');div.appendChild(l2);}
         }
       }else{
@@ -988,12 +958,126 @@ function _renderCal(cal){
     if(sorted.length>maxShow){
       const m=document.createElement('div');
       m.style.cssText='font-size:10px;color:#999;text-align:right;padding:1px 4px';
-      m.textContent='+'+( sorted.length-maxShow)+'件';
+      m.textContent='+'+(sorted.length-maxShow)+'件';
       cell.appendChild(m);
     }
     grid.appendChild(cell);
   }
 }
+
+// ===== 週間カレンダー =====
+function getMonday(d){
+  const day=d.getDay();
+  const diff=day===0?-6:1-day;
+  const mon=new Date(d);
+  mon.setDate(d.getDate()+diff);
+  mon.setHours(0,0,0,0);
+  return mon;
+}
+function addDaysW(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
+function moveWeek(d){cal3BaseMonday=addDaysW(cal3BaseMonday,d*7);renderWeekCal();}
+function goToday(){cal3BaseMonday=getMonday(new Date());renderWeekCal();}
+
+function renderWeekCal(){
+  if(!cal3BaseMonday) cal3BaseMonday=getMonday(new Date());
+  const monday=cal3BaseMonday;
+  const sunday=addDaysW(monday,6);
+  const todayD=today0();
+  function fmtS(d){return (d.getMonth()+1)+'/'+d.getDate();}
+  document.getElementById('cal3Title').textContent=monday.getFullYear()+'年 '+fmtS(monday)+' 〜 '+fmtS(sunday);
+  const evs={};
+  records.forEach(r=>{
+    if(!r.opDate) return;
+    const d=parseDate(r.opDate);
+    if(!d) return;
+    const key=ymd(d);
+    if(!evs[key]) evs[key]=[];
+    evs[key].push(r);
+  });
+  const grid=document.getElementById('cal3Grid');
+  grid.innerHTML='';
+  const dayNames=['日','月','火','水','木','金','土'];
+  for(let i=0;i<7;i++){
+    const date=addDaysW(monday,i);
+    const key=ymd(date);
+    const dow=date.getDay();
+    const isToday=date.getTime()===todayD.getTime();
+    const dayEvs=(evs[key]||[]).sort((a,b)=>{
+      return ((a.opCol||'Z')+(a.opNum||'9'))<((b.opCol||'Z')+(b.opNum||'9'))?-1:1;
+    });
+    const card=document.createElement('div');
+    card.className='week-day-card';
+    const hdr=document.createElement('div');
+    let hdrCls='week-day-header ';
+    if(isToday) hdrCls+='today-hdr';
+    else if(dow===0) hdrCls+='sun';
+    else if(dow===6) hdrCls+='sat';
+    else if(isHoliday(date)) hdrCls+='hol';
+    else hdrCls+='normal';
+    hdr.className=hdrCls;
+    hdr.innerHTML='<span>'+(date.getMonth()+1)+'月'+date.getDate()+'日（'+dayNames[dow]+'）'+(isHoliday(date)?' 🎌':'')+'</span>'+(dayEvs.length?'<span class="week-count">'+dayEvs.length+'件</span>':'');
+    card.appendChild(hdr);
+    const body=document.createElement('div');
+    body.className='week-day-body';
+    if(!dayEvs.length){
+      const empty=document.createElement('div');
+      empty.className='week-empty';
+      empty.textContent='手術なし';
+      body.appendChild(empty);
+    }else{
+      dayEvs.forEach(r=>{
+        const isA=r.opCol==='A',isB=r.opCol==='B';
+        const ev=document.createElement('div');
+        ev.className='week-ev '+(isA?'ev-A':isB?'ev-B':'ev-A');
+        ev.onclick=((rec)=>()=>showDetail(rec))(r);
+        const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'';
+        const row1=document.createElement('div');
+        row1.className='week-ev-row1';
+        if(ord){const p=document.createElement('span');p.className='order-pill '+(isA?'pill-A':'pill-B');p.style.fontSize='11px';p.textContent=ord;row1.appendChild(p);}
+        const idSpan=document.createElement('span');idSpan.textContent=r.patientId;row1.appendChild(idSpan);
+        if(r.opTime){const ts=document.createElement('span');ts.style.cssText='font-size:11px;font-weight:400;color:#555;margin-left:auto';ts.textContent=r.opTime+'h';row1.appendChild(ts);}
+        ev.appendChild(row1);
+        const row2=document.createElement('div');
+        row2.className='week-ev-row2';
+        const parts=[SHORT[r.surgery]||r.surgery||''];
+        if(r.doctor) parts.push('主:'+r.doctor);
+        if(r.surgeon) parts.push('執1:'+r.surgeon);
+        if(r.surgeon2) parts.push('執2:'+r.surgeon2);
+        if(r.assist1) parts.push('助1:'+r.assist1);
+        if(r.assist2) parts.push('助2:'+r.assist2);
+        row2.textContent=parts.filter(Boolean).join('　');
+        ev.appendChild(row2);
+        body.appendChild(ev);
+      });
+    }
+    card.appendChild(body);
+    grid.appendChild(card);
+  }
+}
+
+// ===== 詳細モーダル =====
+function showDetail(r){
+  if(!r) return;
+  const ad=parseDate(r.admitDate),od=parseDate(r.opDate),dd=parseDate(r.dischargeDate);
+  const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'—';
+  const ordColor=r.opCol==='A'?'#3b7dd8':'#7c3aed';
+  let html='<div class="modal-title">'+r.patientId+'　<span style="font-size:12px;font-weight:400;color:#888">'+(SHORT[r.surgery]||r.surgery||'')+'</span></div>';
+  const rows=[['入院日',fmt(ad)],['手術日',fmt(od)],['退院予定日',dd?fmt(dd):'除外対象'],['外来主治医',r.doctor||'—'],['執刀医１',r.surgeon||'—'],['執刀医２',r.surgeon2||'—'],['助手１',r.assist1||'—'],['助手２',r.assist2||'—']];
+  rows.forEach(([label,val])=>{
+    if(val&&val!=='—') html+='<div class="modal-row"><div class="modal-label">'+label+'</div><div class="modal-value">'+val+'</div></div>';
+  });
+  html+='<hr class="modal-divider">';
+  const info=[];
+  if(ord!=='—') info.push('<span style="background:'+ordColor+';color:#fff;padding:2px 10px;border-radius:12px;font-size:13px;font-weight:700">'+ord+'</span>');
+  if(r.opTime) info.push('<span style="font-size:13px;font-weight:600;color:#555">予定 '+r.opTime+'h</span>');
+  if(info.length) html+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+info.join('')+'</div>';
+  document.getElementById('modalContent').innerHTML=html;
+  document.getElementById('detailModal').style.display='flex';
+  document.body.style.overflow='hidden';
+}
+function hideModal(){document.getElementById('detailModal').style.display='none';document.body.style.overflow='';}
+function closeModal(e){if(e.target===document.getElementById('detailModal'))hideModal();}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')hideModal();});
 
 // ===== 操作ログ =====
 function renderLog(){
@@ -1010,190 +1094,6 @@ function clearLogs(){
   logs=[];saveLogs();renderLog();
 }
 
-// ===== 週間カレンダー =====
-function getMonday(d){
-  const day=d.getDay();
-  const diff=day===0?-6:1-day; // 月曜日を週の始まりに
-  const mon=new Date(d);
-  mon.setDate(d.getDate()+diff);
-  mon.setHours(0,0,0,0);
-  return mon;
-}
-function addDaysW(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
-
-function moveWeek(d){
-  cal3BaseMonday=addDaysW(cal3BaseMonday,d*7);
-  renderWeekCal();
-}
-function goToday(){
-  cal3BaseMonday=getMonday(new Date());
-  renderWeekCal();
-}
-
-function renderWeekCal(){
-  if(!cal3BaseMonday)cal3BaseMonday=getMonday(new Date());
-  const monday=cal3BaseMonday;
-  const sunday=addDaysW(monday,6);
-  const todayD=today0();
-
-  // タイトル
-  function fmtShort(d){return (d.getMonth()+1)+'/'+d.getDate();}
-  document.getElementById('cal3Title').textContent=
-    monday.getFullYear()+'年 '+fmtShort(monday)+' 〜 '+fmtShort(sunday);
-
-  // イベント収集
-  const evs={};
-  records.forEach(r=>{
-    if(!r.opDate)return;
-    const d=parseDate(r.opDate);
-    if(!d)return;
-    const key=ymd(d);
-    if(!evs[key])evs[key]=[];
-    evs[key].push(r);
-  });
-
-  const grid=document.getElementById('cal3Grid');
-  grid.innerHTML='';
-
-  for(let i=0;i<7;i++){
-    const date=addDaysW(monday,i);
-    const key=ymd(date);
-    const dow=date.getDay();
-    const isToday=date.getTime()===todayD.getTime();
-    const isSat=dow===6;
-    const isSun=dow===0;
-    const isHol=(!isSat&&!isSun&&isHoliday(date));
-    const dayEvs=(evs[key]||[]).sort((a,b)=>{
-      const oa=(a.opCol||'Z')+(a.opNum||'9');
-      const ob=(b.opCol||'Z')+(b.opNum||'9');
-      return oa<ob?-1:oa>ob?1:0;
-    });
-    const dayNames=['日','月','火','水','木','金','土'];
-
-    const card=document.createElement('div');
-    card.className='week-day-card';
-
-    // ヘッダー
-    const hdr=document.createElement('div');
-    let hdrCls='week-day-header ';
-    if(isToday)hdrCls+='today-hdr';
-    else if(isSun)hdrCls+='sun';
-    else if(isSat)hdrCls+='sat';
-    else if(isHol)hdrCls+='hol';
-    else hdrCls+='normal';
-    hdr.className=hdrCls;
-
-    const dateStr=(date.getMonth()+1)+'月'+date.getDate()+'日（'+dayNames[dow]+'）';
-    hdr.innerHTML='<span>'+dateStr+(isHol?' 🎌':'')+'</span>'
-      +(dayEvs.length?'<span class="week-count">'+dayEvs.length+'件</span>':'');
-    card.appendChild(hdr);
-
-    // ボディ
-    const body=document.createElement('div');
-    body.className='week-day-body';
-
-    if(!dayEvs.length){
-      const empty=document.createElement('div');
-      empty.className='week-empty';
-      empty.textContent='手術なし';
-      body.appendChild(empty);
-    }else{
-      dayEvs.forEach(r=>{
-        const isA=r.opCol==='A';
-        const isB=r.opCol==='B';
-        const ev=document.createElement('div');
-        ev.className='week-ev '+(isA?'ev-A':isB?'ev-B':'ev-A');
-
-        const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'';
-        const row1=document.createElement('div');
-        row1.className='week-ev-row1';
-        if(ord){
-          const pill=document.createElement('span');
-          pill.className='order-pill '+(isA?'pill-A':'pill-B');
-          pill.style.fontSize='11px';
-          pill.textContent=ord;
-          row1.appendChild(pill);
-        }
-        const idSpan=document.createElement('span');
-        idSpan.textContent=r.patientId;
-        row1.appendChild(idSpan);
-        if(r.opTime){
-          const timeSpan=document.createElement('span');
-          timeSpan.style.cssText='font-size:11px;font-weight:400;color:#555;margin-left:auto';
-          timeSpan.textContent=r.opTime+'h';
-          row1.appendChild(timeSpan);
-        }
-        ev.appendChild(row1);
-
-        const row2=document.createElement('div');
-        row2.className='week-ev-row2';
-        const parts=[];
-        parts.push(SHORT[r.surgery]||r.surgery||'');
-        if(r.doctor)parts.push('主:'+r.doctor);
-        if(r.surgeon)parts.push('執1:'+r.surgeon);
-        if(r.surgeon2)parts.push('執2:'+r.surgeon2);
-        if(r.assist1)parts.push('助1:'+r.assist1);
-        if(r.assist2)parts.push('助2:'+r.assist2);
-        row2.textContent=parts.filter(Boolean).join('　');
-        ev.appendChild(row2);
-
-        ev.onclick=((record)=>()=>showDetail(record))(r);
-        body.appendChild(ev);
-      });
-    }
-    card.appendChild(body);
-    grid.appendChild(card);
-  }
-}
-
-// ===== 詳細モーダル =====
-function showDetail(r){
-  if(!r)return;
-  const ad=parseDate(r.admitDate),od=parseDate(r.opDate),dd=parseDate(r.dischargeDate);
-  const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'—';
-  const ordColor=r.opCol==='A'?'#3b7dd8':'#7c3aed';
-
-  let html='<div class="modal-title">'+r.patientId+'　<span style="font-size:12px;font-weight:400;color:#888">'+(SHORT[r.surgery]||r.surgery||'')+'</span></div>';
-
-  const rows=[
-    ['入院日', fmt(ad)],
-    ['手術日', fmt(od)],
-    ['退院予定日', dd?fmt(dd):'除外対象'],
-    ['外来主治医', r.doctor||'—'],
-    ['執刀医１', r.surgeon||'—'],
-    ['執刀医２', r.surgeon2||'—'],
-    ['助手１', r.assist1||'—'],
-    ['助手２', r.assist2||'—'],
-  ];
-
-  rows.forEach(([label,val])=>{
-    if(val&&val!=='—'){
-      html+='<div class="modal-row"><div class="modal-label">'+label+'</div><div class="modal-value">'+val+'</div></div>';
-    }
-  });
-
-  html+='<hr class="modal-divider">';
-
-  const info=[];
-  if(ord!=='—')info.push('<span style="background:'+ordColor+';color:#fff;padding:2px 10px;border-radius:12px;font-size:13px;font-weight:700">'+ord+'</span>');
-  if(r.opTime)info.push('<span style="font-size:13px;font-weight:600;color:#555">予定 '+r.opTime+'h</span>');
-  if(info.length)html+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+info.join('')+'</div>';
-
-  document.getElementById('modalContent').innerHTML=html;
-  document.getElementById('detailModal').style.display='flex';
-  document.body.style.overflow='hidden';
-}
-
-function hideModal(){
-  document.getElementById('detailModal').style.display='none';
-  document.body.style.overflow='';
-}
-function closeModal(e){
-  if(e.target===document.getElementById('detailModal'))hideModal();
-}
-
-// キーボードEscでも閉じる
-document.addEventListener('keydown',e=>{if(e.key==='Escape')hideModal();});
 </script>
 </body>
 </html>
