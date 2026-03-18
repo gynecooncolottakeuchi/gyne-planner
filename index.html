@@ -113,7 +113,36 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 .sync-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#3b7dd8;background:none;border:none;cursor:pointer;padding:4px 8px}
 .spinner{display:none;width:14px;height:14px;border:2px solid #ddd;border-top-color:#3b7dd8;border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* ===== モーダル ===== */
+.modal-overlay{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(0,0,0,0.5);z-index:8000;display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:600px){.modal-overlay{align-items:center}}
+.modal-card{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:20px 20px 36px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+@media(min-width:600px){.modal-card{border-radius:16px;padding:24px;max-height:80vh}}
+.modal-handle{width:40px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:14px;color:#1a1a1a}
+.modal-row{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start}
+.modal-label{font-size:11px;color:#888;font-weight:600;min-width:70px;padding-top:2px}
+.modal-value{font-size:14px;font-weight:600;color:#1a1a1a;flex:1;line-height:1.4}
+.modal-divider{border:none;border-top:1px solid #f0f0f0;margin:10px 0}
+.modal-close{width:100%;padding:12px;background:#f5f5f5;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:14px;color:#444}
+.cal-ev{cursor:pointer}
+.week-ev{cursor:pointer}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:24px;font-size:13px;font-weight:600;color:#fff;z-index:9999;pointer-events:none;white-space:nowrap;box-shadow:0 2px 12px rgba(0,0,0,0.2)}
+.week-day-card{background:#fff;border-radius:10px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.week-day-header{padding:8px 14px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.week-day-header.sat{background:#e8f0fb;color:#1a4a8a}
+.week-day-header.sun{background:#fdecea;color:#c0392b}
+.week-day-header.hol{background:#fdf0f8;color:#8b2fa8}
+.week-day-header.today-hdr{background:#3b7dd8;color:#fff}
+.week-day-header.normal{background:#f5f5f5;color:#444}
+.week-day-body{padding:8px 10px}
+.week-ev{padding:8px 10px;border-radius:8px;margin-bottom:6px;border-left:4px solid}
+.week-ev.ev-A{background:#dbeafe;border-color:#3b7dd8}
+.week-ev.ev-B{background:#ede9fe;border-color:#7c3aed}
+.week-ev-row1{font-size:13px;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:6px}
+.week-ev-row2{font-size:12px;color:#555;line-height:1.5}
+.week-empty{font-size:12px;color:#bbb;padding:6px 4px;text-align:center}
+.week-count{background:#fff;border:1px solid #ddd;border-radius:12px;font-size:11px;padding:1px 7px;font-weight:600}
 </style>
 </head>
 <body>
@@ -137,6 +166,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <button class="tab-btn active" onclick="switchTab('calc')">退院日計算</button>
     <button class="tab-btn" onclick="switchTab('cal1')">カレンダー①</button>
     <button class="tab-btn" onclick="switchTab('cal2')">カレンダー②手術</button>
+    <button class="tab-btn" onclick="switchTab('cal3')">カレンダー③週間手術</button>
     <button class="tab-btn" onclick="switchTab('list')">土日入院</button>
     <button class="tab-btn" onclick="switchTab('edit')">一覧・修正</button>
     <button class="tab-btn" onclick="switchTab('log')">操作ログ</button>
@@ -267,6 +297,26 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <p style="font-size:11px;color:#aaa;margin-top:8px;text-align:center">表示：ID・術式・主治医・執刀医・助手</p>
   </div>
 
+  <!-- カレンダー③週間手術 -->
+  <div id="tab-cal3" class="content cal-content" style="display:none">
+    <div class="cal-controls">
+      <button class="cal-nav-btn" onclick="moveWeek(-1)">◀ 前週</button>
+      <span class="cal-title" id="cal3Title" style="font-size:15px"></span>
+      <button class="cal-nav-btn" onclick="moveWeek(1)">来週 ▶</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="cal-legend" style="margin:0;padding:6px 10px;flex:1">
+        <div class="leg-item"><div class="leg-dot" style="background:#dbeafe;border-left:3px solid #3b7dd8"></div>A列</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#ede9fe;border-left:3px solid #7c3aed"></div>B列</div>
+      </div>
+      <button class="sync-btn" onclick="syncNow()" style="margin-left:8px">🔄 同期</button>
+    </div>
+    <div id="cal3Grid"></div>
+    <div style="text-align:center;margin-top:8px">
+      <button class="btn" onclick="goToday()" style="font-size:12px;padding:6px 16px">今週に戻る</button>
+    </div>
+  </div>
+
   <!-- 土日入院 -->
   <div id="tab-list" class="content" style="display:none">
     <div class="counter-grid">
@@ -299,6 +349,15 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
   </div>
 </div>
 
+<!-- 詳細モーダル -->
+<div id="detailModal" class="modal-overlay" style="display:none" onclick="closeModal(event)">
+  <div class="modal-card" id="modalCard">
+    <div class="modal-handle"></div>
+    <div id="modalContent"></div>
+    <button class="modal-close" onclick="hideModal()">閉じる</button>
+  </div>
+</div>
+
 <script>
 const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGBnAEP7d9YM-54OmGqnFNYvee8e2ji1D5wKaR2skxE_Jzg/exec';
 const PASSWORD='gynecology2025';
@@ -313,6 +372,7 @@ const DAYS=['日','月','火','水','木','金','土'];
 const HOLIDAYS=new Set(['2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24','2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06','2025-07-21','2025-08-11','2025-09-15','2025-09-22','2025-09-23','2025-10-13','2025-11-03','2025-11-23','2025-11-24','2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06','2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23','2026-12-23']);
 
 let records=[], logs=[], currentUser='';
+let cal3BaseMonday=null; // 週間カレンダーの基準月曜日
 let cal1Year, cal1Month, cal2Year, cal2Month;
 
 // ===== ユーティリティ =====
@@ -448,6 +508,7 @@ function refreshUI(){
   const active=tabs.find(t=>document.getElementById('tab-'+t)&&document.getElementById('tab-'+t).style.display!=='none');
   if(active==='cal1')renderCal('cal1');
   if(active==='cal2')renderCal('cal2');
+  if(active==='cal3')renderWeekCal();
   if(active==='list')renderList();
   if(active==='edit')renderEdit();
   if(active==='log')renderLog();
@@ -500,6 +561,7 @@ function checkPw(){
     document.getElementById('opDate').value=ymd(t);
     cal1Year=cal2Year=t.getFullYear();
     cal1Month=cal2Month=t.getMonth();
+    cal3BaseMonday=getMonday(t);
     fillSelects();
     load();
     refreshUI();
@@ -527,6 +589,7 @@ function switchTab(t){
   });
   if(t==='cal1')setTimeout(()=>renderCal('cal1'),50);
   if(t==='cal2')setTimeout(()=>renderCal('cal2'),50);
+  if(t==='cal3')setTimeout(()=>renderWeekCal(),50);
   if(t==='list')renderList();
   if(t==='edit')renderEdit();
   if(t==='log')renderLog();
@@ -841,6 +904,10 @@ function _renderCal(cal){
       const cls2='cal-ev '+(ev.type==='admit'?'ev-admit':isA?'ev-A':isB?'ev-B':'ev-discharge');
       const div=document.createElement('div');
       div.className=cls2;
+      div.onclick=(()=>{
+        const rec=records.find(x=>x.patientId===ev.patientId&&x.opDate&&parseDate(x.opDate)&&ymd(parseDate(x.opDate))===key);
+        return ()=>showDetail(rec||{patientId:ev.patientId,doctor:ev.doctor,surgeon:ev.surgeon,surgeon2:ev.surgeon2,assist1:ev.assist1,assist2:ev.assist2,surgery:ev.surgery,opCol:ev.opCol,opNum:ev.opNum,opTime:ev.opTime,opDate:key,admitDate:ev.type==='admit'?key:'',dischargeDate:ev.type==='discharge'?key:''});
+      })();
       const ord=ev.opCol&&ev.opNum?ev.opCol+ev.opNum:'';
 
       if(isOp){
@@ -898,6 +965,191 @@ function clearLogs(){
   if(!confirm('ログを全削除しますか？'))return;
   logs=[];saveLogs();renderLog();
 }
+
+// ===== 週間カレンダー =====
+function getMonday(d){
+  const day=d.getDay();
+  const diff=day===0?-6:1-day; // 月曜日を週の始まりに
+  const mon=new Date(d);
+  mon.setDate(d.getDate()+diff);
+  mon.setHours(0,0,0,0);
+  return mon;
+}
+function addDaysW(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
+
+function moveWeek(d){
+  cal3BaseMonday=addDaysW(cal3BaseMonday,d*7);
+  renderWeekCal();
+}
+function goToday(){
+  cal3BaseMonday=getMonday(new Date());
+  renderWeekCal();
+}
+
+function renderWeekCal(){
+  if(!cal3BaseMonday)cal3BaseMonday=getMonday(new Date());
+  const monday=cal3BaseMonday;
+  const sunday=addDaysW(monday,6);
+  const todayD=today0();
+
+  // タイトル
+  function fmtShort(d){return (d.getMonth()+1)+'/'+d.getDate();}
+  document.getElementById('cal3Title').textContent=
+    monday.getFullYear()+'年 '+fmtShort(monday)+' 〜 '+fmtShort(sunday);
+
+  // イベント収集
+  const evs={};
+  records.forEach(r=>{
+    if(!r.opDate)return;
+    const d=parseDate(r.opDate);
+    if(!d)return;
+    const key=ymd(d);
+    if(!evs[key])evs[key]=[];
+    evs[key].push(r);
+  });
+
+  const grid=document.getElementById('cal3Grid');
+  grid.innerHTML='';
+
+  for(let i=0;i<7;i++){
+    const date=addDaysW(monday,i);
+    const key=ymd(date);
+    const dow=date.getDay();
+    const isToday=date.getTime()===todayD.getTime();
+    const isSat=dow===6;
+    const isSun=dow===0;
+    const isHol=(!isSat&&!isSun&&isHoliday(date));
+    const dayEvs=(evs[key]||[]).sort((a,b)=>{
+      const oa=(a.opCol||'Z')+(a.opNum||'9');
+      const ob=(b.opCol||'Z')+(b.opNum||'9');
+      return oa<ob?-1:oa>ob?1:0;
+    });
+    const dayNames=['日','月','火','水','木','金','土'];
+
+    const card=document.createElement('div');
+    card.className='week-day-card';
+
+    // ヘッダー
+    const hdr=document.createElement('div');
+    let hdrCls='week-day-header ';
+    if(isToday)hdrCls+='today-hdr';
+    else if(isSun)hdrCls+='sun';
+    else if(isSat)hdrCls+='sat';
+    else if(isHol)hdrCls+='hol';
+    else hdrCls+='normal';
+    hdr.className=hdrCls;
+
+    const dateStr=(date.getMonth()+1)+'月'+date.getDate()+'日（'+dayNames[dow]+'）';
+    hdr.innerHTML='<span>'+dateStr+(isHol?' 🎌':'')+'</span>'
+      +(dayEvs.length?'<span class="week-count">'+dayEvs.length+'件</span>':'');
+    card.appendChild(hdr);
+
+    // ボディ
+    const body=document.createElement('div');
+    body.className='week-day-body';
+
+    if(!dayEvs.length){
+      const empty=document.createElement('div');
+      empty.className='week-empty';
+      empty.textContent='手術なし';
+      body.appendChild(empty);
+    }else{
+      dayEvs.forEach(r=>{
+        const isA=r.opCol==='A';
+        const isB=r.opCol==='B';
+        const ev=document.createElement('div');
+        ev.className='week-ev '+(isA?'ev-A':isB?'ev-B':'ev-A');
+
+        const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'';
+        const row1=document.createElement('div');
+        row1.className='week-ev-row1';
+        if(ord){
+          const pill=document.createElement('span');
+          pill.className='order-pill '+(isA?'pill-A':'pill-B');
+          pill.style.fontSize='11px';
+          pill.textContent=ord;
+          row1.appendChild(pill);
+        }
+        const idSpan=document.createElement('span');
+        idSpan.textContent=r.patientId;
+        row1.appendChild(idSpan);
+        if(r.opTime){
+          const timeSpan=document.createElement('span');
+          timeSpan.style.cssText='font-size:11px;font-weight:400;color:#555;margin-left:auto';
+          timeSpan.textContent=r.opTime+'h';
+          row1.appendChild(timeSpan);
+        }
+        ev.appendChild(row1);
+
+        const row2=document.createElement('div');
+        row2.className='week-ev-row2';
+        const parts=[];
+        parts.push(SHORT[r.surgery]||r.surgery||'');
+        if(r.doctor)parts.push('主:'+r.doctor);
+        if(r.surgeon)parts.push('執1:'+r.surgeon);
+        if(r.surgeon2)parts.push('執2:'+r.surgeon2);
+        if(r.assist1)parts.push('助1:'+r.assist1);
+        if(r.assist2)parts.push('助2:'+r.assist2);
+        row2.textContent=parts.filter(Boolean).join('　');
+        ev.appendChild(row2);
+
+        ev.onclick=((record)=>()=>showDetail(record))(r);
+        body.appendChild(ev);
+      });
+    }
+    card.appendChild(body);
+    grid.appendChild(card);
+  }
+}
+
+// ===== 詳細モーダル =====
+function showDetail(r){
+  if(!r)return;
+  const ad=parseDate(r.admitDate),od=parseDate(r.opDate),dd=parseDate(r.dischargeDate);
+  const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'—';
+  const ordColor=r.opCol==='A'?'#3b7dd8':'#7c3aed';
+
+  let html='<div class="modal-title">'+r.patientId+'　<span style="font-size:12px;font-weight:400;color:#888">'+(SHORT[r.surgery]||r.surgery||'')+'</span></div>';
+
+  const rows=[
+    ['入院日', fmt(ad)],
+    ['手術日', fmt(od)],
+    ['退院予定日', dd?fmt(dd):'除外対象'],
+    ['外来主治医', r.doctor||'—'],
+    ['執刀医１', r.surgeon||'—'],
+    ['執刀医２', r.surgeon2||'—'],
+    ['助手１', r.assist1||'—'],
+    ['助手２', r.assist2||'—'],
+  ];
+
+  rows.forEach(([label,val])=>{
+    if(val&&val!=='—'){
+      html+='<div class="modal-row"><div class="modal-label">'+label+'</div><div class="modal-value">'+val+'</div></div>';
+    }
+  });
+
+  html+='<hr class="modal-divider">';
+
+  const info=[];
+  if(ord!=='—')info.push('<span style="background:'+ordColor+';color:#fff;padding:2px 10px;border-radius:12px;font-size:13px;font-weight:700">'+ord+'</span>');
+  if(r.opTime)info.push('<span style="font-size:13px;font-weight:600;color:#555">予定 '+r.opTime+'h</span>');
+  if(info.length)html+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+info.join('')+'</div>';
+
+  document.getElementById('modalContent').innerHTML=html;
+  document.getElementById('detailModal').style.display='flex';
+  document.body.style.overflow='hidden';
+}
+
+function hideModal(){
+  document.getElementById('detailModal').style.display='none';
+  document.body.style.overflow='';
+}
+function closeModal(e){
+  if(e.target===document.getElementById('detailModal'))hideModal();
+}
+
+// キーボードEscでも閉じる
+document.addEventListener('keydown',e=>{if(e.key==='Escape')hideModal();});
 </script>
 </body>
 </html>
