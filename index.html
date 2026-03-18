@@ -163,13 +163,13 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <button class="logout-btn" onclick="logout()">ログアウト</button>
   </div>
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('calc')">退院日計算</button>
-    <button class="tab-btn" onclick="switchTab('cal1')">カレンダー①</button>
-    <button class="tab-btn" onclick="switchTab('cal2')">カレンダー②手術</button>
-    <button class="tab-btn" onclick="switchTab('cal3')">カレンダー③週間手術</button>
-    <button class="tab-btn" onclick="switchTab('list')">土日入院</button>
-    <button class="tab-btn" onclick="switchTab('edit')">一覧・修正</button>
-    <button class="tab-btn" onclick="switchTab('log')">操作ログ</button>
+    <button class="tab-btn active" onclick="switchTab('calc')" data-tab="calc">退院日計算</button>
+    <button class="tab-btn" onclick="switchTab('cal1')" data-tab="cal1">カレンダー①</button>
+    <button class="tab-btn" onclick="switchTab('cal2')" data-tab="cal2">カレンダー②手術</button>
+    <button class="tab-btn" onclick="switchTab('cal3')" data-tab="cal3">カレンダー③週間手術</button>
+    <button class="tab-btn" onclick="switchTab('list')" data-tab="list">土日入院</button>
+    <button class="tab-btn" onclick="switchTab('edit')" data-tab="edit">一覧・修正</button>
+    <button class="tab-btn" onclick="switchTab('log')" data-tab="log">操作ログ</button>
   </div>
 
   <!-- 退院日計算 -->
@@ -547,7 +547,23 @@ function fillSelects(){
     if(cur)sel.value=cur;
   });
 }
-document.addEventListener('DOMContentLoaded',fillSelects);
+document.addEventListener('DOMContentLoaded',()=>{
+  fillSelects();
+  // セッション復元（30分以内なら自動ログイン）
+  try{
+    const saved=sessionStorage.getItem('gyn_session');
+    if(saved){
+      const s=JSON.parse(saved);
+      const age=(Date.now()-s.ts)/1000/60; // 分
+      if(age<30 && s.user && s.pw===PASSWORD){
+        document.getElementById('loginDoctor').value=s.user;
+        document.getElementById('pwInput').value=s.pw;
+        checkPw();
+        return;
+      }
+    }
+  }catch(e){}
+});
 
 function checkPw(){
   const doc=document.getElementById('loginDoctor').value;
@@ -557,6 +573,8 @@ function checkPw(){
     document.getElementById('lockScreen').style.display='none';
     document.getElementById('app').style.display='block';
     document.getElementById('header-user').textContent=doc+' 先生';
+    // セッション保存（30分間有効）
+    try{ sessionStorage.setItem('gyn_session', JSON.stringify({user:doc,pw:pw,ts:Date.now()})); }catch(e){}
     const t=new Date();
     document.getElementById('opDate').value=ymd(t);
     cal1Year=cal2Year=t.getFullYear();
@@ -579,13 +597,16 @@ function logout(){
   document.getElementById('pwInput').value='';
   document.getElementById('loginDoctor').value='';
   document.getElementById('pwError').style.display='none';
+  try{ sessionStorage.removeItem('gyn_session'); }catch(e){}
 }
 
 // ===== タブ切り替え =====
 function switchTab(t){
-  ['calc','cal1','cal2','cal3','list','edit','log'].forEach((name,i)=>{
+  ['calc','cal1','cal2','cal3','list','edit','log'].forEach(name=>{
     document.getElementById('tab-'+name).style.display=t===name?'block':'none';
-    document.querySelectorAll('.tab-btn')[i].classList.toggle('active',t===name);
+  });
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.getAttribute('data-tab')===t);
   });
   if(t==='cal1')setTimeout(()=>renderCal('cal1'),50);
   if(t==='cal2')setTimeout(()=>renderCal('cal2'),50);
