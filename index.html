@@ -164,7 +164,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
   </div>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('calc')" data-tab="calc">退院日計算</button>
-    <button class="tab-btn" onclick="switchTab('cal1')" data-tab="cal1">カレンダー①</button>
+    <button class="tab-btn" onclick="switchTab('cal1')" data-tab="cal1">カレンダー①入退院日確認</button>
     <button class="tab-btn" onclick="switchTab('cal2')" data-tab="cal2">カレンダー②手術</button>
     <button class="tab-btn" onclick="switchTab('cal3')" data-tab="cal3">カレンダー③週間手術</button>
     <button class="tab-btn" onclick="switchTab('list')" data-tab="list">土日入院</button>
@@ -263,7 +263,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <div id="output"></div>
   </div>
 
-  <!-- カレンダー① -->
+  <!-- カレンダー①入退院日確認 -->
   <div id="tab-cal1" class="content cal-content" style="display:none">
     <div class="cal-controls">
       <button class="cal-nav-btn" onclick="moveMonth('cal1',-1)">◀</button>
@@ -396,29 +396,30 @@ function parseDate(s){
   if(!s) return null;
   // 数値（Excelシリアル値）の場合
   if(typeof s==='number'){
-    // Googleシートのシリアル値（1900年1月1日起点）
-    const d=new Date((s-25569)*86400000);
-    return isNaN(d.getTime())?null:d;
+    // Googleシートのシリアル値（1900年1月1日起点）→ UTC基準で計算後ローカル日付に変換
+    const utc=new Date((s-25569)*86400000);
+    // UTC日付をローカル日付として解釈（タイムゾーンずれを防ぐ）
+    return new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate());
   }
   const str=String(s).trim();
   if(!str) return null;
-  // YYYY-MM-DD形式
+  // YYYY-MM-DD形式（最も一般的）- タイムゾーン安全な方法
   if(str.match(/^\d{4}-\d{2}-\d{2}$/)){
-    const d=new Date(str+'T00:00:00');
+    const parts=str.split('-');
+    const d=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
     return isNaN(d.getTime())?null:d;
   }
   // ISO形式 (2025-06-10T00:00:00.000Z など)
   if(str.match(/^\d{4}-\d{2}-\d{2}T/)){
-    // UTCをローカル日付として解釈
+    // UTC日付部分のみ取り出してローカル日付として扱う
     const parts=str.slice(0,10).split('-');
-    const d=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
-    return isNaN(d.getTime())?null:d;
+    return new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
   }
-  // その他の形式を試みる
+  // その他の形式
   const d=new Date(str);
   if(!isNaN(d.getTime())){
-    // UTCオフセットを補正してローカル日付を返す
-    return new Date(d.getFullYear(),d.getMonth(),d.getDate());
+    // getUTCFullYear等でUTC日付を取り出してローカル日付として扱う
+    return new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());
   }
   return null;
 }
@@ -953,7 +954,7 @@ function _renderCal(cal){
         t1.textContent=ev.patientId+' '+(SHORT[ev.surgery]||'');
         l1.appendChild(t1);div.appendChild(l1);
         if(isCal1){
-          // カレンダー①: 主治医を1行で
+          // カレンダー①入退院日確認: 主治医を1行で
           if(ev.doctor){const l2=document.createElement('div');l2.style.cssText='font-size:9px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=ev.doctor;div.appendChild(l2);}
         }else{
           // カレンダー②: 担当者を2行目
