@@ -504,7 +504,7 @@ function applyAndRender(recs){
 function refreshUI(){
   updateCounter();
   // 現在表示中のタブに応じて再描画
-  const tabs=['calc','cal1','cal2','list','edit','log'];
+  const tabs=['calc','cal1','cal2','cal3','list','edit','log'];
   const active=tabs.find(t=>document.getElementById('tab-'+t)&&document.getElementById('tab-'+t).style.display!=='none');
   if(active==='cal1')renderCal('cal1');
   if(active==='cal2')renderCal('cal2');
@@ -583,7 +583,7 @@ function logout(){
 
 // ===== タブ切り替え =====
 function switchTab(t){
-  ['calc','cal1','cal2','list','edit','log'].forEach((name,i)=>{
+  ['calc','cal1','cal2','cal3','list','edit','log'].forEach((name,i)=>{
     document.getElementById('tab-'+name).style.display=t===name?'block':'none';
     document.querySelectorAll('.tab-btn')[i].classList.toggle('active',t===name);
   });
@@ -732,6 +732,19 @@ function calculate(){
   const out=document.getElementById('output');
 
   if(!pid){out.innerHTML='<div class="alert alert-warn">患者IDを入力してください</div>';return;}
+
+  // 同一患者ID・同一手術日の重複チェック
+  if(!editingId&&opStr){
+    const dup=records.find(r=>r.patientId===pid&&r.opDate===opStr);
+    if(dup){
+      if(!confirm('患者ID「'+pid+'」の'+opStr+'の手術はすでに登録されています。\n上書きしますか？')){
+        out.innerHTML='<div class="alert alert-info">登録をキャンセルしました。「一覧・修正」タブから既存データを修正できます。</div>';
+        return;
+      }
+      // 上書きの場合は既存IDを引き継ぐ
+      document.getElementById('editingId').value=dup.id;
+    }
+  }
   if(!doc){out.innerHTML='<div class="alert alert-warn">主治医を選択してください</div>';return;}
   if(!opStr||!surgery){out.innerHTML='<div class="alert alert-warn">手術日と術式を選択してください</div>';return;}
 
