@@ -207,11 +207,9 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <input type="hidden" id="editingId">
     <div class="card">
       <div class="section-label">患者情報</div>
-      <div class="form-grid">
+      <div class="form-grid-3">
         <div class="field"><label>患者ID</label><input type="text" id="patientId" placeholder="例：P20250001" oninput="autoLoad(this.value)"></div>
         <div class="field"><label>外来主治医</label><select id="doctorName"><option value="">-- 選択 --</option></select></div>
-      </div>
-      <div class="form-grid">
         <div class="field"><label>入院主治医</label><select id="admitDoctor"><option value="">-- 選択 --</option></select></div>
       </div>
     </div>
@@ -726,7 +724,6 @@ function switchTab(t){
     btn.classList.toggle('active',btn.getAttribute('data-tab')===t);
   });
   if(t==='absence'){ fetchAbsences(); }
-  if(t==='stats'){ initStats(); }
   if(t==='stats'){ initStats(); }
   if(t==='cal1') setTimeout(()=>renderCal('cal1'),50);
   if(t==='cal2') setTimeout(()=>renderCal('cal2'),50);
