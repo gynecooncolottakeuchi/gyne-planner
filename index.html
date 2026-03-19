@@ -127,6 +127,30 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 .modal-close{width:100%;padding:12px;background:#f5f5f5;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:14px;color:#444}
 .cal-ev{cursor:pointer}
 .week-ev{cursor:pointer}
+.abs-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;margin:1px}
+.abs-all{background:#fee2e2;color:#991b1b}
+.abs-am{background:#fef3c7;color:#92400e}
+.abs-pm{background:#dbeafe;color:#1e40af}
+.stats-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px}
+.stats-table th{background:#f5f5f5;font-size:11px;font-weight:600;color:#555;padding:8px 10px;border:1px solid #e0e0e0;text-align:center;white-space:nowrap}
+.stats-table th:first-child{text-align:left}
+.stats-table td{padding:7px 10px;border:1px solid #eee;text-align:center;vertical-align:middle}
+.stats-table td:first-child{text-align:left;font-weight:600;white-space:nowrap}
+.stats-table tr:hover td{background:#fafafa}
+.stats-table .total-row td{background:#f0f4ff;font-weight:700;border-top:2px solid #3b7dd8}
+.stats-num{font-weight:700;color:#1a4a8a}
+.stats-zero{color:#ddd}
+.stats-section{font-size:13px;font-weight:700;color:#555;margin:16px 0 8px;padding-bottom:4px;border-bottom:2px solid #e0e0e0}
+/* 統計テーブル */
+.stats-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px}
+.stats-table th{background:#f5f5f5;font-size:11px;font-weight:600;color:#555;padding:8px 10px;text-align:left;border-bottom:2px solid #e0e0e0;white-space:nowrap}
+.stats-table th.num{text-align:right}
+.stats-table td{padding:7px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+.stats-table td.num{text-align:right;font-weight:600;font-size:13px}
+.stats-table tr:hover td{background:#f9f9f9}
+.stats-table tr.total-row td{background:#f0f4ff;font-weight:700;border-top:2px solid #ddd}
+.stats-section-title{font-size:14px;font-weight:700;color:#1a1a1a;margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid #3b7dd8}
+.stats-bar{height:8px;border-radius:4px;background:#3b7dd8;display:inline-block;vertical-align:middle;min-width:4px}
 .search-highlight{outline:3px solid #f59e0b !important;box-shadow:0 0 0 6px rgba(245,158,11,0.2) !important;z-index:1;position:relative}
 .cal-cell.search-match{outline:3px solid #f59e0b;box-shadow:0 0 0 6px rgba(245,158,11,0.2)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:24px;font-size:13px;font-weight:600;color:#fff;z-index:9999;pointer-events:none;white-space:nowrap;box-shadow:0 2px 12px rgba(0,0,0,0.2)}
@@ -166,6 +190,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
   </div>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('calc')" data-tab="calc">退院日計算</button>
+    <button class="tab-btn" onclick="switchTab('absence')" data-tab="absence">不在入力</button>
     <button class="tab-btn" onclick="switchTab('cal1')" data-tab="cal1">カレンダー①入退院日確認</button>
     <button class="tab-btn" onclick="switchTab('cal2')" data-tab="cal2">カレンダー②手術</button>
     <button class="tab-btn" onclick="switchTab('cal3')" data-tab="cal3">カレンダー③週間手術</button>
@@ -173,6 +198,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <button class="tab-btn" onclick="switchTab('edit')" data-tab="edit">一覧・修正</button>
     <button class="tab-btn" onclick="switchTab('log')" data-tab="log">操作ログ</button>
     <button class="tab-btn" onclick="switchTab('search')" data-tab="search">🔍 検索</button>
+    <button class="tab-btn" onclick="switchTab('stats')" data-tab="stats">📊 統計</button>
+    <button class="tab-btn" onclick="switchTab('stats')" data-tab="stats">📊 統計</button>
   </div>
 
   <!-- 退院日計算 -->
@@ -183,6 +210,9 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
       <div class="form-grid">
         <div class="field"><label>患者ID</label><input type="text" id="patientId" placeholder="例：P20250001" oninput="autoLoad(this.value)"></div>
         <div class="field"><label>外来主治医</label><select id="doctorName"><option value="">-- 選択 --</option></select></div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>入院主治医</label><select id="admitDoctor"><option value="">-- 選択 --</option></select></div>
       </div>
     </div>
     <div class="card">
@@ -264,6 +294,41 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
       </div>
     </div>
     <div id="output"></div>
+  </div>
+
+  <!-- 不在入力 -->
+  <div id="tab-absence" class="content" style="display:none">
+    <div class="card">
+      <div class="section-label">不在入力</div>
+      <div class="form-grid" style="margin-bottom:10px">
+        <div class="field"><label>日付</label><input type="date" id="absDate"></div>
+        <div class="field"><label>不在者</label><select id="absPerson"><option value="">-- 選択 --</option></select></div>
+      </div>
+      <div class="form-grid-3" style="margin-bottom:10px">
+        <div class="field">
+          <label>区分</label>
+          <select id="absType" onchange="updateAbsReason()">
+            <option value="">-- 選択 --</option>
+            <option value="終日">終日不在</option>
+            <option value="午前">午前不在</option>
+            <option value="午後">午後不在</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>理由</label>
+          <select id="absReason"><option value="">-- 選択 --</option></select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveAbsence()">登録</button>
+        <button class="btn" onclick="clearAbsForm()">クリア</button>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:#555">登録済み不在一覧</div>
+      <button class="sync-btn" onclick="fetchAbsences()"><span class="spinner" id="absSpin"></span>🔄 同期</button>
+    </div>
+    <div id="absenceList" class="card"><p style="font-size:13px;color:#aaa">登録されていません</p></div>
   </div>
 
   <!-- カレンダー①入退院日確認 -->
@@ -362,6 +427,78 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
       </div>
     </div>
     <div id="searchResult"></div>
+  </div>
+
+  <!-- 統計タブ -->
+  <div id="tab-stats" class="content" style="display:none">
+    <div id="statsLock" style="text-align:center;padding:40px">
+      <div style="font-size:32px;margin-bottom:12px">🔒</div>
+      <div style="font-size:15px;font-weight:600;color:#555;margin-bottom:20px">このタブは竹内先生のみアクセスできます</div>
+    </div>
+    <div id="statsContent" style="display:none">
+      <div class="card">
+        <div class="section-label">集計条件</div>
+        <div class="form-grid">
+          <div class="field">
+            <label>期間</label>
+            <select id="statsPeriod" onchange="renderStats()">
+              <option value="month">月別</option>
+              <option value="year">年別</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>対象月/年度</label>
+            <select id="statsTarget" onchange="renderStats()"></select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label>集計軸</label>
+            <select id="statsAxis" onchange="renderStats()">
+              <option value="doctor">外来主治医別</option>
+              <option value="admitDoctor">入院主治医別</option>
+              <option value="surgeon">執刀医別</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>表示</label>
+            <select id="statsView" onchange="renderStats()">
+              <option value="table">表形式</option>
+              <option value="list">リスト形式</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="statsResult"></div>
+    </div>
+  </div>
+
+  <!-- 統計タブ -->
+  <div id="tab-stats" class="content" style="display:none">
+    <div id="statsLock" style="text-align:center;padding:40px">
+      <div style="font-size:48px;margin-bottom:16px">🔒</div>
+      <div style="font-size:15px;font-weight:600;color:#555;margin-bottom:16px">このページは竹内先生専用です</div>
+      <button class="btn btn-primary" onclick="unlockStats()">パスワードを入力</button>
+    </div>
+    <div id="statsContent" style="display:none">
+      <div class="card">
+        <div class="section-label">集計条件</div>
+        <div class="form-grid">
+          <div class="field">
+            <label>期間</label>
+            <select id="statsPeriod" onchange="renderStats()">
+              <option value="month">月別</option>
+              <option value="year">年別</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>対象月/年度</label>
+            <select id="statsTarget" onchange="renderStats()"></select>
+          </div>
+        </div>
+      </div>
+      <div id="statsOutput"></div>
+    </div>
   </div>
 
 <!-- 詳細モーダル -->
@@ -518,7 +655,7 @@ async function fetchAndRender(showSpinner){
 
 // ===== ログイン =====
 function fillSelects(){
-  ['loginDoctor','doctorName','surgeon','surgeon2','assist1','assist2'].forEach(id=>{
+  ['loginDoctor','doctorName','admitDoctor','surgeon','surgeon2','assist1','assist2','absPerson'].forEach(id=>{
     const sel=document.getElementById(id);
     if(!sel) return;
     const cur=sel.value;
@@ -550,13 +687,16 @@ function checkPw(){
     document.getElementById('header-user').textContent=doc+' 先生';
     const t=new Date();
     document.getElementById('opDate').value=ymd(t);
+    document.getElementById('absDate').value=ymd(t);
     cal1Year=cal2Year=t.getFullYear();
     cal1Month=cal2Month=t.getMonth();
     cal3BaseMonday=getMonday(t);
     fillSelects();
     loadLogs();
+    loadAbsences();
     // GASから最新データ取得
     fetchAndRender(false);
+    fetchAbsences();
   }else{
     document.getElementById('pwError').style.display='block';
     document.getElementById('pwInput').value='';
@@ -579,12 +719,15 @@ function logout(){
 
 // ===== タブ切り替え =====
 function switchTab(t){
-  ['calc','cal1','cal2','cal3','list','edit','log','search'].forEach(name=>{
+  ['calc','absence','cal1','cal2','cal3','list','edit','log','search','stats'].forEach(name=>{
     document.getElementById('tab-'+name).style.display=t===name?'block':'none';
   });
   document.querySelectorAll('.tab-btn').forEach(btn=>{
     btn.classList.toggle('active',btn.getAttribute('data-tab')===t);
   });
+  if(t==='absence'){ fetchAbsences(); }
+  if(t==='stats'){ initStats(); }
+  if(t==='stats'){ initStats(); }
   if(t==='cal1') setTimeout(()=>renderCal('cal1'),50);
   if(t==='cal2') setTimeout(()=>renderCal('cal2'),50);
   if(t==='cal3') setTimeout(()=>renderWeekCal(),50);
@@ -596,7 +739,7 @@ function switchTab(t){
 // ===== 画面更新 =====
 function refreshUI(){
   updateCounter();
-  const tabs=['calc','cal1','cal2','cal3','list','edit','log','search'];
+  const tabs=['calc','absence','cal1','cal2','cal3','list','edit','log','search','stats'];
   const active=tabs.find(t=>{const el=document.getElementById('tab-'+t);return el&&el.style.display!=='none';});
   if(active==='cal1') renderCal('cal1');
   if(active==='cal2') renderCal('cal2');
@@ -675,6 +818,8 @@ function editRecord(id){
   if(!r) return;
   document.getElementById('patientId').value=r.patientId||'';
   document.getElementById('doctorName').value=r.doctor||'';
+  document.getElementById('admitDoctor').value=r.admitDoctor||'';
+  document.getElementById('admitDoctor').value=r.admitDoctor||'';
   document.getElementById('surgeon').value=r.surgeon||'';
   document.getElementById('surgeon2').value=r.surgeon2||'';
   document.getElementById('assist1').value=r.assist1||'';
@@ -695,6 +840,8 @@ function autoLoad(pid){
   const r=records.find(x=>x.patientId===pid.trim());
   if(!r) return;
   document.getElementById('doctorName').value=r.doctor||'';
+  document.getElementById('admitDoctor').value=r.admitDoctor||'';
+  document.getElementById('admitDoctor').value=r.admitDoctor||'';
   document.getElementById('surgeon').value=r.surgeon||'';
   document.getElementById('surgeon2').value=r.surgeon2||'';
   document.getElementById('assist1').value=r.assist1||'';
@@ -735,7 +882,7 @@ function clearAll(){
 }
 
 function clearForm(){
-  ['patientId','doctorName','surgeon','surgeon2','assist1','assist2','surgerySelect','opCol','opNum','opTime','editingId'].forEach(id=>{
+  ['patientId','doctorName','admitDoctor','surgeon','surgeon2','assist1','assist2','surgerySelect','opCol','opNum','opTime','editingId'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   document.getElementById('opDate').value=ymd(new Date());
@@ -813,7 +960,8 @@ async function calculate(){
     }
   }
 
-  const record={id,patientId:pid,doctor:doc,surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',surgery,opCol:opCol||'',opNum:opNum||'',opTime:opTime||'',opDate:ymd(opDate),admitDate:ymd(admitDate),dischargeDate:dischargeDate?ymd(dischargeDate):''};
+  const admitDoc=document.getElementById('admitDoctor').value;
+  const record={id,patientId:pid,doctor:doc,admitDoctor:admitDoc||'',surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',surgery,opCol:opCol||'',opNum:opNum||'',opTime:opTime||'',opDate:ymd(opDate),admitDate:ymd(admitDate),dischargeDate:dischargeDate?ymd(dischargeDate):''};
 
   // GASに保存してから最新データを取得
   setSpin(true);
@@ -834,6 +982,7 @@ async function calculate(){
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
       <div><div class="result-label">患者ID</div><div style="font-size:16px;font-weight:700">${pid}</div></div>
       <div><div class="result-label">主治医</div><div style="font-size:14px;font-weight:600">${doc} 先生</div></div>
+      ${admitDoc?'<div><div class="result-label">入院主治医</div><div style="font-size:14px;font-weight:600">'+admitDoc+' 先生</div></div>':''}
       ${surgeon?'<div><div class="result-label">執刀医１</div><div style="font-size:13px;font-weight:600">'+surgeon+'</div></div>':''}
       ${surgeon2?'<div><div class="result-label">執刀医２</div><div style="font-size:13px;font-weight:600">'+surgeon2+'</div></div>':''}
       ${orderStr?'<div><div class="result-label">手術順番</div><span class="badge '+(opCol==='A'?'badge-blue':'badge-purple')+'">'+orderStr+'</span></div>':''}
@@ -1077,7 +1226,7 @@ function showDetail(r){
   const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'—';
   const ordColor=r.opCol==='A'?'#3b7dd8':'#7c3aed';
   let html='<div class="modal-title">'+r.patientId+'　<span style="font-size:12px;font-weight:400;color:#888">'+(SHORT[r.surgery]||r.surgery||'')+'</span></div>';
-  const rows=[['入院日',fmt(ad)],['手術日',fmt(od)],['退院予定日',dd?fmt(dd):'除外対象'],['外来主治医',r.doctor||'—'],['執刀医１',r.surgeon||'—'],['執刀医２',r.surgeon2||'—'],['助手１',r.assist1||'—'],['助手２',r.assist2||'—']];
+  const rows=[['入院日',fmt(ad)],['手術日',fmt(od)],['退院予定日',dd?fmt(dd):'除外対象'],['外来主治医',r.doctor||'—'],['入院主治医',r.admitDoctor||'—'],['執刀医１',r.surgeon||'—'],['執刀医２',r.surgeon2||'—'],['助手１',r.assist1||'—'],['助手２',r.assist2||'—']];
   rows.forEach(([label,val])=>{
     if(val&&val!=='—') html+='<div class="modal-row"><div class="modal-label">'+label+'</div><div class="modal-value">'+val+'</div></div>';
   });
@@ -1093,6 +1242,330 @@ function showDetail(r){
 function hideModal(){document.getElementById('detailModal').style.display='none';document.body.style.overflow='';}
 function closeModal(e){if(e.target===document.getElementById('detailModal'))hideModal();}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')hideModal();});
+
+// ===== 不在入力 =====
+const ABS_REASONS={
+  '終日':['直明け','有給','夏季休暇','学会','リフレッシュ休暇','忌引き'],
+  '午前':['有給','午前C/S','午前会議'],
+  '午後':['有給','午後C/S','午後会議','午後遺伝カウンセリング','午後胎児エコー']
+};
+
+let absences=[]; // {id, date, person, type, reason}
+
+function updateAbsReason(){
+  const type=document.getElementById('absType').value;
+  const sel=document.getElementById('absReason');
+  sel.innerHTML='<option value="">-- 選択 --</option>';
+  if(type&&ABS_REASONS[type]){
+    ABS_REASONS[type].forEach(r=>{
+      const o=document.createElement('option');
+      o.textContent=r;sel.appendChild(o);
+    });
+  }
+}
+
+function clearAbsForm(){
+  document.getElementById('absDate').value=ymd(new Date());
+  document.getElementById('absPerson').value='';
+  document.getElementById('absType').value='';
+  document.getElementById('absReason').innerHTML='<option value="">-- 選択 --</option>';
+}
+
+async function saveAbsence(){
+  const date=document.getElementById('absDate').value;
+  const person=document.getElementById('absPerson').value;
+  const type=document.getElementById('absType').value;
+  const reason=document.getElementById('absReason').value;
+  if(!date||!person||!type){toast('日付・不在者・区分を入力してください',false);return;}
+  const abs={id:'abs_'+genId(),date,person,type,reason:reason||''};
+  // GASに保存（absencesキーで）
+  try{
+    await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsertAbsence',record:abs})});
+    await fetchAbsences();
+    clearAbsForm();
+    toast('✓ 不在を登録しました',true);
+  }catch(e){
+    // GAS未対応の場合はローカルに保存
+    absences.push(abs);
+    try{localStorage.setItem('gyn_absences',JSON.stringify(absences));}catch(ex){}
+    renderAbsences();
+    clearAbsForm();
+    toast('✓ 不在を登録しました（ローカル保存）',true);
+  }
+}
+
+async function fetchAbsences(){
+  document.getElementById('absSpin').style.display='inline-block';
+  try{
+    const r=await fetch(GAS_URL+'?action=getAbsences&t='+Date.now());
+    const d=await r.json();
+    if(d.absences&&Array.isArray(d.absences)){
+      absences=d.absences;
+    }
+  }catch(e){
+    // ローカルから読み込み
+    try{const s=localStorage.getItem('gyn_absences');if(s)absences=JSON.parse(s);}catch(ex){}
+  }
+  document.getElementById('absSpin').style.display='none';
+  renderAbsences();
+}
+
+async function delAbsence(id){
+  absences=absences.filter(a=>a.id!==id);
+  try{
+    await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteAbsence',id})});
+  }catch(e){}
+  try{localStorage.setItem('gyn_absences',JSON.stringify(absences));}catch(ex){}
+  renderAbsences();
+}
+
+function renderAbsences(){
+  const el=document.getElementById('absenceList');
+  if(!absences.length){el.innerHTML='<p style="font-size:13px;color:#aaa">登録されていません</p>';return;}
+  const sorted=[...absences].sort((a,b)=>a.date<b.date?-1:1);
+  // 日付ごとにグループ化
+  const grp={};
+  sorted.forEach(a=>{if(!grp[a.date])grp[a.date]=[];grp[a.date].push(a);});
+  let html='';
+  Object.keys(grp).sort().forEach(date=>{
+    const d=parseDate(date);
+    html+='<div style="margin-bottom:10px"><div style="font-weight:700;font-size:13px;padding:6px 0;border-bottom:1px solid #f0f0f0;margin-bottom:6px">'+fmt(d)+'</div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    grp[date].forEach(a=>{
+      const cls=a.type==='終日'?'abs-all':a.type==='午前'?'abs-am':'abs-pm';
+      html+='<div style="display:flex;align-items:center;gap:4px;background:#f9f9f9;border-radius:8px;padding:5px 10px;font-size:12px">'
+        +'<span style="font-weight:600">'+a.person+'</span>'
+        +'<span class="abs-badge '+cls+'">'+a.type+'</span>'
+        +(a.reason?'<span style="color:#888">'+a.reason+'</span>':'')
+        +'<button class="btn btn-sm btn-danger" style="padding:2px 8px;font-size:11px" data-id="'+a.id+'" onclick="delAbsence(this.dataset.id)">×</button>'
+        +'</div>';
+    });
+    html+='</div></div>';
+  });
+  el.innerHTML=html;
+}
+
+// 不在データをローカルから初期読み込み
+function loadAbsences(){
+  try{const s=localStorage.getItem('gyn_absences');if(s)absences=JSON.parse(s);}catch(e){}
+}
+
+// ===== 統計 =====
+let statsUnlocked = false;
+
+function unlockStats(){
+  const pw=prompt('パスワードを入力してください');
+  if(pw==='20140609'&&currentUser===LOG_ADMIN){
+    statsUnlocked=true;
+    document.getElementById('statsLock').style.display='none';
+    document.getElementById('statsContent').style.display='block';
+    initStats();
+  } else {
+    alert('竹内先生のアカウントでログインし、正しいパスワードを入力してください');
+  }
+}
+
+function initStats(){
+  if(!statsUnlocked){
+    if(currentUser===LOG_ADMIN){
+      // 竹内先生でログイン済みなら自動解除
+      statsUnlocked=true;
+      document.getElementById('statsLock').style.display='none';
+      document.getElementById('statsContent').style.display='block';
+    } else {
+      return;
+    }
+  }
+  buildStatsTargets();
+  renderStats();
+}
+
+function buildStatsTargets(){
+  const period=document.getElementById('statsPeriod').value;
+  const sel=document.getElementById('statsTarget');
+  const cur=sel.value;
+  sel.innerHTML='';
+  const months=new Set();
+  const fyears=new Set();
+  records.forEach(r=>{
+    const d=parseDate(r.opDate);
+    if(!d) return;
+    const y=d.getFullYear(),m=d.getMonth()+1;
+    months.add(y+'-'+String(m).padStart(2,'0'));
+    fyears.add(y);
+  });
+  if(period==='month'){
+    [...months].sort().reverse().forEach(ym=>{
+      const o=document.createElement('option');
+      const [y,m]=ym.split('-');
+      o.value=ym; o.textContent=y+'年'+parseInt(m)+'月';
+      sel.appendChild(o);
+    });
+  } else {
+    [...fyears].sort().reverse().forEach(fy=>{
+      const o=document.createElement('option');
+      o.value=fy; o.textContent=fy+'年';
+      sel.appendChild(o);
+    });
+  }
+  if(cur) sel.value=cur;
+}
+
+function getFilteredRecords(){
+  const period=document.getElementById('statsPeriod').value;
+  const target=document.getElementById('statsTarget').value;
+  if(!target) return [];
+  return records.filter(r=>{
+    const d=parseDate(r.opDate);
+    if(!d) return false;
+    if(period==='month'){
+      const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      return ym===target;
+    } else {
+      return String(d.getFullYear())===String(target);
+    }
+  });
+}
+
+function makeTable(title, rows, colHeader, maxVal){
+  if(!rows.length) return '';
+  let html='<div class="stats-section-title">'+title+'</div>';
+  html+='<div style="overflow-x:auto"><table class="stats-table">';
+  html+='<thead><tr><th>'+colHeader+'</th><th class="num">件数</th><th style="width:120px">割合</th></tr></thead><tbody>';
+  const total=rows.reduce((s,r)=>s+r[1],0);
+  rows.sort((a,b)=>b[1]-a[1]).forEach(([label,cnt])=>{
+    const pct=total>0?Math.round(cnt/total*100):0;
+    const barW=maxVal>0?Math.round(cnt/maxVal*100):0;
+    html+='<tr><td>'+label+'</td><td class="num">'+cnt+'</td>'
+      +'<td><span class="stats-bar" style="width:'+barW+'px"></span> '
+      +'<span style="font-size:11px;color:#888">'+pct+'%</span></td></tr>';
+  });
+  html+='<tr class="total-row"><td>合計</td><td class="num">'+total+'</td><td></td></tr>';
+  html+='</tbody></table></div>';
+  return html;
+}
+
+function makeDetailTable(title, rowKeys, colKeys, data){
+  if(!rowKeys.length||!colKeys.length) return '';
+  // Limit columns for readability
+  const cols=colKeys.slice(0,15);
+  let html='<div class="stats-section-title">'+title+'</div>';
+  html+='<div style="overflow-x:auto"><table class="stats-table">';
+  html+='<thead><tr><th>術式</th>';
+  cols.forEach(c=>html+='<th class="num" style="min-width:50px">'+c+'</th>');
+  html+='<th class="num">計</th></tr></thead><tbody>';
+  rowKeys.forEach(rk=>{
+    const rowTotal=cols.reduce((s,ck)=>s+(data[rk]&&data[rk][ck]?data[rk][ck]:0),0);
+    if(rowTotal===0) return;
+    html+='<tr><td style="white-space:nowrap">'+rk+'</td>';
+    cols.forEach(ck=>{
+      const v=data[rk]&&data[rk][ck]?data[rk][ck]:0;
+      html+='<td class="num">'+(v>0?v:'')+'</td>';
+    });
+    html+='<td class="num">'+rowTotal+'</td></tr>';
+  });
+  // Total row
+  html+='<tr class="total-row"><td>合計</td>';
+  const grandTotal=cols.reduce((s,ck)=>{
+    const ct=rowKeys.reduce((ss,rk)=>ss+(data[rk]&&data[rk][ck]?data[rk][ck]:0),0);
+    html+='<td class="num">'+ct+'</td>';
+    return s+ct;
+  },0);
+  html+='<td class="num">'+rowKeys.reduce((s,rk)=>s+cols.reduce((ss,ck)=>ss+(data[rk]&&data[rk][ck]?data[rk][ck]:0),0),0)+'</td></tr>';
+  html+='</tbody></table></div>';
+  return html;
+}
+
+function renderStats(){
+  if(!statsUnlocked) return;
+  buildStatsTargets();
+  const recs=getFilteredRecords();
+  const period=document.getElementById('statsPeriod').value;
+  const target=document.getElementById('statsTarget').value;
+  const out=document.getElementById('statsOutput');
+  if(!target){out.innerHTML='<div class="card"><p style="color:#aaa;font-size:13px">対象期間を選択してください</p></div>';return;}
+  if(!recs.length){out.innerHTML='<div class="card"><p style="color:#aaa;font-size:13px">該当するデータがありません</p></div>';return;}
+
+  const periodLabel=period==='month'?(()=>{const[y,m]=target.split('-');return y+'年'+parseInt(m)+'月';})():(target+'年');
+
+  // 1. 外来主治医別集計
+  const docCount={};
+  recs.forEach(r=>{const k=r.doctor||'未設定';docCount[k]=(docCount[k]||0)+1;});
+  const docMax=Math.max(...Object.values(docCount),1);
+
+  // 2. 執刀医別集計
+  const surgCount={};
+  recs.forEach(r=>{
+    [r.surgeon,r.surgeon2].filter(Boolean).forEach(s=>{surgCount[s]=(surgCount[s]||0)+1;});
+  });
+  const surgMax=Math.max(...Object.values(surgCount),1);
+
+  // 3. 術式別集計
+  const opCount={};
+  recs.forEach(r=>{const k=SHORT[r.surgery]||r.surgery||'不明';opCount[k]=(opCount[k]||0)+1;});
+  const opMax=Math.max(...Object.values(opCount),1);
+
+  // 4. 主治医×術式クロス集計
+  const docOpData={};
+  const docKeys=new Set(),opKeys=new Set();
+  recs.forEach(r=>{
+    const d=r.doctor||'未設定';
+    const op=SHORT[r.surgery]||r.surgery||'不明';
+    docKeys.add(d);opKeys.add(op);
+    if(!docOpData[op])docOpData[op]={};
+    docOpData[op][d]=(docOpData[op][d]||0)+1;
+  });
+
+  // 5. 執刀医×術式クロス集計
+  const surgOpData={};
+  const surgKeys=new Set();
+  recs.forEach(r=>{
+    const op=SHORT[r.surgery]||r.surgery||'不明';
+    [r.surgeon,r.surgeon2].filter(Boolean).forEach(s=>{
+      surgKeys.add(s);
+      if(!surgOpData[op])surgOpData[op]={};
+      surgOpData[op][s]=(surgOpData[op][s]||0)+1;
+    });
+  });
+
+  let html='<div class="card" style="background:#e8f0fb;border:none;margin-bottom:16px">'
+    +'<div style="font-size:14px;font-weight:700;color:#1a4a8a">'+periodLabel+' 集計結果</div>'
+    +'<div style="font-size:13px;color:#555;margin-top:4px">対象症例数：'+recs.length+'件</div>'
+    +'</div>';
+
+  // セクション1：外来主治医別
+  html+='<div class="card">';
+  html+=makeTable('① 外来主治医別 手術件数',Object.entries(docCount),'外来主治医',docMax);
+  html+='</div>';
+
+  // セクション2：執刀医別
+  if(Object.keys(surgCount).length){
+    html+='<div class="card">';
+    html+=makeTable('② 執刀医別 手術件数',Object.entries(surgCount),'執刀医',surgMax);
+    html+='</div>';
+  }
+
+  // セクション3：術式別
+  html+='<div class="card">';
+  html+=makeTable('③ 術式別 手術件数',Object.entries(opCount),'術式',opMax);
+  html+='</div>';
+
+  // セクション4：主治医×術式クロス
+  if(docKeys.size&&opKeys.size){
+    html+='<div class="card">';
+    html+=makeDetailTable('④ 外来主治医 × 術式 クロス集計',[...opKeys].sort(),[...docKeys].sort(),docOpData);
+    html+='</div>';
+  }
+
+  // セクション5：執刀医×術式クロス
+  if(surgKeys.size&&opKeys.size){
+    html+='<div class="card">';
+    html+=makeDetailTable('⑤ 執刀医 × 術式 クロス集計',[...opKeys].sort(),[...surgKeys].sort(),surgOpData);
+    html+='</div>';
+  }
+
+  out.innerHTML=html;
+}
 
 // ===== 検索 =====
 let searchHighlightPid='';
@@ -1193,6 +1666,176 @@ function highlightCalendar(){
   // ハイライトされたセルにスクロール
   const first=document.querySelector('.cal-cell.search-match');
   if(first) first.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+// ===== 統計 =====
+function initStats(){
+  // アクセス制御
+  if(currentUser!=='竹内'){
+    document.getElementById('statsLock').style.display='block';
+    document.getElementById('statsContent').style.display='none';
+    return;
+  }
+  document.getElementById('statsLock').style.display='none';
+  document.getElementById('statsContent').style.display='block';
+  // 期間選択肢を生成
+  buildStatsTargets();
+  renderStats();
+}
+
+function buildStatsTargets(){
+  const period=document.getElementById('statsPeriod').value;
+  const sel=document.getElementById('statsTarget');
+  sel.innerHTML='';
+  // 手術データから日付を収集
+  const dates=records.map(r=>parseDate(r.opDate)).filter(Boolean);
+  if(!dates.length){sel.innerHTML='<option>データなし</option>';return;}
+  if(period==='month'){
+    // 月ごと: YYYY-MM
+    const months=[...new Set(dates.map(d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')))].sort().reverse();
+    months.forEach(m=>{
+      const o=document.createElement('option');
+      o.value=m;
+      const y=m.slice(0,4),mo=parseInt(m.slice(5));
+      o.textContent=y+'年'+mo+'月';
+      sel.appendChild(o);
+    });
+  } else {
+    // 年度ごと: 4月始まり
+    const fiscal=d=>{const m=d.getMonth()+1;return m>=4?d.getFullYear():d.getFullYear()-1;};
+    const years=[...new Set(dates.map(fiscal))].sort().reverse();
+    years.forEach(y=>{
+      const o=document.createElement('option');
+      o.value='fy'+y;
+      o.textContent=y+'年度（'+y+'/4〜'+(y+1)+'/3）';
+      sel.appendChild(o);
+    });
+  }
+}
+
+function getFilteredRecords(){
+  const period=document.getElementById('statsPeriod').value;
+  const target=document.getElementById('statsTarget').value;
+  if(!target) return [];
+  return records.filter(r=>{
+    const d=parseDate(r.opDate);
+    if(!d) return false;
+    if(period==='month'){
+      const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      return ym===target;
+    } else {
+      const fy=parseInt(target.slice(2));
+      const m=d.getMonth()+1;
+      const y=d.getFullYear();
+      return (y===fy&&m>=4)||(y===fy+1&&m<=3);
+    }
+  });
+}
+
+// 術式グループ定義
+const SURGERY_GROUPS=[
+  {label:'開腹｜悪性',keys:['ec_open_ln','ec_open_noln','oc_open_ln','oc_open_noln','cx_semi_ln','cx_simple_ln','cx_semi_noln','cx_simple_noln','cx_radical']},
+  {label:'開腹｜良性',keys:['open_benign_ut','open_benign_ov']},
+  {label:'腹腔鏡',keys:['lap_malig_ln','lap_malig_noln','lap_benign','lap_adnexa','lap_radical']},
+  {label:'ロボット',keys:['robot_malig_ln','robot_malig_noln','robot_benign']},
+  {label:'膣式・その他',keys:['vaginal_hyst','vnotes','cone','laser','hyst_scope','ectopic']},
+];
+const ALL_SURGERY_KEYS=SURGERY_GROUPS.flatMap(g=>g.keys);
+
+function renderStats(){
+  buildStatsTargets();
+  const recs=getFilteredRecords();
+  const axis=document.getElementById('statsAxis').value;
+  const view=document.getElementById('statsView').value;
+  const el=document.getElementById('statsResult');
+  if(!recs.length){el.innerHTML='<div class="card"><p style="font-size:13px;color:#aaa">該当データがありません</p></div>';return;}
+
+  // axis別に人名を取得
+  const getKey=r=>r[axis]||'（未設定）';
+  const persons=[...new Set(recs.map(getKey))].sort();
+
+  // 手術ごと×人名の集計
+  const counts={};// counts[surgeryKey][person] = count
+  recs.forEach(r=>{
+    const s=r.surgery;
+    const p=getKey(r);
+    if(!counts[s]) counts[s]={};
+    counts[s][p]=(counts[s][p]||0)+1;
+  });
+
+  const axisLabel=document.getElementById('statsAxis').options[document.getElementById('statsAxis').selectedIndex].text;
+  let html=`<div style="font-size:12px;color:#888;margin-bottom:12px">対象：${recs.length}件</div>`;
+
+  if(view==='table'){
+    // テーブル形式: 行=術式, 列=人名
+    SURGERY_GROUPS.forEach(grp=>{
+      const grpKeys=grp.keys.filter(k=>counts[k]&&Object.keys(counts[k]).length>0);
+      if(!grpKeys.length) return;
+      html+=`<div class="stats-section">${grp.label}</div>`;
+      html+='<div style="overflow-x:auto"><table class="stats-table"><thead><tr><th>術式</th>';
+      persons.forEach(p=>{html+=`<th>${p}</th>`;});
+      html+='<th>合計</th></tr></thead><tbody>';
+      let grpTotal=Array(persons.length).fill(0);
+      grpKeys.forEach(k=>{
+        const row=counts[k]||{};
+        let rowTotal=0;
+        html+=`<tr><td>${SHORT[k]||k}</td>`;
+        persons.forEach((p,i)=>{
+          const n=row[p]||0;
+          rowTotal+=n;grpTotal[i]+=n;
+          html+=n?`<td class="stats-num">${n}</td>`:'<td class="stats-zero">—</td>';
+        });
+        html+=`<td class="stats-num">${rowTotal}</td></tr>`;
+      });
+      // グループ合計行
+      const gt=grpTotal.reduce((a,b)=>a+b,0);
+      html+='<tr class="total-row"><td>小計</td>';
+      grpTotal.forEach(n=>{html+=`<td>${n||'—'}</td>`;});
+      html+=`<td>${gt}</td></tr>`;
+      html+='</tbody></table></div>';
+    });
+
+    // 総合計
+    const totals={};
+    persons.forEach(p=>{
+      totals[p]=recs.filter(r=>getKey(r)===p).length;
+    });
+    html+='<div class="stats-section">総合計</div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px">';
+    persons.forEach(p=>{
+      html+=`<div style="background:#f0f4ff;border-radius:8px;padding:10px 16px;text-align:center">
+        <div style="font-size:11px;color:#888">${p}</div>
+        <div style="font-size:22px;font-weight:700;color:#1a4a8a">${totals[p]}</div>
+        <div style="font-size:11px;color:#888">件</div>
+      </div>`;
+    });
+    html+='</div>';
+
+  } else {
+    // リスト形式: 人名ごとに術式一覧
+    persons.forEach(p=>{
+      const pRecs=recs.filter(r=>getKey(r)===p);
+      html+=`<div class="card" style="margin-bottom:12px">
+        <div style="font-size:15px;font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between">
+          <span>${p}</span><span style="font-size:13px;color:#3b7dd8;font-weight:600">${pRecs.length}件</span>
+        </div>`;
+      SURGERY_GROUPS.forEach(grp=>{
+        const grpRecs=pRecs.filter(r=>grp.keys.includes(r.surgery));
+        if(!grpRecs.length) return;
+        html+=`<div style="font-size:11px;font-weight:600;color:#888;margin:8px 0 4px">${grp.label}</div>`;
+        const sc={};
+        grpRecs.forEach(r=>{sc[r.surgery]=(sc[r.surgery]||0)+1;});
+        Object.entries(sc).sort((a,b)=>b[1]-a[1]).forEach(([k,n])=>{
+          html+=`<div style="display:flex;justify-content:space-between;padding:4px 8px;border-radius:6px;background:#f9f9f9;margin-bottom:3px;font-size:13px">
+            <span>${SHORT[k]||k}</span><span style="font-weight:700;color:#1a4a8a">${n}件</span>
+          </div>`;
+        });
+      });
+      html+='</div>';
+    });
+  }
+
+  el.innerHTML=html;
 }
 
 // ===== 操作ログ =====
