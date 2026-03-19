@@ -561,13 +561,13 @@ function switchTab(t){
   document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.toggle('active',btn.getAttribute('data-tab')===t));
   if(t==='absence') fetchAbsences();
   if(t==='cal1'||t==='cal2'||t==='cal3'){
-    // 不在データがなければ取得してからカレンダーを描画
-    if(!absences.length) fetchAbsences();
+    // カレンダーに不在データを反映するため常に取得
+    fetchAbsences();
   }
   if(t==='stats') initStats();
-  if(t==='cal1') setTimeout(()=>renderCal('cal1'),50);
-  if(t==='cal2') setTimeout(()=>renderCal('cal2'),50);
-  if(t==='cal3') setTimeout(()=>renderWeekCal(),50);
+  if(t==='cal1') renderCal('cal1');
+  if(t==='cal2') renderCal('cal2');
+  if(t==='cal3') renderWeekCal();
   if(t==='list') renderList();
   if(t==='edit') renderEdit();
   if(t==='log') renderLog();
