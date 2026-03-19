@@ -983,21 +983,27 @@ function renderStats(){
   const periodLabel=period==='month'?(()=>{const[y,m]=target.split('-');return y+'年'+parseInt(m)+'月';})():(target+'年');
   const allDocs=DOCTORS;
   const docCount={};allDocs.forEach(d=>{docCount[d]=0;});recs.forEach(r=>{if(r.doctor)docCount[r.doctor]=(docCount[r.doctor]||0)+1;});
+  const admitDocCount={};allDocs.forEach(d=>{admitDocCount[d]=0;});recs.forEach(r=>{if(r.admitDoctor)admitDocCount[r.admitDoctor]=(admitDocCount[r.admitDoctor]||0)+1;});
   const surgCount={};allDocs.forEach(d=>{surgCount[d]=0;});recs.forEach(r=>{[r.surgeon,r.surgeon2].filter(Boolean).forEach(s=>{surgCount[s]=(surgCount[s]||0)+1;});});
   const opCount={};recs.forEach(r=>{const k=SHORT[r.surgery]||r.surgery||'不明';opCount[k]=(opCount[k]||0)+1;});
-  const docOpData={},surgOpData={},opKeys=new Set();
-  recs.forEach(r=>{const op=SHORT[r.surgery]||r.surgery||'不明';opKeys.add(op);if(r.doctor){if(!docOpData[op])docOpData[op]={};docOpData[op][r.doctor]=(docOpData[op][r.doctor]||0)+1;}[r.surgeon,r.surgeon2].filter(Boolean).forEach(s=>{if(!surgOpData[op])surgOpData[op]={};surgOpData[op][s]=(surgOpData[op][s]||0)+1;});});
+  const docOpData={},admitDocOpData={},surgOpData={},opKeys=new Set();
+  recs.forEach(r=>{const op=SHORT[r.surgery]||r.surgery||'不明';opKeys.add(op);
+    if(r.doctor){if(!docOpData[op])docOpData[op]={};docOpData[op][r.doctor]=(docOpData[op][r.doctor]||0)+1;}
+    if(r.admitDoctor){if(!admitDocOpData[op])admitDocOpData[op]={};admitDocOpData[op][r.admitDoctor]=(admitDocOpData[op][r.admitDoctor]||0)+1;}[r.surgeon,r.surgeon2].filter(Boolean).forEach(s=>{if(!surgOpData[op])surgOpData[op]={};surgOpData[op][s]=(surgOpData[op][s]||0)+1;});});
   const docMax=Math.max(...Object.values(docCount),1);
+  const admitDocMax=Math.max(...Object.values(admitDocCount),1);
   const surgMax=Math.max(...Object.values(surgCount).filter(v=>v>0),1);
   const opMax=recs.length>0?Math.max(...Object.values(opCount),1):1;
   const sortedOps=[...opKeys].sort();
   let html='<div class="card" style="background:#e8f0fb;border:none;margin-bottom:16px"><div style="font-size:14px;font-weight:700;color:#1a4a8a">'+periodLabel+' 集計結果</div><div style="font-size:13px;color:#555;margin-top:4px">対象症例数：'+recs.length+'件</div></div>';
   html+='<div class="card">'+makeTable('① 外来主治医別 手術件数',allDocs.map(d=>[d,docCount[d]||0]),'外来主治医',docMax)+'</div>';
-  html+='<div class="card">'+makeTable('② 執刀医別 手術件数',allDocs.map(d=>[d,surgCount[d]||0]),'執刀医',surgMax)+'</div>';
+  html+='<div class="card">'+makeTable('② 入院主治医別 手術件数',allDocs.map(d=>[d,admitDocCount[d]||0]),'入院主治医',admitDocMax)+'</div>';
+  html+='<div class="card">'+makeTable('③ 執刀医別 手術件数',allDocs.map(d=>[d,surgCount[d]||0]),'執刀医',surgMax)+'</div>';
   if(sortedOps.length){html+='<div class="card">'+makeTable('③ 術式別 手術件数',Object.entries(opCount),'術式',opMax)+'</div>';}
   if(sortedOps.length){
-    html+='<div class="card">'+makeDetailTable('④ 外来主治医 × 術式 クロス集計',sortedOps,allDocs,docOpData)+'</div>';
-    html+='<div class="card">'+makeDetailTable('⑤ 執刀医 × 術式 クロス集計',sortedOps,allDocs,surgOpData)+'</div>';
+    html+='<div class="card">'+makeDetailTable('⑤ 外来主治医 × 術式 クロス集計',sortedOps,allDocs,docOpData)+'</div>';
+    html+='<div class="card">'+makeDetailTable('⑥ 入院主治医 × 術式 クロス集計',sortedOps,allDocs,admitDocOpData)+'</div>';
+    html+='<div class="card">'+makeDetailTable('⑦ 執刀医 × 術式 クロス集計',sortedOps,allDocs,surgOpData)+'</div>';
   }
   out.innerHTML=html;
 }
