@@ -560,6 +560,10 @@ function switchTab(t){
   });
   document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.toggle('active',btn.getAttribute('data-tab')===t));
   if(t==='absence') fetchAbsences();
+  if(t==='cal1'||t==='cal2'||t==='cal3'){
+    // 不在データがなければ取得してからカレンダーを描画
+    if(!absences.length) fetchAbsences();
+  }
   if(t==='stats') initStats();
   if(t==='cal1') setTimeout(()=>renderCal('cal1'),50);
   if(t==='cal2') setTimeout(()=>renderCal('cal2'),50);
@@ -741,7 +745,7 @@ function _renderCal(cal){
   absences.forEach(a=>{if(!absMap[a.date])absMap[a.date]=[];absMap[a.date].push(a);});
   // 手術イベント
   const evs={};
-  const addEv=(key,type,r)=>{if(!key) return;if(!evs[key])evs[key]=[];evs[key].push({type,patientId:r.patientId,doctor:r.doctor||'',surgeon:r.surgeon||'',surgeon2:r.surgeon2||'',assist1:r.assist1||'',assist2:r.assist2||'',surgery:r.surgery,opCol:r.opCol||'',opNum:r.opNum||'',opTime:r.opTime||''});};
+  const addEv=(key,type,r)=>{if(!key) return;if(!evs[key])evs[key]=[];evs[key].push({type,patientId:r.patientId,doctor:r.doctor||'',admitDoctor:r.admitDoctor||'',surgeon:r.surgeon||'',surgeon2:r.surgeon2||'',assist1:r.assist1||'',assist2:r.assist2||'',surgery:r.surgery,opCol:r.opCol||'',opNum:r.opNum||'',opTime:r.opTime||''});};
   records.forEach(r=>{if(!r.opDate) return;if(isCal1){if(!EXCLUDED.has(r.surgery)){if(r.admitDate)addEv(r.admitDate,'admit',r);addEv(r.opDate,'op',r);if(r.dischargeDate)addEv(r.dischargeDate,'discharge',r);}}else{addEv(r.opDate,'op',r);}});
   const w=window.innerWidth;
   const maxShow=isCal1?(w>=900?99:w>=600?4:2):(w>=900?99:w>=600?5:3);
@@ -786,8 +790,12 @@ function _renderCal(cal){
         const l1=document.createElement('div');l1.style.cssText='display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;font-size:'+fs+';font-weight:600';
         if(ord){const p=document.createElement('span');p.className='order-pill '+(isA?'pill-A':'pill-B');p.textContent=ord;l1.appendChild(p);}
         const t1=document.createElement('span');t1.style.cssText='overflow:hidden;text-overflow:ellipsis;white-space:nowrap';t1.textContent=ev.patientId+' '+(SHORT[ev.surgery]||'');l1.appendChild(t1);div.appendChild(l1);
-        if(isCal1){if(ev.doctor){const l2=document.createElement('div');l2.style.cssText='font-size:9px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=ev.doctor;div.appendChild(l2);}}
-        else{const staff=[];if(ev.doctor)staff.push('主:'+ev.doctor);if(ev.surgeon)staff.push('執1:'+ev.surgeon);if(ev.surgeon2)staff.push('執2:'+ev.surgeon2);if(ev.assist1)staff.push('助1:'+ev.assist1);if(ev.assist2)staff.push('助2:'+ev.assist2);if(ev.opTime)staff.push(ev.opTime+'h');if(staff.length){const l2=document.createElement('div');l2.style.cssText='font-size:9px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=staff.join(' ');div.appendChild(l2);}}
+        if(isCal1){
+          const docStr=[ev.doctor,ev.admitDoctor].filter(Boolean).join('／');
+          if(docStr){const l2=document.createElement('div');l2.style.cssText='font-size:9px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=docStr;div.appendChild(l2);}
+        }else{
+          const staff=[];if(ev.doctor)staff.push('外:'+ev.doctor);if(ev.admitDoctor)staff.push('入:'+ev.admitDoctor);if(ev.surgeon)staff.push('執1:'+ev.surgeon);if(ev.surgeon2)staff.push('執2:'+ev.surgeon2);if(ev.assist1)staff.push('助1:'+ev.assist1);if(ev.assist2)staff.push('助2:'+ev.assist2);if(ev.opTime)staff.push(ev.opTime+'h');if(staff.length){const l2=document.createElement('div');l2.style.cssText='font-size:9px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=staff.join(' ');div.appendChild(l2);}
+        }
       }else{const l1=document.createElement('div');l1.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:'+fs+';font-weight:600';l1.textContent=(ev.type==='admit'?'入院':'退院')+' '+ev.patientId+' '+(SHORT[ev.surgery]||'')+(ev.doctor?' '+ev.doctor:'');div.appendChild(l1);}
       cell.appendChild(div);
     });
@@ -842,7 +850,7 @@ function renderWeekCal(){
       ev.appendChild(row1);
       const row2=document.createElement('div');row2.className='week-ev-row2';
       const parts=[SHORT[r.surgery]||r.surgery||''];
-      if(r.doctor)parts.push('主:'+r.doctor);if(r.surgeon)parts.push('執1:'+r.surgeon);if(r.surgeon2)parts.push('執2:'+r.surgeon2);if(r.assist1)parts.push('助1:'+r.assist1);if(r.assist2)parts.push('助2:'+r.assist2);
+      if(r.doctor)parts.push('外:'+r.doctor);if(r.admitDoctor)parts.push('入:'+r.admitDoctor);if(r.surgeon)parts.push('執1:'+r.surgeon);if(r.surgeon2)parts.push('執2:'+r.surgeon2);if(r.assist1)parts.push('助1:'+r.assist1);if(r.assist2)parts.push('助2:'+r.assist2);
       row2.textContent=parts.filter(Boolean).join('　');ev.appendChild(row2);body.appendChild(ev);
     });
     card.appendChild(body);grid.appendChild(card);
@@ -881,7 +889,7 @@ async function saveAbsence(){
   if(!date||!person||!type){toast('日付・不在者・区分を入力してください',false);return;}
   const abs={id:'abs_'+genId(),date,person,type,reason:reason||''};
   try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsertAbsence',record:abs})});await fetchAbsences();clearAbsForm();toast('✓ 不在を登録しました',true);}
-  catch(e){absences.push(abs);safeLS('gyn_absences',JSON.stringify(absences));renderAbsences();clearAbsForm();toast('✓ 不在を登録しました（ローカル保存）',true);}
+  catch(e){absences.push(abs);safeLS('gyn_absences',JSON.stringify(absences));renderAbsences();clearAbsForm();toast('✓ 不在を登録しました（ローカル保存）',true);if(document.getElementById('tab-cal1').style.display!=='none')renderCal('cal1');if(document.getElementById('tab-cal2').style.display!=='none')renderCal('cal2');if(document.getElementById('tab-cal3').style.display!=='none')renderWeekCal();}
 }
 async function fetchAbsences(){
   document.getElementById('absSpin').style.display='inline-block';
@@ -889,6 +897,10 @@ async function fetchAbsences(){
   catch(e){try{const s=safeLS('gyn_absences');if(s)absences=JSON.parse(s);}catch(ex){}}
   document.getElementById('absSpin').style.display='none';
   renderAbsences();
+  // カレンダーも再描画（不在バッジを反映）
+  if(document.getElementById('tab-cal1').style.display!=='none') renderCal('cal1');
+  if(document.getElementById('tab-cal2').style.display!=='none') renderCal('cal2');
+  if(document.getElementById('tab-cal3').style.display!=='none') renderWeekCal();
 }
 async function delAbsence(id){
   absences=absences.filter(a=>a.id!==id);
