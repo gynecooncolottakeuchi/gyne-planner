@@ -127,6 +127,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 .modal-close{width:100%;padding:12px;background:#f5f5f5;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:14px;color:#444}
 .cal-ev{cursor:pointer}
 .week-ev{cursor:pointer}
+.search-highlight{outline:3px solid #f59e0b !important;box-shadow:0 0 0 6px rgba(245,158,11,0.2) !important;z-index:1;position:relative}
+.cal-cell.search-match{outline:3px solid #f59e0b;box-shadow:0 0 0 6px rgba(245,158,11,0.2)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:24px;font-size:13px;font-weight:600;color:#fff;z-index:9999;pointer-events:none;white-space:nowrap;box-shadow:0 2px 12px rgba(0,0,0,0.2)}
 .week-day-card{background:#fff;border-radius:10px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
 .week-day-header{padding:8px 14px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
@@ -170,6 +172,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <button class="tab-btn" onclick="switchTab('list')" data-tab="list">土日入院</button>
     <button class="tab-btn" onclick="switchTab('edit')" data-tab="edit">一覧・修正</button>
     <button class="tab-btn" onclick="switchTab('log')" data-tab="log">操作ログ</button>
+    <button class="tab-btn" onclick="switchTab('search')" data-tab="search">🔍 検索</button>
   </div>
 
   <!-- 退院日計算 -->
@@ -348,6 +351,18 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <div id="logList" class="card"><p style="font-size:13px;color:#aaa">ログはありません</p></div>
   </div>
 </div>
+
+  <!-- 検索タブ -->
+  <div id="tab-search" class="content" style="display:none">
+    <div class="card">
+      <div class="section-label">患者ID検索</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="searchInput" placeholder="患者IDを入力" style="flex:1;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:16px" oninput="onSearch(this.value)">
+        <button class="btn" onclick="clearSearch()">クリア</button>
+      </div>
+    </div>
+    <div id="searchResult"></div>
+  </div>
 
 <!-- 詳細モーダル -->
 <div id="detailModal" class="modal-overlay" style="display:none" onclick="closeModal(event)">
@@ -564,7 +579,7 @@ function logout(){
 
 // ===== タブ切り替え =====
 function switchTab(t){
-  ['calc','cal1','cal2','cal3','list','edit','log'].forEach(name=>{
+  ['calc','cal1','cal2','cal3','list','edit','log','search'].forEach(name=>{
     document.getElementById('tab-'+name).style.display=t===name?'block':'none';
   });
   document.querySelectorAll('.tab-btn').forEach(btn=>{
@@ -581,7 +596,7 @@ function switchTab(t){
 // ===== 画面更新 =====
 function refreshUI(){
   updateCounter();
-  const tabs=['calc','cal1','cal2','cal3','list','edit','log'];
+  const tabs=['calc','cal1','cal2','cal3','list','edit','log','search'];
   const active=tabs.find(t=>{const el=document.getElementById('tab-'+t);return el&&el.style.display!=='none';});
   if(active==='cal1') renderCal('cal1');
   if(active==='cal2') renderCal('cal2');
@@ -1078,6 +1093,107 @@ function showDetail(r){
 function hideModal(){document.getElementById('detailModal').style.display='none';document.body.style.overflow='';}
 function closeModal(e){if(e.target===document.getElementById('detailModal'))hideModal();}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')hideModal();});
+
+// ===== 検索 =====
+let searchHighlightPid='';
+
+function onSearch(pid){
+  searchHighlightPid=pid.trim();
+  renderSearch(pid.trim());
+}
+
+function clearSearch(){
+  document.getElementById('searchInput').value='';
+  searchHighlightPid='';
+  document.getElementById('searchResult').innerHTML='';
+  // カレンダーのハイライトを消す
+  document.querySelectorAll('.search-match').forEach(el=>el.classList.remove('search-match'));
+}
+
+function renderSearch(pid){
+  const el=document.getElementById('searchResult');
+  if(!pid){el.innerHTML='';return;}
+  const found=records.filter(r=>r.patientId&&r.patientId.toLowerCase().includes(pid.toLowerCase()));
+  if(!found.length){
+    el.innerHTML='<div class="card"><p style="font-size:13px;color:#aaa">「'+pid+'」に一致する患者が見つかりません</p></div>';
+    return;
+  }
+  let html='<div style="font-size:12px;color:#888;margin-bottom:8px">'+found.length+'件見つかりました</div>';
+  found.forEach(r=>{
+    const ad=parseDate(r.admitDate),od=parseDate(r.opDate),dd=parseDate(r.dischargeDate);
+    const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'—';
+    html+=`<div class="card" style="margin-bottom:10px;cursor:pointer;border:2px solid #e8e8e8" onclick="showDetailAndHighlight('${r.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#1a1a1a">${r.patientId}</div>
+          <div style="font-size:12px;color:#888;margin-top:2px">${SHORT[r.surgery]||r.surgery||'—'}</div>
+        </div>
+        <span class="badge ${r.opCol==='A'?'badge-blue':'badge-purple'}" style="font-size:12px">${ord}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><div style="font-size:10px;color:#888">入院日</div><div style="font-size:12px;font-weight:600">${fmt(ad)}</div></div>
+        <div><div style="font-size:10px;color:#888">手術日</div><div style="font-size:12px;font-weight:600">${fmt(od)}</div></div>
+        <div><div style="font-size:10px;color:#888">退院日</div><div style="font-size:12px;font-weight:600">${dd?fmt(dd):'除外対象'}</div></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:#555">
+        ${r.doctor?'<span>主:'+r.doctor+'</span>':''}
+        ${r.surgeon?'<span>執1:'+r.surgeon+'</span>':''}
+        ${r.surgeon2?'<span>執2:'+r.surgeon2+'</span>':''}
+        ${r.assist1?'<span>助1:'+r.assist1+'</span>':''}
+        ${r.assist2?'<span>助2:'+r.assist2+'</span>':''}
+        ${r.opTime?'<span>'+r.opTime+'h</span>':''}
+      </div>
+      <div style="font-size:11px;color:#3b7dd8;margin-top:8px">タップして詳細表示・カレンダーでハイライト →</div>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+
+function showDetailAndHighlight(id){
+  const r=records.find(x=>x.id===id);
+  if(!r) return;
+  // 詳細ポップアップ
+  showDetail(r);
+  // カレンダーハイライト用にIDを記録
+  searchHighlightPid=r.patientId;
+  // カレンダー①を開いてハイライト
+  setTimeout(()=>{
+    switchTab('cal1');
+    // 手術日の月にカレンダーを移動
+    const od=parseDate(r.opDate);
+    if(od){
+      cal1Year=od.getFullYear();
+      cal1Month=od.getMonth();
+    }
+    setTimeout(()=>{
+      renderCal('cal1');
+      highlightCalendar();
+    },100);
+  },200);
+}
+
+function highlightCalendar(){
+  if(!searchHighlightPid) return;
+  const r=records.find(x=>x.patientId===searchHighlightPid);
+  if(!r) return;
+  // ハイライト対象日付
+  const targetDates=new Set([r.admitDate,r.opDate,r.dischargeDate].filter(Boolean));
+  // カレンダーのセルをチェック
+  document.querySelectorAll('.cal-cell').forEach(cell=>{
+    cell.classList.remove('search-match');
+  });
+  // カレンダーのイベント要素からIDを含むものを探してセルをハイライト
+  document.querySelectorAll('.cal-ev').forEach(ev=>{
+    if(ev.textContent.includes(searchHighlightPid)||
+       (ev.title&&ev.title.includes('ID:'+searchHighlightPid))){
+      const cell=ev.closest('.cal-cell');
+      if(cell) cell.classList.add('search-match');
+    }
+  });
+  // ハイライトされたセルにスクロール
+  const first=document.querySelector('.cal-cell.search-match');
+  if(first) first.scrollIntoView({behavior:'smooth',block:'center'});
+}
 
 // ===== 操作ログ =====
 function renderLog(){
