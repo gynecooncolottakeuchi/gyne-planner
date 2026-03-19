@@ -617,6 +617,8 @@ async function fetchAndRender(showSpinner){
   try{
     records=await gasGetAll();
     refreshUI();
+    // 統計タブが開いている場合は再描画
+    if(document.getElementById('tab-stats').style.display!=='none'&&statsUnlocked) renderStats();
     if(showSpinner){setSpin(false);toast('✓ 最新データを取得（'+records.length+'件）',true);}
   }catch(e){
     if(showSpinner){setSpin(false);toast('⚠ 取得失敗：ネットワークを確認してください',false);}
@@ -1338,7 +1340,6 @@ function unlockStats(){
 function initStats(){
   if(!statsUnlocked){
     if(currentUser===LOG_ADMIN){
-      // 竹内先生でログイン済みなら自動解除
       statsUnlocked=true;
       document.getElementById('statsLock').style.display='none';
       document.getElementById('statsContent').style.display='block';
@@ -1346,8 +1347,16 @@ function initStats(){
       return;
     }
   }
-  buildStatsTargets();
-  renderStats();
+  // データがまだない場合はGASから取得してから表示
+  if(!records.length){
+    fetchAndRender(true).then(()=>{
+      buildStatsTargets();
+      renderStats();
+    });
+  } else {
+    buildStatsTargets();
+    renderStats();
+  }
 }
 
 function buildStatsTargets(){
