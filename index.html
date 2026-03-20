@@ -87,11 +87,11 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 .cal-cell.other-month{background:#f8f8f8;opacity:.55}
 .cal-cell.today{border:2px solid #3b7dd8}
 .cal-cell.sat{background:#f0f4ff}.cal-cell.sun{background:#fff4f4}.cal-cell.holiday{background:#fff0f8}
-.cal-date{font-size:12px;font-weight:700;color:#444;margin-bottom:2px}
+.cal-date{font-size:13px;font-weight:700;color:#333;margin-bottom:3px}
 .cal-cell.today .cal-date{color:#3b7dd8}
 .cal-cell.other-month .cal-date{color:#bbb}
 .cal-cell.sun .cal-date{color:#e74c3c}.cal-cell.sat .cal-date{color:#3b7dd8}
-.cal-ev{font-size:10px;padding:2px 4px;border-radius:4px;margin-bottom:2px;overflow:hidden;line-height:1.4;cursor:pointer}
+.cal-ev{font-size:10px;padding:2px 4px;border-radius:4px;margin-bottom:2px;overflow:hidden;line-height:1.5;cursor:pointer;font-weight:600}
 @media(min-width:900px){.cal-ev{font-size:11px;padding:3px 5px}}
 .ev-admit{background:#fff3cd;color:#7a5200;border-left:3px solid #ffc107}
 .ev-A{background:#dbeafe;color:#1e3a5f;border-left:3px solid #3b7dd8}
@@ -114,10 +114,10 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 .week-day-header.hol{background:#fdf0f8;color:#8b2fa8}.week-day-header.today-hdr{background:#3b7dd8;color:#fff}
 .week-day-header.normal{background:#f5f5f5;color:#444}
 .week-day-body{padding:8px 10px}
-.week-ev{padding:8px 10px;border-radius:8px;margin-bottom:6px;border-left:4px solid;cursor:pointer}
+.week-ev{padding:9px 12px;border-radius:8px;margin-bottom:6px;border-left:4px solid;cursor:pointer}
 .week-ev.ev-A{background:#dbeafe;border-color:#3b7dd8}.week-ev.ev-B{background:#ede9fe;border-color:#7c3aed}
 .week-ev-row1{font-size:13px;font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:6px}
-.week-ev-row2{font-size:12px;color:#555;line-height:1.5}
+.week-ev-row2{font-size:12px;color:#444;font-weight:600;line-height:1.5}
 .week-abs{padding:4px 8px;border-radius:6px;margin-bottom:4px;font-size:12px;font-weight:600}
 .week-empty{font-size:12px;color:#bbb;padding:6px 4px;text-align:center}
 .week-count{background:#fff;border:1px solid #ddd;border-radius:12px;font-size:11px;padding:1px 7px;font-weight:600}
@@ -163,7 +163,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <button class="logout-btn" onclick="logout()">ログアウト</button>
   </div>
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('calc')" data-tab="calc">退院日計算</button>
+    <button class="tab-btn" onclick="switchTab('newsfeed')" data-tab="newsfeed">🆕 NEW!</button>
+    <button class="tab-btn" onclick="switchTab('calc')" data-tab="calc">退院日計算</button>
     <button class="tab-btn" onclick="switchTab('absence')" data-tab="absence">不在入力</button>
     <button class="tab-btn" onclick="switchTab('cal1')" data-tab="cal1">カレンダー①入退院日確認</button>
     <button class="tab-btn" onclick="switchTab('cal2')" data-tab="cal2">カレンダー②手術</button>
@@ -175,8 +176,13 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <button class="tab-btn" onclick="switchTab('stats')" data-tab="stats">📊 統計</button>
   </div>
 
+  <!-- NEW!タブ -->
+  <div id="tab-newsfeed" class="content">
+    <div id="newsfeedContent"></div>
+  </div>
+
   <!-- 退院日計算 -->
-  <div id="tab-calc" class="content">
+  <div id="tab-calc" class="content" style="display:none">
     <input type="hidden" id="editingId">
     <div class="card">
       <div class="section-label">患者情報</div>
@@ -282,6 +288,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
         </div>
         <div class="field"><label>理由</label><select id="absReason"><option value="">-- 選択 --</option></select></div>
       </div>
+      <input type="hidden" id="editingAbsId">
       <div class="btn-row">
         <button class="btn btn-primary" onclick="saveAbsence()">登録</button>
         <button class="btn" onclick="clearAbsForm()">クリア</button>
@@ -428,6 +435,7 @@ const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGB
 const PASSWORD='gynecology2025';
 const LOG_ADMIN='竹内';
 const STATS_PW='20140609';
+const ADMINS=new Set(['竹内','穴井']);
 const DOCTORS=['豊福','後藤','竹内','小山','平川','穴井','小林','内田','川野','杉山','中島','広瀬','山本','中野','小西','西田','池田','家城','田中'];
 const NIGHTS={ec_open_ln:12,ec_open_noln:8,oc_open_ln:12,oc_open_noln:8,cx_radical:null,lap_radical:null,cx_semi_ln:12,cx_simple_ln:12,cx_semi_noln:8,cx_simple_noln:8,open_benign_ut:8,open_benign_ov:8,lap_malig_ln:8,lap_malig_noln:6,lap_benign:6,lap_adnexa:6,robot_malig_ln:8,robot_malig_noln:6,robot_benign:6,vaginal_hyst:8,vnotes:6,cone:3,laser:3,hyst_scope:3,ectopic:5};
 const FIXED=new Set(['cone','laser','hyst_scope']);
@@ -537,6 +545,7 @@ function checkPw(){
     cal3BaseMonday=getMonday(t);
     fillSelects();loadLogs();loadAbsences();
     fetchAndRender(false);fetchAbsences();
+    switchTab('newsfeed');
     try{sessionStorage.setItem('gyn_session',JSON.stringify({user:doc,pw,ts:Date.now()}));}catch(e){}
   }else{
     document.getElementById('pwError').style.display='block';
@@ -555,10 +564,11 @@ function logout(){
 
 // ===== タブ切り替え =====
 function switchTab(t){
-  ['calc','absence','cal1','cal2','cal3','list','edit','log','search','stats'].forEach(name=>{
+  ['newsfeed','calc','absence','cal1','cal2','cal3','list','edit','log','search','stats'].forEach(name=>{
     document.getElementById('tab-'+name).style.display=t===name?'block':'none';
   });
   document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.toggle('active',btn.getAttribute('data-tab')===t));
+  if(t==='newsfeed') renderNewsfeed();
   if(t==='absence') fetchAbsences();
   if(t==='cal1'||t==='cal2'||t==='cal3'){
     // カレンダーに不在データを反映するため常に取得
@@ -574,8 +584,9 @@ function switchTab(t){
 }
 function refreshUI(){
   updateCounter();
-  const tabs=['calc','absence','cal1','cal2','cal3','list','edit','log','search','stats'];
+  const tabs=['newsfeed','calc','absence','cal1','cal2','cal3','list','edit','log','search','stats'];
   const active=tabs.find(t=>{const el=document.getElementById('tab-'+t);return el&&el.style.display!=='none';});
+  if(active==='newsfeed') renderNewsfeed();
   if(active==='cal1') renderCal('cal1');
   if(active==='cal2') renderCal('cal2');
   if(active==='cal3') renderWeekCal();
@@ -667,6 +678,7 @@ function autoLoad(pid){
   document.getElementById('output').innerHTML='<div class="alert alert-info">既存データを読み込みました。修正後「退院日を計算・登録」を押してください</div>';
 }
 async function delRecord(id){
+  if(!ADMINS.has(currentUser)){toast('削除は竹内先生・穴井先生のみです',false);return;}
   const r=records.find(x=>x.id===id);if(!r) return;
   if(!confirm('患者ID「'+r.patientId+'」を削除しますか？')) return;
   addLog('削除',r.patientId,SHORT[r.surgery]||r.surgery||'');
@@ -679,6 +691,7 @@ function clearForm(){['patientId','doctorName','admitDoctor','surgeon','surgeon2
 
 // ===== 退院日計算 =====
 async function calculate(){
+  if(!ADMINS.has(currentUser)){toast('症例登録は竹内先生・穴井先生のみです',false);return;}
   const pid=document.getElementById('patientId').value.trim();
   const doc=document.getElementById('doctorName').value;
   const admitDoc=document.getElementById('admitDoctor').value;
@@ -692,25 +705,24 @@ async function calculate(){
   const out=document.getElementById('output');
   if(!pid){out.innerHTML='<div class="alert alert-warn">患者IDを入力してください</div>';return;}
   if(!doc){out.innerHTML='<div class="alert alert-warn">主治医を選択してください</div>';return;}
-  if(!opStr||!surgery){out.innerHTML='<div class="alert alert-warn">手術日と術式を選択してください</div>';return;}
-  const opDate=parseDate(opStr);
-  if(!opDate){out.innerHTML='<div class="alert alert-warn">手術日が正しくありません</div>';return;}
+  if(!surgery){out.innerHTML='<div class="alert alert-warn">術式を選択してください</div>';return;}
+  const opDate=opStr?parseDate(opStr):null;
   if(!editingId){
     const dup=records.find(r=>r.patientId===pid&&r.opDate===opStr);
     if(dup){if(!confirm('患者ID「'+pid+'」の'+opStr+'はすでに登録されています。\n上書きしますか？')){out.innerHTML='<div class="alert alert-info">登録をキャンセルしました</div>';return;}document.getElementById('editingId').value=dup.id;}
   }
   const isEctopic=surgery==='ectopic',isExcluded=EXCLUDED.has(surgery);
-  const admitDate=isEctopic?new Date(opDate):addDays(opDate,-1);
+  const admitDate=opDate?(isEctopic?new Date(opDate):addDays(opDate,-1)):null;
   const id=document.getElementById('editingId').value||genId();
   let alertsHTML='';
-  const admitDay=admitDate.getDay();
+  const admitDay=admitDate?admitDate.getDay():-1;
   if(admitDay===6||admitDay===0){
     const admitYMD=ymd(admitDate);
     const same=records.filter(r=>r.admitDate===admitYMD&&r.id!==id);
     alertsHTML+=same.length>=2?'<div class="alert alert-red">⚠ '+fmt(admitDate)+'の入院が上限（2名）に達しています</div>':'<div class="alert alert-warn">'+fmt(admitDate)+'の入院 '+(same.length+1)+' / 2 名目として登録します</div>';
   }
   let dischargeDate=null,adjustNote='';
-  if(!isExcluded){
+  if(!isExcluded&&admitDate){
     const nights=NIGHTS[surgery],isFixed=FIXED.has(surgery);
     const earliest=addDays(admitDate,nights);dischargeDate=new Date(earliest);let adjusted=false;
     if(!isFixed&&isBad(dischargeDate)){dischargeDate=nextWorkday(dischargeDate);adjusted=true;}
@@ -718,12 +730,12 @@ async function calculate(){
     else if(adjusted){const dw=earliest.getDay();const reason=isHoliday(earliest)?'祝日':dw===5?'金曜':dw===6?'土曜':'日曜';adjustNote='<div class="alert alert-info" style="margin-top:10px;margin-bottom:0">最短退院日（'+fmt(earliest)+'）は'+reason+'のため次の平日に調整しました</div>';}
     else adjustNote='<div class="alert alert-ok" style="margin-top:10px;margin-bottom:0">最短日数で月〜木退院が可能です</div>';
   }
-  const record={id,patientId:pid,doctor:doc,admitDoctor:admitDoc||'',surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',surgery,opCol:opCol||'',opNum:opNum||'',opTime:opTime||'',opDate:ymd(opDate),admitDate:ymd(admitDate),dischargeDate:dischargeDate?ymd(dischargeDate):''};
+  const record={id,patientId:pid,doctor:doc,admitDoctor:admitDoc||'',surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',surgery,opCol:opCol||'',opNum:opNum||'',opTime:opTime||'',opDate:opDate?ymd(opDate):'',admitDate:admitDate?ymd(admitDate):'',dischargeDate:dischargeDate?ymd(dischargeDate):'',registeredBy:currentUser,confirmedBy:{}};
   setSpin(true);
   try{await gasPut(record);addLog(editingId?'修正':'登録',pid,SHORT[surgery]||surgery);document.getElementById('editingId').value=record.id;await fetchAndRender(false);setSpin(false);toast('✓ 登録しました',true);}
   catch(e){setSpin(false);toast('⚠ 保存に失敗しました',false);}
   const orderStr=opCol&&opNum?opCol+opNum:'';
-  out.innerHTML=alertsHTML+'<div class="result-card"><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px"><div><div class="result-label">患者ID</div><div style="font-size:16px;font-weight:700">'+pid+'</div></div><div><div class="result-label">外来主治医</div><div style="font-size:14px;font-weight:600">'+doc+' 先生</div></div>'+(admitDoc?'<div><div class="result-label">入院主治医</div><div style="font-size:14px;font-weight:600">'+admitDoc+' 先生</div></div>':'')+(surgeon?'<div><div class="result-label">執刀医１</div><div style="font-size:13px;font-weight:600">'+surgeon+'</div></div>':'')+(surgeon2?'<div><div class="result-label">執刀医２</div><div style="font-size:13px;font-weight:600">'+surgeon2+'</div></div>':'')+(orderStr?'<div><div class="result-label">手術順番</div><span class="badge '+(opCol==='A'?'badge-blue':'badge-purple')+'">'+orderStr+'</span></div>':'')+(opTime?'<div><div class="result-label">予定時間</div><div style="font-size:13px;font-weight:600">'+opTime+'h</div></div>':'')+'<div style="flex:0 0 100%"><span class="badge badge-purple" style="font-size:11px">'+(LABELS[surgery]||surgery)+'</span></div></div><div class="result-grid"><div><div class="result-label">入院日</div><div class="result-val">'+fmt(admitDate)+'</div>'+(isEctopic?'<div style="font-size:10px;color:#888">当日入院（急患）</div>':'')+'</div><div><div class="result-label">手術日</div><div class="result-val">'+fmt(opDate)+'</div></div><div><div class="result-label">退院推奨日</div><div class="result-val" style="color:#1a6640">'+(dischargeDate?fmt(dischargeDate):'除外対象')+'</div></div></div>'+(!isExcluded?'<div class="detail-row"><span class="detail-key">退院曜日</span><span class="badge '+badgeClass(dischargeDate)+'">'+DAYS[dischargeDate.getDay()]+'曜日</span></div>':'')+adjustNote+'</div>';
+  out.innerHTML=alertsHTML+'<div class="result-card"><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px"><div><div class="result-label">患者ID</div><div style="font-size:16px;font-weight:700">'+pid+'</div></div><div><div class="result-label">外来主治医</div><div style="font-size:14px;font-weight:600">'+doc+' 先生</div></div>'+(admitDoc?'<div><div class="result-label">入院主治医</div><div style="font-size:14px;font-weight:600">'+admitDoc+' 先生</div></div>':'')+(surgeon?'<div><div class="result-label">執刀医１</div><div style="font-size:13px;font-weight:600">'+surgeon+'</div></div>':'')+(surgeon2?'<div><div class="result-label">執刀医２</div><div style="font-size:13px;font-weight:600">'+surgeon2+'</div></div>':'')+(orderStr?'<div><div class="result-label">手術順番</div><span class="badge '+(opCol==='A'?'badge-blue':'badge-purple')+'">'+orderStr+'</span></div>':'')+(opTime?'<div><div class="result-label">予定時間</div><div style="font-size:13px;font-weight:600">'+opTime+'h</div></div>':'')+'<div style="flex:0 0 100%"><span class="badge badge-purple" style="font-size:11px">'+(LABELS[surgery]||surgery)+'</span></div></div><div class="result-grid"><div><div class="result-label">入院日</div><div class="result-val">'+(admitDate?fmt(admitDate):'未定')+'</div>'+(isEctopic?'<div style="font-size:10px;color:#888">当日入院（急患）</div>':'')+'</div><div><div class="result-label">手術日</div><div class="result-val">'+fmt(opDate)+'</div></div><div><div class="result-label">退院推奨日</div><div class="result-val" style="color:#1a6640">'+(dischargeDate?fmt(dischargeDate):opDate?'除外対象':'未定')+'</div></div></div>'+(!isExcluded&&dischargeDate?'<div class="detail-row"><span class="detail-key">退院曜日</span><span class="badge '+badgeClass(dischargeDate)+'">'+DAYS[dischargeDate.getDay()]+'曜日</span></div>':'')+(adjustNote||'')+'</div>';
   if(isExcluded) out.innerHTML+='<div class="alert alert-info">カレンダー②③に表示されます（退院日計算は除外対象）</div>';
 }
 
@@ -787,16 +799,17 @@ function _renderCal(cal){
       div.onclick=(()=>{const rec=records.find(x=>x.patientId===ev.patientId&&x.opDate===key)||(()=>{const x={...ev};x.opDate=key;return x;})();return ()=>showDetail(rec);})();
       const ord=ev.opCol&&ev.opNum?ev.opCol+ev.opNum:'';
       if(isOp){
-        const l1=document.createElement('div');l1.style.cssText='display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;font-size:'+fs+';font-weight:600';
+        const l1=document.createElement('div');l1.style.cssText='display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;font-size:'+fs+';font-weight:700';
         if(ord){const p=document.createElement('span');p.className='order-pill '+(isA?'pill-A':'pill-B');p.textContent=ord;l1.appendChild(p);}
         const t1=document.createElement('span');t1.style.cssText='overflow:hidden;text-overflow:ellipsis;white-space:nowrap';t1.textContent=ev.patientId+' '+(SHORT[ev.surgery]||'');l1.appendChild(t1);div.appendChild(l1);
         if(isCal1){
-          const docStr=[ev.doctor,ev.admitDoctor].filter(Boolean).join('／');
-          if(docStr){const l2=document.createElement('div');l2.style.cssText='font-size:9px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=docStr;div.appendChild(l2);}
+          const parts=[];if(ev.doctor)parts.push('外'+ev.doctor);if(ev.admitDoctor)parts.push('入'+ev.admitDoctor);
+          const docStr=parts.join('/');
+          if(docStr){const l2=document.createElement('div');l2.style.cssText='font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=docStr;div.appendChild(l2);}
         }else{
-          const staff=[];if(ev.doctor)staff.push('外:'+ev.doctor);if(ev.admitDoctor)staff.push('入:'+ev.admitDoctor);if(ev.surgeon)staff.push('執1:'+ev.surgeon);if(ev.surgeon2)staff.push('執2:'+ev.surgeon2);if(ev.assist1)staff.push('助1:'+ev.assist1);if(ev.assist2)staff.push('助2:'+ev.assist2);if(ev.opTime)staff.push(ev.opTime+'h');if(staff.length){const l2=document.createElement('div');l2.style.cssText='font-size:9px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=staff.join(' ');div.appendChild(l2);}
+          const staff=[];if(ev.doctor)staff.push('外:'+ev.doctor);if(ev.admitDoctor)staff.push('入:'+ev.admitDoctor);if(ev.surgeon)staff.push('執1:'+ev.surgeon);if(ev.surgeon2)staff.push('執2:'+ev.surgeon2);if(ev.assist1)staff.push('助1:'+ev.assist1);if(ev.assist2)staff.push('助2:'+ev.assist2);if(ev.opTime)staff.push(ev.opTime+'h');if(staff.length){const l2=document.createElement('div');l2.style.cssText='font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=staff.join(' ');div.appendChild(l2);}
         }
-      }else{const l1=document.createElement('div');l1.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:'+fs+';font-weight:600';l1.textContent=(ev.type==='admit'?'入院':'退院')+' '+ev.patientId+' '+(SHORT[ev.surgery]||'')+(ev.doctor?' '+ev.doctor:'');div.appendChild(l1);}
+      }else{const l1=document.createElement('div');l1.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:'+fs+';font-weight:700';l1.textContent=(ev.type==='admit'?'入院':'退院')+' '+ev.patientId+' '+(SHORT[ev.surgery]||'')+(ev.doctor?' '+ev.doctor:'');div.appendChild(l1);}
       cell.appendChild(div);
     });
     if(sorted.length>maxShow){const m=document.createElement('div');m.style.cssText='font-size:10px;color:#999;text-align:right;padding:1px 4px';m.textContent='+'+(sorted.length-maxShow)+'件';cell.appendChild(m);}
@@ -882,12 +895,30 @@ function updateAbsReason(){
   sel.innerHTML='<option value="">-- 選択 --</option>';
   if(type&&ABS_REASONS[type]) ABS_REASONS[type].forEach(r=>{const o=document.createElement('option');o.textContent=r;sel.appendChild(o);});
 }
-function clearAbsForm(){document.getElementById('absDate').value=ymd(new Date());document.getElementById('absPerson').value='';document.getElementById('absType').value='';document.getElementById('absReason').innerHTML='<option value="">-- 選択 --</option>';}
+function clearAbsForm(){
+  document.getElementById('absDate').value=ymd(new Date());
+  document.getElementById('absPerson').value='';
+  document.getElementById('absType').value='';
+  document.getElementById('absReason').innerHTML='<option value="">-- 選択 --</option>';
+  document.getElementById('editingAbsId').value='';
+}
+function editAbsence(id){
+  const a=absences.find(x=>x.id===id);if(!a) return;
+  document.getElementById('absDate').value=a.date||'';
+  document.getElementById('absPerson').value=a.person||'';
+  document.getElementById('absType').value=a.type||'';
+  updateAbsReason();
+  document.getElementById('absReason').value=a.reason||'';
+  document.getElementById('editingAbsId').value=a.id;
+  window.scrollTo(0,0);
+  toast('修正モード：変更後「登録」を押してください',true);
+}
 async function saveAbsence(){
   const date=document.getElementById('absDate').value,person=document.getElementById('absPerson').value;
   const type=document.getElementById('absType').value,reason=document.getElementById('absReason').value;
   if(!date||!person||!type){toast('日付・不在者・区分を入力してください',false);return;}
-  const abs={id:'abs_'+genId(),date,person,type,reason:reason||''};
+  const editingAbsId=document.getElementById('editingAbsId').value;
+  const abs={id:editingAbsId||'abs_'+genId(),date,person,type,reason:reason||''};
   try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsertAbsence',record:abs})});await fetchAbsences();clearAbsForm();toast('✓ 不在を登録しました',true);}
   catch(e){absences.push(abs);safeLS('gyn_absences',JSON.stringify(absences));renderAbsences();clearAbsForm();toast('✓ 不在を登録しました（ローカル保存）',true);if(document.getElementById('tab-cal1').style.display!=='none')renderCal('cal1');if(document.getElementById('tab-cal2').style.display!=='none')renderCal('cal2');if(document.getElementById('tab-cal3').style.display!=='none')renderWeekCal();}
 }
@@ -915,7 +946,7 @@ function renderAbsences(){
   Object.keys(grp).sort().forEach(date=>{
     const d=parseDate(date);
     html+='<div style="margin-bottom:10px"><div style="font-weight:700;font-size:13px;padding:6px 0;border-bottom:1px solid #f0f0f0;margin-bottom:6px">'+fmt(d)+'</div><div style="display:flex;flex-wrap:wrap;gap:6px">';
-    grp[date].forEach(a=>{const cls=a.type==='終日'?'abs-all':a.type==='午前'?'abs-am':'abs-pm';html+='<div style="display:flex;align-items:center;gap:4px;background:#f9f9f9;border-radius:8px;padding:5px 10px;font-size:12px"><span style="font-weight:600">'+a.person+'</span><span class="abs-badge '+cls+'">'+a.type+'</span>'+(a.reason?'<span style="color:#888">'+a.reason+'</span>':'')+'<button class="btn btn-sm btn-danger" style="padding:2px 8px;font-size:11px" data-id="'+a.id+'" onclick="delAbsence(this.dataset.id)">×</button></div>';});
+    grp[date].forEach(a=>{const cls=a.type==='終日'?'abs-all':a.type==='午前'?'abs-am':'abs-pm';html+='<div style="display:flex;align-items:center;gap:4px;background:#f9f9f9;border-radius:8px;padding:5px 10px;font-size:12px"><span style="font-weight:600">'+a.person+'</span><span class="abs-badge '+cls+'">'+a.type+'</span>'+(a.reason?'<span style="color:#888">'+a.reason+'</span>':'')+'<button class="btn btn-sm btn-edit" style="padding:2px 8px;font-size:11px" data-id="'+a.id+'" onclick="editAbsence(this.dataset.id)">修正</button><button class="btn btn-sm btn-danger" style="padding:2px 8px;font-size:11px" data-id="'+a.id+'" onclick="delAbsence(this.dataset.id)">×</button></div>';});
     html+='</div></div>';
   });
   el.innerHTML=html;
@@ -1018,6 +1049,103 @@ function renderStats(){
     html+='<div class="card">'+makeDetailTable('⑦ 執刀医 × 術式 クロス集計',sortedOps,allDocs,surgOpData)+'</div>';
   }
   out.innerHTML=html;
+}
+
+// ===== NEW!フィード =====
+// 確認済み記録はlocalStorageに保存
+function getConfirmed(){try{const s=safeLS('gyn_confirmed_'+currentUser);return s?JSON.parse(s):{};} catch(e){return {};}}
+function setConfirmed(id){const c=getConfirmed();c[id]=true;safeLS('gyn_confirmed_'+currentUser,JSON.stringify(c));}
+
+function renderNewsfeed(){
+  const el=document.getElementById('newsfeedContent');
+  if(!records.length){
+    el.innerHTML='<div class="card" style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:12px">📋</div><div style="color:#888;font-size:14px">データを読み込み中...</div></div>';
+    return;
+  }
+
+  const confirmed=getConfirmed();
+  const isAdmin=ADMINS.has(currentUser);
+
+  // 自分が外来主治医の症例で未確認のもの（管理者以外）
+  const myRecords=isAdmin?[]:records.filter(r=>r.doctor===currentUser&&!confirmed[r.id]);
+
+  let html='';
+
+  // 未確認通知
+  if(!isAdmin&&myRecords.length>0){
+    html+='<div style="margin-bottom:16px">';
+    html+='<div style="font-size:15px;font-weight:700;color:#c0392b;margin-bottom:10px">🔔 手術日が決まりました！（'+myRecords.length+'件）</div>';
+    myRecords.sort((a,b)=>a.opDate<b.opDate?-1:1).forEach(r=>{
+      const od=parseDate(r.opDate),ad=parseDate(r.admitDate),dd=parseDate(r.dischargeDate);
+      html+='<div class="card" style="border:2px solid #e74c3c;margin-bottom:12px">'
+        +'<div style="background:#fdecea;border-radius:8px 8px 0 0;padding:10px 14px;margin:-14px -14px 12px;display:flex;justify-content:space-between;align-items:center">'
+        +'<div style="font-size:15px;font-weight:700;color:#c0392b">🏥 手術日が決まりました!</div>'
+        +'<span class="badge badge-purple" style="font-size:11px">'+(SHORT[r.surgery]||r.surgery||'—')+'</span>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+        +'<div><div class="result-label">患者ID</div><div style="font-size:16px;font-weight:700">'+r.patientId+'</div></div>'
+        +'<div><div class="result-label">外来主治医</div><div style="font-size:14px;font-weight:600">'+(r.doctor||'—')+'</div></div>'
+        +(r.admitDoctor?'<div><div class="result-label">入院主治医</div><div style="font-size:14px;font-weight:600">'+r.admitDoctor+'</div></div>':'')
+        +'<div><div class="result-label">入院日</div><div style="font-size:13px;font-weight:600">'+(ad?fmt(ad):'未定')+'</div></div>'
+        +'<div><div class="result-label">手術日</div><div style="font-size:14px;font-weight:700;color:#3b7dd8">'+(od?fmt(od):'未定')+'</div></div>'
+        +'<div><div class="result-label">退院推奨日</div><div style="font-size:13px;font-weight:600;color:#1a6640">'+(dd?fmt(dd):'未定')+'</div></div>'
+        +(r.opCol&&r.opNum?'<div><div class="result-label">手術順番</div><span class="badge '+(r.opCol==='A'?'badge-blue':'badge-purple')+'">'+r.opCol+r.opNum+'</span></div>':'')
+        +(r.opTime?'<div><div class="result-label">予定手術時間</div><div style="font-size:13px;font-weight:600">'+r.opTime+'h</div></div>':'')
+        +'</div>'
+        +'<button class="btn btn-primary" style="width:100%;padding:12px" data-id="'+r.id+'" onclick="confirmRecord(this.dataset.id)">✓ 確認しました</button>'
+        +'</div>';
+    });
+    html+='</div>';
+  }
+
+  // 管理者向け：最近の登録一覧
+  if(isAdmin){
+    const recent=[...records].sort((a,b)=>a.opDate<b.opDate?-1:1).slice(0,10);
+    html+='<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px">📋 直近の登録症例（手術日順）</div>';
+    if(!recent.length){html+='<p style="color:#aaa;font-size:13px">登録されていません</p>';}
+    else{
+      recent.forEach(r=>{
+        const od=parseDate(r.opDate);
+        html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0">'
+          +'<div><div style="font-size:13px;font-weight:600">'+r.patientId+'</div>'
+          +'<div style="font-size:11px;color:#888">'+(SHORT[r.surgery]||r.surgery||'—')+' / '+(r.doctor||'—')+'</div></div>'
+          +'<div style="font-size:12px;font-weight:600;color:#3b7dd8">'+(od?fmt(od):'未定')+'</div>'
+          +'</div>';
+      });
+    }
+    html+='</div>';
+  }
+
+  // 一般医師向け：自分の確認済み症例
+  if(!isAdmin){
+    const myAll=records.filter(r=>r.doctor===currentUser);
+    const myConfirmed=myAll.filter(r=>confirmed[r.id]);
+    if(myAll.length===0){
+      html+='<div class="card" style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:12px">📭</div><div style="color:#888;font-size:14px">あなたの症例はまだ登録されていません</div></div>';
+    } else if(myRecords.length===0){
+      html+='<div class="card" style="text-align:center;padding:20px;background:#e6f7ee;border:none"><div style="font-size:24px;margin-bottom:8px">✅</div><div style="color:#1a6640;font-size:14px;font-weight:600">すべて確認済みです</div></div>';
+      if(myConfirmed.length>0){
+        html+='<div class="card"><div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px">確認済み症例</div>';
+        [...myConfirmed].sort((a,b)=>a.opDate<b.opDate?-1:1).forEach(r=>{
+          const od=parseDate(r.opDate);
+          html+='<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:12px">'
+            +'<span style="font-weight:600">'+r.patientId+'</span>'
+            +'<span style="color:#888">'+(SHORT[r.surgery]||'—')+'</span>'
+            +'<span style="color:#3b7dd8">'+(od?fmt(od):'未定')+'</span>'
+            +'</div>';
+        });
+        html+='</div>';
+      }
+    }
+  }
+
+  el.innerHTML=html||'<div class="card" style="text-align:center;padding:30px;color:#888">表示する情報がありません</div>';
+}
+
+function confirmRecord(id){
+  setConfirmed(id);
+  renderNewsfeed();
+  toast('✓ 確認しました',true);
 }
 
 // ===== 検索 =====
