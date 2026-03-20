@@ -472,7 +472,9 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 
 <script>
 const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGBnAEP7d9YM-54OmGqnFNYvee8e2ji1D5wKaR2skxE_Jzg/exec';
-const PASSWORD='gynecology2025';
+const PASSWORDS={'竹内':'gyne20140609','穴井':'vuitton'};
+const PASSWORD_DEFAULT='gyne2025';
+function getPassword(user){return PASSWORDS[user]||PASSWORD_DEFAULT;}
 const LOG_ADMIN='竹内';
 const STATS_PW='20140609';
 const ADMINS=new Set(['竹内','穴井']);
@@ -590,7 +592,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   fillSelects();
   try{
     const s=JSON.parse(sessionStorage.getItem('gyn_session')||'null');
-    if(s&&(Date.now()-s.ts)/60000<30&&s.user&&s.pw===PASSWORD){
+    if(s&&(Date.now()-s.ts)/60000<30&&s.user&&s.pw===getPassword(s.user)){
       document.getElementById('loginDoctor').value=s.user;
       document.getElementById('pwInput').value=s.pw;
       checkPw();
@@ -600,7 +602,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 function checkPw(){
   const doc=document.getElementById('loginDoctor').value;
   const pw=document.getElementById('pwInput').value;
-  if(pw===PASSWORD&&doc){
+  if(pw===getPassword(doc)&&doc){
     currentUser=doc;
     document.getElementById('lockScreen').style.display='none';
     document.getElementById('app').style.display='block';
