@@ -774,7 +774,8 @@ async function calculate(){
   if(!pid){out.innerHTML='<div class="alert alert-warn">患者IDを入力してください</div>';return;}
   if(!doc){out.innerHTML='<div class="alert alert-warn">主治医を選択してください</div>';return;}
   if(!surgery){out.innerHTML='<div class="alert alert-warn">術式を選択してください</div>';return;}
-  // C列は木曜日のみ
+  const opDate=opStr?parseDate(opStr):null;
+  // C列は木曜日のみ（手術日が入力されている場合）
   if(opCol==='C'&&opDate&&opDate.getDay()!==4){
     out.innerHTML='<div class="alert alert-warn">C列（外来手術）は木曜日のみ登録できます</div>';return;
   }
@@ -782,7 +783,6 @@ async function calculate(){
   if((surgery==='op_laser_ex'||surgery==='op_scope_ex')&&opCol!=='C'){
     out.innerHTML='<div class="alert alert-warn">外来手術はC列を選択してください</div>';return;
   }
-  const opDate=opStr?parseDate(opStr):null;
   if(!editingId){
     const dup=records.find(r=>r.patientId===pid&&r.opDate===opStr);
     if(dup){if(!confirm('患者ID「'+pid+'」の'+opStr+'はすでに登録されています。\n上書きしますか？')){out.innerHTML='<div class="alert alert-info">登録をキャンセルしました</div>';return;}document.getElementById('editingId').value=dup.id;}
