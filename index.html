@@ -611,6 +611,11 @@ function checkPw(){
     cal1Year=cal2Year=t.getFullYear();cal1Month=cal2Month=t.getMonth();
     cal3BaseMonday=getMonday(t);
     fillSelects();loadLogs();loadAbsences();
+    // 管理者以外は症例登録・新患担当・一覧修正タブを非表示
+    ['calc','shinkan','edit'].forEach(tab=>{
+      const btn=document.querySelector('[data-tab="'+tab+'"]');
+      if(btn) btn.style.display=ADMINS.has(currentUser)?'':'none';
+    });
     loadShinkans();fetchAndRender(false);fetchAbsences();fetchShinkan();
     switchTab('newsfeed');
     try{sessionStorage.setItem('gyn_session',JSON.stringify({user:doc,pw,ts:Date.now()}));}catch(e){}
@@ -754,7 +759,7 @@ async function delRecord(id){
   try{await gasDelete(id);await fetchAndRender(false);setSpin(false);toast('✓ 削除しました',true);}
   catch(e){setSpin(false);toast('⚠ 削除に失敗しました',false);}
 }
-function clearAll(){if(!confirm('全データを削除しますか？')) return;Promise.all(records.map(r=>gasDelete(r.id))).then(()=>{records=[];refreshUI();toast('✓ 全件削除しました',true);}).catch(()=>toast('⚠ 削除に失敗しました',false));}
+function clearAll(){if(!ADMINS.has(currentUser)){toast('操作権限がありません',false);return;}if(!confirm('全データを削除しますか？')) return;Promise.all(records.map(r=>gasDelete(r.id))).then(()=>{records=[];refreshUI();toast('✓ 全件削除しました',true);}).catch(()=>toast('⚠ 削除に失敗しました',false));}
 function clearForm(){['patientId','doctorName','admitDoctor','surgeon','surgeon2','assist1','assist2','surgerySelect','opCol','opNum','opTime','editingId'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('opDate').value=ymd(new Date());document.getElementById('output').innerHTML='';}
 
 // ===== 退院日計算 =====
@@ -1185,6 +1190,7 @@ function editShinkan(id){
 }
 
 async function saveShinkan(){
+  if(!ADMINS.has(currentUser)){toast('新患担当の登録は竹内先生・穴井先生のみです',false);return;}
   const date=document.getElementById('shinkanDate').value;
   if(!date){toast('日付を入力してください',false);return;}
   const d=parseDate(date);
