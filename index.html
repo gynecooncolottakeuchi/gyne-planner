@@ -235,9 +235,14 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
               <option value="robot_malig_noln">ロボット 子宮悪性（LN-）6泊7日</option>
               <option value="robot_benign">ロボット 子宮良性 6泊7日</option>
             </optgroup>
+            <optgroup label="その他（A/B列）">
+              <option value="lap_other">腹腔鏡その他（除外）</option>
+              <option value="open_other">開腹その他（除外）</option>
+            </optgroup>
             <optgroup label="外来手術（C列専用）">
               <option value="op_laser_ex">外来レーザー蒸散術（C列のみ）</option>
               <option value="op_scope_ex">外来子宮鏡手術（C列のみ）</option>
+              <option value="op_other_ex">外来その他（C列のみ）</option>
             </optgroup>
             <optgroup label="膣式・その他">
               <option value="vaginal_hyst">膣式子宮全摘出術 8泊9日</option>
@@ -479,11 +484,11 @@ const LOG_ADMIN='竹内';
 const STATS_PW='20140609';
 const ADMINS=new Set(['竹内','穴井']);
 const DOCTORS=['豊福','後藤','竹内','小山','平川','穴井','小林','内田','川野','杉山','中島','広瀬','山本','中野','小西','西田','池田','家城','田中'];
-const NIGHTS={op_laser_ex:0,op_scope_ex:0,ec_open_ln:12,ec_open_noln:8,oc_open_ln:12,oc_open_noln:8,cx_radical:null,lap_radical:null,cx_semi_ln:12,cx_simple_ln:12,cx_semi_noln:8,cx_simple_noln:8,open_benign_ut:8,open_benign_ov:8,lap_malig_ln:8,lap_malig_noln:6,lap_benign:6,lap_adnexa:6,robot_malig_ln:8,robot_malig_noln:6,robot_benign:6,vaginal_hyst:8,vnotes:6,cone:3,laser:3,hyst_scope:3,ectopic:5};
-const FIXED=new Set(['cone','laser','hyst_scope','op_laser_ex','op_scope_ex']);
-const EXCLUDED=new Set(['cx_radical','lap_radical']);
-const SHORT={op_laser_ex:'外来レーザー',op_scope_ex:'外来子宮鏡',ec_open_ln:'体癌開腹LN+',ec_open_noln:'体癌開腹LN-',oc_open_ln:'卵巣開腹LN+',oc_open_noln:'卵巣開腹LN-',cx_radical:'頸癌広汎',lap_radical:'腹腔鏡広汎',cx_semi_ln:'頸癌準広汎LN+',cx_simple_ln:'頸癌単純LN+',cx_semi_noln:'頸癌準広汎LN-',cx_simple_noln:'頸癌単純LN-',open_benign_ut:'良性子宮開腹',open_benign_ov:'良性卵巣開腹',lap_malig_ln:'腹腔鏡悪LN+',lap_malig_noln:'腹腔鏡悪LN-',lap_benign:'腹腔鏡良性',lap_adnexa:'腹腔鏡付属器',robot_malig_ln:'ロボ悪LN+',robot_malig_noln:'ロボ悪LN-',robot_benign:'ロボ良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
-const LABELS={op_laser_ex:'外来レーザー蒸散術',op_scope_ex:'外来子宮鏡手術',ec_open_ln:'子宮体癌 開腹（LN+）',ec_open_noln:'子宮体癌 開腹（LN-）',oc_open_ln:'卵巣癌 開腹（LN+）',oc_open_noln:'卵巣癌 開腹（LN-）',cx_radical:'頸癌 広汎子宮全摘',lap_radical:'腹腔鏡下 広汎子宮全摘',cx_semi_ln:'頸癌 準広汎（LN+）',cx_simple_ln:'頸癌 単純TH（LN+）',cx_semi_noln:'頸癌 準広汎（LN-）',cx_simple_noln:'頸癌 単純TH（LN-）',open_benign_ut:'良性子宮 開腹',open_benign_ov:'良性卵巣 開腹',lap_malig_ln:'腹腔鏡 悪性（LN+）',lap_malig_noln:'腹腔鏡 悪性（LN-）',lap_benign:'腹腔鏡 良性',lap_adnexa:'腹腔鏡 付属器',robot_malig_ln:'ロボ 悪性（LN+）',robot_malig_noln:'ロボ 悪性（LN-）',robot_benign:'ロボ 良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
+const NIGHTS={op_laser_ex:0,op_scope_ex:0,op_other_ex:0,lap_other:null,open_other:null,ec_open_ln:12,ec_open_noln:8,oc_open_ln:12,oc_open_noln:8,cx_radical:null,lap_radical:null,cx_semi_ln:12,cx_simple_ln:12,cx_semi_noln:8,cx_simple_noln:8,open_benign_ut:8,open_benign_ov:8,lap_malig_ln:8,lap_malig_noln:6,lap_benign:6,lap_adnexa:6,robot_malig_ln:8,robot_malig_noln:6,robot_benign:6,vaginal_hyst:8,vnotes:6,cone:3,laser:3,hyst_scope:3,ectopic:5};
+const FIXED=new Set(['cone','laser','hyst_scope','op_laser_ex','op_scope_ex','op_other_ex']);
+const EXCLUDED=new Set(['cx_radical','lap_radical','lap_other','open_other']);
+const SHORT={op_laser_ex:'外来レーザー',op_scope_ex:'外来子宮鏡',op_other_ex:'外来その他',lap_other:'腹腔鏡その他',open_other:'開腹その他',ec_open_ln:'体癌開腹LN+',ec_open_noln:'体癌開腹LN-',oc_open_ln:'卵巣開腹LN+',oc_open_noln:'卵巣開腹LN-',cx_radical:'頸癌広汎',lap_radical:'腹腔鏡広汎',cx_semi_ln:'頸癌準広汎LN+',cx_simple_ln:'頸癌単純LN+',cx_semi_noln:'頸癌準広汎LN-',cx_simple_noln:'頸癌単純LN-',open_benign_ut:'良性子宮開腹',open_benign_ov:'良性卵巣開腹',lap_malig_ln:'腹腔鏡悪LN+',lap_malig_noln:'腹腔鏡悪LN-',lap_benign:'腹腔鏡良性',lap_adnexa:'腹腔鏡付属器',robot_malig_ln:'ロボ悪LN+',robot_malig_noln:'ロボ悪LN-',robot_benign:'ロボ良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
+const LABELS={op_laser_ex:'外来レーザー蒸散術',op_scope_ex:'外来子宮鏡手術',op_other_ex:'外来その他',lap_other:'腹腔鏡その他',open_other:'開腹その他',ec_open_ln:'子宮体癌 開腹（LN+）',ec_open_noln:'子宮体癌 開腹（LN-）',oc_open_ln:'卵巣癌 開腹（LN+）',oc_open_noln:'卵巣癌 開腹（LN-）',cx_radical:'頸癌 広汎子宮全摘',lap_radical:'腹腔鏡下 広汎子宮全摘',cx_semi_ln:'頸癌 準広汎（LN+）',cx_simple_ln:'頸癌 単純TH（LN+）',cx_semi_noln:'頸癌 準広汎（LN-）',cx_simple_noln:'頸癌 単純TH（LN-）',open_benign_ut:'良性子宮 開腹',open_benign_ov:'良性卵巣 開腹',lap_malig_ln:'腹腔鏡 悪性（LN+）',lap_malig_noln:'腹腔鏡 悪性（LN-）',lap_benign:'腹腔鏡 良性',lap_adnexa:'腹腔鏡 付属器',robot_malig_ln:'ロボ 悪性（LN+）',robot_malig_noln:'ロボ 悪性（LN-）',robot_benign:'ロボ 良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
 const DAYS=['日','月','火','水','木','金','土'];
 const HOLIDAYS=new Set(['2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24','2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06','2025-07-21','2025-08-11','2025-09-15','2025-09-22','2025-09-23','2025-10-13','2025-11-03','2025-11-23','2025-11-24','2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06','2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23','2026-12-23']);
 const ABS_REASONS={'終日':['直明け','有給','夏季休暇','学会','リフレッシュ休暇','忌引き'],'午前':['有給','午前C/S','午前会議'],'午後':['有給','午後C/S','午後会議','午後遺伝カウンセリング','午後胎児エコー']};
@@ -502,20 +507,20 @@ function onColChange(){
     if(opNumDiv) opNumDiv.style.display='none';
     // 外来術式以外を無効化
     Array.from(surgSel.options).forEach(o=>{
-      if(o.value&&o.value!=='op_laser_ex'&&o.value!=='op_scope_ex') o.disabled=true;
+      if(o.value&&o.value!=='op_laser_ex'&&o.value!=='op_scope_ex'&&o.value!=='op_other_ex') o.disabled=true;
       else o.disabled=false;
     });
     // 現在の選択が外来術式でなければリセット
-    if(surgSel.value!=='op_laser_ex'&&surgSel.value!=='op_scope_ex') surgSel.value='';
+    if(surgSel.value!=='op_laser_ex'&&surgSel.value!=='op_scope_ex'&&surgSel.value!=='op_other_ex') surgSel.value='';
   } else {
     if(opNumDiv) opNumDiv.style.display='';
     // 外来術式を無効化
     Array.from(surgSel.options).forEach(o=>{
-      if(o.value==='op_laser_ex'||o.value==='op_scope_ex') o.disabled=true;
+      if(o.value==='op_laser_ex'||o.value==='op_scope_ex'||o.value==='op_other_ex') o.disabled=true;
       else o.disabled=false;
     });
     // 外来術式が選択されていればリセット
-    if(surgSel.value==='op_laser_ex'||surgSel.value==='op_scope_ex') surgSel.value='';
+    if(surgSel.value==='op_laser_ex'||surgSel.value==='op_scope_ex'||surgSel.value==='op_other_ex') surgSel.value='';
   }
 }
 
@@ -792,7 +797,7 @@ async function calculate(){
     out.innerHTML='<div class="alert alert-warn">C列（外来手術）は木曜日のみ登録できます</div>';return;
   }
   // 外来術式はC列のみ
-  if((surgery==='op_laser_ex'||surgery==='op_scope_ex')&&opCol!=='C'){
+  if((surgery==='op_laser_ex'||surgery==='op_scope_ex'||surgery==='op_other_ex')&&opCol!=='C'){
     out.innerHTML='<div class="alert alert-warn">外来手術はC列を選択してください</div>';return;
   }
   if(!editingId){
