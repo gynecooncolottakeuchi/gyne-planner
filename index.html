@@ -616,6 +616,11 @@ function checkPw(){
       const btn=document.querySelector('[data-tab="'+tab+'"]');
       if(btn) btn.style.display=ADMINS.has(currentUser)?'':'none';
     });
+    // 竹内以外は操作ログ・統計タブを非表示
+    ['log','stats'].forEach(tab=>{
+      const btn=document.querySelector('[data-tab="'+tab+'"]');
+      if(btn) btn.style.display=currentUser===LOG_ADMIN?'':'none';
+    });
     loadShinkans();fetchAndRender(false);fetchAbsences();fetchShinkan();
     switchTab('newsfeed');
     try{sessionStorage.setItem('gyn_session',JSON.stringify({user:doc,pw,ts:Date.now()}));}catch(e){}
