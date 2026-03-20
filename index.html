@@ -857,6 +857,19 @@ function _renderCal(cal){
     const dateRow=document.createElement('div');
     dateRow.style.cssText='display:flex;align-items:center;gap:2px;margin-bottom:2px;flex-wrap:wrap';
     const dateDiv=document.createElement('span');dateDiv.className='cal-date';dateDiv.style.marginBottom='0';dateDiv.textContent=day;dateRow.appendChild(dateDiv);
+    // 新患バッジを日付の横に表示（カレンダー②のみ）
+    if(!isCal1&&isCur&&shinkanMap[key]){
+      shinkanMap[key].forEach(s=>{
+        const docs=(s.doctors||'').split(',').filter(Boolean);
+        if(docs.length){
+          const badge=document.createElement('span');
+          badge.className='ev-shinkan';
+          badge.title='新患担当: '+docs.join('、');
+          badge.textContent='新患:'+docs.map(d=>d.slice(0,2)).join('・');
+          dateRow.appendChild(badge);
+        }
+      });
+    }
     // 不在バッジを日付の横に表示
     if(isCur&&absMap[key]){
       absMap[key].forEach(a=>{
