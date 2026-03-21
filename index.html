@@ -572,13 +572,21 @@ function fillAssistSelects(){
   });
 }
 function fillSelects(){
-  ['loginDoctor','doctorName','admitDoctor','surgeon','surgeon2','absPerson','shinkanDoc1','shinkanDoc2','shinkanDoc3'].forEach(id=>{
+  ['loginDoctor','doctorName','admitDoctor','surgeon','surgeon2','shinkanDoc1','shinkanDoc2','shinkanDoc3'].forEach(id=>{
     const sel=document.getElementById(id);if(!sel) return;
     const cur=sel.value;while(sel.options.length>1)sel.remove(1);
     DOCTORS.forEach(n=>{const o=document.createElement('option');o.textContent=n;sel.appendChild(o);});
     if(cur)sel.value=cur;
   });
   fillAssistSelects();
+  fillAbsPersonSelect();
+}
+function fillAbsPersonSelect(){
+  const sel=document.getElementById('absPerson');if(!sel) return;
+  const cur=sel.value;while(sel.options.length>1)sel.remove(1);
+  DOCTORS.forEach(n=>{const o=document.createElement('option');o.textContent=n;sel.appendChild(o);});
+  const r=document.createElement('option');r.value='全研修医';r.textContent='全研修医';sel.appendChild(r);
+  if(cur)sel.value=cur;
 }
 document.addEventListener('DOMContentLoaded',()=>{
   fillSelects();
@@ -685,18 +693,14 @@ function editRecord(id){
   document.getElementById('assist1').value=r.assist1||'';
   document.getElementById('assist2').value=r.assist2||'';
   document.getElementById('opCol').value=r.opCol||'';
+  // onColChangeを先に実行して術式選択肢を制御
+  if(r.opCol) onColChange();
+  // onColChange後に術式・順番・時間・日付を設定
+  document.getElementById('surgerySelect').value=r.surgery||'';
   document.getElementById('opNum').value=r.opNum||'';
   document.getElementById('opTime').value=r.opTime||'';
   document.getElementById('opDate').value=r.opDate||'';
   document.getElementById('editingId').value=r.id;
-  // onColChangeで術式選択肢を制御（opTimeは既に設定済みなので影響なし）
-  if(r.opCol) onColChange();
-  document.getElementById('surgerySelect').value=r.surgery||'';
-  // onColChange後に再度opTimeを確認
-  document.getElementById('opTime').value=r.opTime||'';
-  // 準備チェックボックスを復元
-  ['prep_geka','prep_hinyoki','prep_ureter','prep_sample'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
-  if(r.prep)(r.prep).split(',').filter(Boolean).forEach(p=>parts.push('['+p+']'));
   document.getElementById('output').innerHTML='<div class="alert alert-info">修正モード：変更後「登録」を押してください</div>';
   switchTab('calc');window.scrollTo(0,0);
 }
@@ -717,7 +721,7 @@ function autoLoad(pid){
   if(r.opCol) onColChange();
   document.getElementById('surgerySelect').value=r.surgery||'';
   document.getElementById('opTime').value=r.opTime||'';
-  ['prep_geka','prep_hinyoki','prep_ureter','prep_sample'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
+  ['prep_geka','prep_hinyoki','prep_ureter','prep_sample','prep_rapid'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
   if(r.prep)(r.prep).split(',').filter(Boolean).forEach(p=>parts.push('['+p+']'));
   document.getElementById('output').innerHTML='<div class="alert alert-info">既存データを読み込みました。修正後「登録」を押してください</div>';
 }
@@ -731,7 +735,7 @@ async function delRecord(id){
   catch(e){setSpin(false);toast('⚠ 削除に失敗しました',false);}
 }
 function clearAll(){if(!ADMINS.has(currentUser)){toast('操作権限がありません',false);return;}if(!confirm('全データを削除しますか？'))return;Promise.all(records.map(r=>gasDelete(r.id))).then(()=>{records=[];refreshUI();toast('✓ 全件削除しました',true);}).catch(()=>toast('⚠ 削除に失敗しました',false));}
-function clearForm(){['patientId','doctorName','admitDoctor','surgeon','surgeon2','assist1','assist2','surgerySelect','opCol','opNum','opTime','editingId'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});['prep_geka','prep_hinyoki','prep_ureter','prep_sample'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});['prep_geka','prep_hinyoki','prep_ureter','prep_sample'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});['prep_geka','prep_hinyoki','prep_ureter','prep_sample'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});document.getElementById('opDate').value=ymd(new Date());document.getElementById('output').innerHTML='';}
+function clearForm(){['patientId','doctorName','admitDoctor','surgeon','surgeon2','assist1','assist2','surgerySelect','opCol','opNum','opTime','editingId'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});['prep_geka','prep_hinyoki','prep_ureter','prep_sample','prep_rapid'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});['prep_geka','prep_hinyoki','prep_ureter','prep_sample','prep_rapid'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});['prep_geka','prep_hinyoki','prep_ureter','prep_sample','prep_rapid'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});document.getElementById('opDate').value=ymd(new Date());document.getElementById('output').innerHTML='';}
 
 function onColChange(){
   const col=document.getElementById('opCol').value;
@@ -786,7 +790,7 @@ async function calculate(){
     else if(adjusted){const dw=earliest.getDay();const reason=isHoliday(earliest)?'祝日':dw===5?'金曜':dw===6?'土曜':'日曜';adjustNote='<div class="alert alert-info" style="margin-top:10px">最短退院日（'+fmt(earliest)+'）は'+reason+'のため次の平日に調整しました</div>';}
     else adjustNote='<div class="alert alert-ok" style="margin-top:10px">最短日数で月〜木退院が可能です</div>';
   }
-  const prepItems=['prep_geka','prep_hinyoki','prep_ureter','prep_sample']
+  const prepItems=['prep_geka','prep_hinyoki','prep_ureter','prep_sample','prep_rapid']
     .filter(id=>document.getElementById(id)&&document.getElementById(id).checked)
     .map(id=>document.getElementById(id).value);
   const record={id,patientId:pid,doctor:doc,admitDoctor:admitDoc||'',surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',prep:prep||'',surgery,opCol:opCol||'',opNum:opCol==='C'?'':opNum||'',opTime:opTime||'',opDate:opDate?ymd(opDate):'',admitDate:admitDate?ymd(admitDate):'',dischargeDate:dischargeDate?ymd(dischargeDate):''}; 
