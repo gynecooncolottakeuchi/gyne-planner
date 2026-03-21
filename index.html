@@ -269,23 +269,6 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
           </select>
         </div>
       </div>
-      <div class="form-grid-3">
-        <div class="field"><label>準備１</label>
-          <select id="prep1"><option value="">--</option>
-            <option>外科応援</option><option>泌尿器応援</option><option>尿管ステント</option><option>試供品あり</option>
-          </select>
-        </div>
-        <div class="field"><label>準備２</label>
-          <select id="prep2"><option value="">--</option>
-            <option>外科応援</option><option>泌尿器応援</option><option>尿管ステント</option><option>試供品あり</option>
-          </select>
-        </div>
-        <div class="field"><label>準備３</label>
-          <select id="prep3"><option value="">--</option>
-            <option>外科応援</option><option>泌尿器応援</option><option>尿管ステント</option><option>試供品あり</option>
-          </select>
-        </div>
-      </div>
       <div class="form-grid">
         <div class="field"><label>執刀医１</label><select id="surgeon"><option value="">-- 選択 --</option></select></div>
         <div class="field"><label>執刀医２</label><select id="surgeon2"><option value="">-- 選択 --</option></select></div>
@@ -293,32 +276,6 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
       <div class="form-grid">
         <div class="field"><label>助手１</label><select id="assist1"><option value="">-- 選択 --</option></select></div>
         <div class="field"><label>助手２</label><select id="assist2"><option value="">-- 選択 --</option></select></div>
-      </div>
-      <div style="margin-bottom:10px">
-        <div class="section-label" style="margin-bottom:8px">準備</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px">
-          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:6px 12px;border-radius:8px;user-select:none"><input type="checkbox" id="prep_surgical" value="外応" style="width:16px;height:16px"> 外科応援</label>
-          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:6px 12px;border-radius:8px;user-select:none"><input type="checkbox" id="prep_urology" value="泌応" style="width:16px;height:16px"> 泌尿器応援</label>
-          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:6px 12px;border-radius:8px;user-select:none"><input type="checkbox" id="prep_stent" value="尿ステ" style="width:16px;height:16px"> 尿管ステント</label>
-          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:6px 12px;border-radius:8px;user-select:none"><input type="checkbox" id="prep_sample" value="試供" style="width:16px;height:16px"> 試供品あり</label>
-        </div>
-      </div>
-      <div class="card" style="margin-bottom:0">
-        <div class="section-label">準備</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px">
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:7px 12px;border-radius:8px;border:1px solid #ddd">
-            <input type="checkbox" id="prep_geka" value="外応" style="width:16px;height:16px"> 外科応援（外応）
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:7px 12px;border-radius:8px;border:1px solid #ddd">
-            <input type="checkbox" id="prep_hinyoki" value="泌応" style="width:16px;height:16px"> 泌尿器応援（泌応）
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:7px 12px;border-radius:8px;border:1px solid #ddd">
-            <input type="checkbox" id="prep_ureter" value="尿ステ" style="width:16px;height:16px"> 尿管ステント（尿ステ）
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:7px 12px;border-radius:8px;border:1px solid #ddd">
-            <input type="checkbox" id="prep_sample" value="試供" style="width:16px;height:16px"> 試供品あり（試供）
-          </label>
-        </div>
       </div>
       <div class="btn-row" style="margin-top:12px">
         <button class="btn btn-primary" onclick="calculate()">登録</button>
@@ -521,69 +478,40 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 </div>
 
 <script>
+
 const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGBnAEP7d9YM-54OmGqnFNYvee8e2ji1D5wKaR2skxE_Jzg/exec';
 const PASSWORDS={'竹内':'gyne20140609','穴井':'vuitton'};
 const PASSWORD_DEFAULT='gyne2025';
-function getPassword(user){return PASSWORDS[user]||PASSWORD_DEFAULT;}
 const LOG_ADMIN='竹内';
 const STATS_PW='20140609';
 const ADMINS=new Set(['竹内','穴井']);
+function getPassword(user){return PASSWORDS[user]||PASSWORD_DEFAULT;}
 const DOCTORS=['豊福','後藤','竹内','小山','平川','穴井','小林','内田','川野','杉山','中島','広瀬','山本','中野','小西','西田','池田','家城','田中'];
-const NIGHTS={op_laser_ex:0,op_scope_ex:0,op_other_ex:0,lap_other:null,open_other:null,vaginal_other:null,cs_other:null,vaginal_other:null,ec_open_ln:12,ec_open_noln:8,oc_open_ln:12,oc_open_noln:8,cx_radical:null,lap_radical:null,cx_semi_ln:12,cx_simple_ln:12,cx_semi_noln:8,cx_simple_noln:8,open_benign_ut:8,open_benign_ov:8,lap_malig_ln:8,lap_malig_noln:6,lap_benign:6,lap_adnexa:6,robot_malig_ln:8,robot_malig_noln:6,robot_benign:6,vaginal_hyst:8,vnotes:6,cone:3,laser:3,hyst_scope:3,ectopic:5};
+const NIGHTS={op_laser_ex:0,op_scope_ex:0,op_other_ex:0,lap_other:null,open_other:null,vaginal_other:null,cs_other:null,ec_open_ln:12,ec_open_noln:8,oc_open_ln:12,oc_open_noln:8,cx_radical:null,lap_radical:null,cx_semi_ln:12,cx_simple_ln:12,cx_semi_noln:8,cx_simple_noln:8,open_benign_ut:8,open_benign_ov:8,lap_malig_ln:8,lap_malig_noln:6,lap_benign:6,lap_adnexa:6,robot_malig_ln:8,robot_malig_noln:6,robot_benign:6,vaginal_hyst:8,vnotes:6,cone:3,laser:3,hyst_scope:3,ectopic:5};
 const FIXED=new Set(['cone','laser','hyst_scope','op_laser_ex','op_scope_ex','op_other_ex']);
 const EXCLUDED=new Set(['cx_radical','lap_radical','lap_other','open_other','vaginal_other','cs_other']);
-const SHORT={op_laser_ex:'外来レーザー',op_scope_ex:'外来子宮鏡',op_other_ex:'外来その他',lap_other:'腹腔鏡その他',open_other:'開腹その他',vaginal_other:'経腟その他',cs_other:'帝王切開',vaginal_other:'経腟その他',ec_open_ln:'体癌開腹LN+',ec_open_noln:'体癌開腹LN-',oc_open_ln:'卵巣開腹LN+',oc_open_noln:'卵巣開腹LN-',cx_radical:'頸癌広汎',lap_radical:'腹腔鏡広汎',cx_semi_ln:'頸癌準広汎LN+',cx_simple_ln:'頸癌単純LN+',cx_semi_noln:'頸癌準広汎LN-',cx_simple_noln:'頸癌単純LN-',open_benign_ut:'良性子宮開腹',open_benign_ov:'良性卵巣開腹',lap_malig_ln:'腹腔鏡悪LN+',lap_malig_noln:'腹腔鏡悪LN-',lap_benign:'腹腔鏡良性',lap_adnexa:'腹腔鏡付属器',robot_malig_ln:'ロボ悪LN+',robot_malig_noln:'ロボ悪LN-',robot_benign:'ロボ良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
-const LABELS={op_laser_ex:'外来レーザー蒸散術',op_scope_ex:'外来子宮鏡手術',op_other_ex:'外来その他',lap_other:'腹腔鏡その他',open_other:'開腹その他',vaginal_other:'経腟その他',cs_other:'帝王切開',vaginal_other:'経腟その他',ec_open_ln:'子宮体癌 開腹（LN+）',ec_open_noln:'子宮体癌 開腹（LN-）',oc_open_ln:'卵巣癌 開腹（LN+）',oc_open_noln:'卵巣癌 開腹（LN-）',cx_radical:'頸癌 広汎子宮全摘',lap_radical:'腹腔鏡下 広汎子宮全摘',cx_semi_ln:'頸癌 準広汎（LN+）',cx_simple_ln:'頸癌 単純TH（LN+）',cx_semi_noln:'頸癌 準広汎（LN-）',cx_simple_noln:'頸癌 単純TH（LN-）',open_benign_ut:'良性子宮 開腹',open_benign_ov:'良性卵巣 開腹',lap_malig_ln:'腹腔鏡 悪性（LN+）',lap_malig_noln:'腹腔鏡 悪性（LN-）',lap_benign:'腹腔鏡 良性',lap_adnexa:'腹腔鏡 付属器',robot_malig_ln:'ロボ 悪性（LN+）',robot_malig_noln:'ロボ 悪性（LN-）',robot_benign:'ロボ 良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
+const SHORT={op_laser_ex:'外来レーザー',op_scope_ex:'外来子宮鏡',op_other_ex:'外来その他',lap_other:'腹腔鏡その他',open_other:'開腹その他',vaginal_other:'経腟その他',cs_other:'帝王切開',ec_open_ln:'体癌開腹LN+',ec_open_noln:'体癌開腹LN-',oc_open_ln:'卵巣開腹LN+',oc_open_noln:'卵巣開腹LN-',cx_radical:'頸癌広汎',lap_radical:'腹腔鏡広汎',cx_semi_ln:'頸癌準広汎LN+',cx_simple_ln:'頸癌単純LN+',cx_semi_noln:'頸癌準広汎LN-',cx_simple_noln:'頸癌単純LN-',open_benign_ut:'良性子宮開腹',open_benign_ov:'良性卵巣開腹',lap_malig_ln:'腹腔鏡悪LN+',lap_malig_noln:'腹腔鏡悪LN-',lap_benign:'腹腔鏡良性',lap_adnexa:'腹腔鏡付属器',robot_malig_ln:'ロボ悪LN+',robot_malig_noln:'ロボ悪LN-',robot_benign:'ロボ良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
+const LABELS={op_laser_ex:'外来レーザー蒸散術',op_scope_ex:'外来子宮鏡手術',op_other_ex:'外来その他',lap_other:'腹腔鏡その他',open_other:'開腹その他',vaginal_other:'経腟その他',cs_other:'帝王切開',ec_open_ln:'子宮体癌 開腹（LN+）',ec_open_noln:'子宮体癌 開腹（LN-）',oc_open_ln:'卵巣癌 開腹（LN+）',oc_open_noln:'卵巣癌 開腹（LN-）',cx_radical:'頸癌 広汎子宮全摘',lap_radical:'腹腔鏡下 広汎子宮全摘',cx_semi_ln:'頸癌 準広汎（LN+）',cx_simple_ln:'頸癌 単純TH（LN+）',cx_semi_noln:'頸癌 準広汎（LN-）',cx_simple_noln:'頸癌 単純TH（LN-）',open_benign_ut:'良性子宮 開腹',open_benign_ov:'良性卵巣 開腹',lap_malig_ln:'腹腔鏡 悪性（LN+）',lap_malig_noln:'腹腔鏡 悪性（LN-）',lap_benign:'腹腔鏡 良性',lap_adnexa:'腹腔鏡 付属器',robot_malig_ln:'ロボ 悪性（LN+）',robot_malig_noln:'ロボ 悪性（LN-）',robot_benign:'ロボ 良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
 const DAYS=['日','月','火','水','木','金','土'];
 const HOLIDAYS=new Set(['2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24','2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06','2025-07-21','2025-08-11','2025-09-15','2025-09-22','2025-09-23','2025-10-13','2025-11-03','2025-11-23','2025-11-24','2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06','2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23','2026-12-23']);
-const ABS_REASONS={'終日':['直明け','有給','夏季休暇','学会','リフレッシュ休暇','忌引き','他科手術応援'],'午前':['有給','午前C/S','午前会議','他科手術応援'],'午後':['有給','午後C/S','午後会議','午後遺伝カウンセリング','午後胎児エコー','他科手術応援']};
+const ABS_REASONS={'終日':['直明け','有給','夏季休暇','学会','リフレッシュ休暇','忌引き'],'午前':['有給','午前C/S','午前会議'],'午後':['有給','午後C/S','午後会議','午後遺伝カウンセリング','午後胎児エコー']};
 
-let records=[],logs=[],absences=[],currentUser='';
+let records=[],logs=[],absences=[],shinkans=[],currentUser='';
 let cal1Year,cal1Month,cal2Year,cal2Month,cal3BaseMonday;
 let isSyncing=false,statsUnlocked=false;
 
-// ===== 列変更ハンドラ =====
-function onColChange(){
-  const col=document.getElementById('opCol').value;
-  const surgSel=document.getElementById('surgerySelect');
-  const opNumDiv=document.getElementById('opNum').closest('.field');
-  // C列の場合：順番選択を非表示、外来術式のみ選択可
-  if(col==='C'){
-    if(opNumDiv) opNumDiv.style.display='none';
-    // 外来術式以外を無効化
-    Array.from(surgSel.options).forEach(o=>{
-      if(o.value&&o.value!=='op_laser_ex'&&o.value!=='op_scope_ex'&&o.value!=='op_other_ex') o.disabled=true;
-      else o.disabled=false;
-    });
-    // 現在の選択が外来術式でなければリセット
-    if(surgSel.value!=='op_laser_ex'&&surgSel.value!=='op_scope_ex'&&surgSel.value!=='op_other_ex') surgSel.value='';
-  } else {
-    if(opNumDiv) opNumDiv.style.display='';
-    // 外来術式を無効化
-    Array.from(surgSel.options).forEach(o=>{
-      if(o.value==='op_laser_ex'||o.value==='op_scope_ex'||o.value==='op_other_ex') o.disabled=true;
-      else o.disabled=false;
-    });
-    // 外来術式が選択されていればリセット
-    if(surgSel.value==='op_laser_ex'||surgSel.value==='op_scope_ex'||surgSel.value==='op_other_ex') surgSel.value='';
-  }
-}
-
-// ===== ユーティリティ =====
 function genId(){return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function parseDate(s){
   if(!s) return null;
   if(typeof s==='number'){const u=new Date((s-25569)*86400000);return new Date(u.getUTCFullYear(),u.getUTCMonth(),u.getUTCDate());}
-  const str=String(s).trim();
-  if(!str) return null;
+  const str=String(s).trim();if(!str) return null;
   if(str.match(/^\d{4}-\d{2}-\d{2}$/)){const p=str.split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
   if(str.match(/^\d{4}\/\d{2}\/\d{2}$/)){const p=str.split('/');return new Date(+p[0],+p[1]-1,+p[2]);}
   if(str.match(/^\d{4}-\d{2}-\d{2}T/)){const p=str.slice(0,10).split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
   const M={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
   const m=str.match(/^\w{3}\s+(\w{3})\s+(\d{1,2})\s+(\d{4})/);
   if(m&&M[m[1]]!==undefined) return new Date(+m[3],M[m[1]],+m[2]);
-  const d=new Date(str);
-  if(!isNaN(d.getTime())) return new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());
+  const d=new Date(str);if(!isNaN(d.getTime())) return new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());
   return null;
 }
 function ymd(d){if(!d||isNaN(d.getTime())) return '';return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -597,78 +525,47 @@ function today0(){const t=new Date();t.setHours(0,0,0,0);return t;}
 function normalizeRecord(r){if(!r) return r;['opDate','admitDate','dischargeDate'].forEach(k=>{if(r[k]){const d=parseDate(r[k]);r[k]=d?ymd(d):'';}});if(!r.id)r.id=genId();if(r.admitDoctor===undefined)r.admitDoctor='';return r;}
 function safeLS(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){}}
 
-// ===== ログ =====
 function saveLogs(){safeLS('gyn_logs',JSON.stringify(logs));}
 function loadLogs(){try{const s=safeLS('gyn_logs');if(s)logs=JSON.parse(s);}catch(e){}}
 function addLog(action,pid,detail){const now=new Date();const pad=n=>String(n).padStart(2,'0');const ts=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+pad(now.getHours())+':'+pad(now.getMinutes());logs.unshift({ts,user:currentUser,action,patientId:pid,detail});if(logs.length>200)logs=logs.slice(0,200);saveLogs();}
 
-// ===== トースト・スピナー =====
 function toast(msg,ok){document.querySelectorAll('.toast').forEach(e=>e.remove());const el=document.createElement('div');el.className='toast';el.style.background=ok?'#1a6640':'#c0392b';el.textContent=msg;document.body.appendChild(el);setTimeout(()=>{if(el.parentNode)el.parentNode.removeChild(el);},3000);}
 function setSpin(on){document.querySelectorAll('.spinner').forEach(s=>s.style.display=on?'inline-block':'none');}
 
-// ===== GAS通信 =====
 async function gasGetAll(){const r=await fetch(GAS_URL+'?action=getAll&t='+Date.now());const d=await r.json();if(!d.records||!Array.isArray(d.records)) throw new Error('invalid');return d.records.map(normalizeRecord).filter(r=>r&&r.patientId&&r.opDate);}
 async function gasPut(rec){await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsert',record:rec})});}
 async function gasDelete(id){await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'delete',id})});}
 
-// ===== データ取得・画面更新 =====
 async function fetchAndRender(showSpinner){
-  if(isSyncing) return;
-  isSyncing=true;
+  if(isSyncing) return;isSyncing=true;
   if(showSpinner) setSpin(true);
-  try{
-    records=await gasGetAll();
-    refreshUI();
-    if(statsUnlocked&&document.getElementById('tab-stats').style.display!=='none') renderStats();
-    if(showSpinner){setSpin(false);toast('✓ 最新データを取得（'+records.length+'件）',true);}
-  }catch(e){
-    if(showSpinner){setSpin(false);toast('⚠ 取得失敗',false);}
-  }
+  try{records=await gasGetAll();refreshUI();if(statsUnlocked&&document.getElementById('tab-stats').style.display!=='none')renderStats();if(showSpinner){setSpin(false);toast('✓ 最新データを取得（'+records.length+'件）',true);}}
+  catch(e){if(showSpinner){setSpin(false);toast('⚠ 取得失敗',false);}}
   isSyncing=false;
 }
 async function syncNow(){await fetchAndRender(true);}
 
-// ===== ログイン =====
 function fillAssistSelects(){
   ['assist1','assist2'].forEach(id=>{
     const sel=document.getElementById(id);if(!sel) return;
-    const cur=sel.value;
-    while(sel.options.length>1) sel.remove(1);
+    const cur=sel.value;while(sel.options.length>1)sel.remove(1);
     DOCTORS.forEach(n=>{const o=document.createElement('option');o.textContent=n;sel.appendChild(o);});
     const r=document.createElement('option');r.value='研修医';r.textContent='研修医';sel.appendChild(r);
-    if(cur) sel.value=cur;
+    if(cur)sel.value=cur;
   });
 }
-
 function fillSelects(){
   ['loginDoctor','doctorName','admitDoctor','surgeon','surgeon2','absPerson','shinkanDoc1','shinkanDoc2','shinkanDoc3'].forEach(id=>{
     const sel=document.getElementById(id);if(!sel) return;
-    const cur=sel.value;
-    while(sel.options.length>1) sel.remove(1);
+    const cur=sel.value;while(sel.options.length>1)sel.remove(1);
     DOCTORS.forEach(n=>{const o=document.createElement('option');o.textContent=n;sel.appendChild(o);});
-    if(cur) sel.value=cur;
+    if(cur)sel.value=cur;
   });
-  // 助手１・助手２は研修医も追加
-  ['assist1','assist2'].forEach(id=>{
-    const sel=document.getElementById(id);if(!sel) return;
-    const cur=sel.value;
-    while(sel.options.length>1) sel.remove(1);
-    DOCTORS.forEach(n=>{const o=document.createElement('option');o.textContent=n;sel.appendChild(o);});
-    const ro=document.createElement('option');ro.value='研修医';ro.textContent='研修医';sel.appendChild(ro);
-    if(cur) sel.value=cur;
-  });
+  fillAssistSelects();
 }
 document.addEventListener('DOMContentLoaded',()=>{
   fillSelects();
-  fillAssistSelects();
-  try{
-    const s=JSON.parse(sessionStorage.getItem('gyn_session')||'null');
-    if(s&&(Date.now()-s.ts)/60000<30&&s.user&&s.pw===getPassword(s.user)){
-      document.getElementById('loginDoctor').value=s.user;
-      document.getElementById('pwInput').value=s.pw;
-      checkPw();
-    }
-  }catch(e){}
+  try{const s=JSON.parse(sessionStorage.getItem('gyn_session')||'null');if(s&&(Date.now()-s.ts)/60000<30&&s.user&&s.pw===getPassword(s.user)){document.getElementById('loginDoctor').value=s.user;document.getElementById('pwInput').value=s.pw;checkPw();}}catch(e){}
 });
 function checkPw(){
   const doc=document.getElementById('loginDoctor').value;
@@ -681,54 +578,28 @@ function checkPw(){
     const t=new Date();
     document.getElementById('opDate').value=ymd(t);
     document.getElementById('absDate').value=ymd(t);
+    document.getElementById('shinkanDate').value=ymd(t);
     cal1Year=cal2Year=t.getFullYear();cal1Month=cal2Month=t.getMonth();
     cal3BaseMonday=getMonday(t);
-    fillSelects();fillAssistSelects();loadLogs();loadAbsences();
-    // 管理者以外は症例登録・新患担当・一覧修正タブを非表示
-    ['calc','shinkan','edit'].forEach(tab=>{
-      const btn=document.querySelector('[data-tab="'+tab+'"]');
-      if(btn) btn.style.display=ADMINS.has(currentUser)?'':'none';
-    });
-    // 竹内以外は操作ログ・統計タブを非表示
-    ['log','stats'].forEach(tab=>{
-      const btn=document.querySelector('[data-tab="'+tab+'"]');
-      if(btn) btn.style.display=currentUser===LOG_ADMIN?'':'none';
-    });
-    loadShinkans();fetchAndRender(false);fetchAbsences();fetchShinkan();
-    switchTab('newsfeed');
+    fillSelects();loadLogs();loadAbsences();loadShinkans();
+    fetchAndRender(false);fetchAbsences();fetchShinkan();
+    ['calc','shinkan','edit'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=ADMINS.has(currentUser)?'':'none';});
+    ['log','stats'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=currentUser===LOG_ADMIN?'':'none';});
     try{sessionStorage.setItem('gyn_session',JSON.stringify({user:doc,pw,ts:Date.now()}));}catch(e){}
-  }else{
-    document.getElementById('pwError').style.display='block';
-    document.getElementById('pwInput').value='';
-  }
+  }else{document.getElementById('pwError').style.display='block';document.getElementById('pwInput').value='';}
 }
-function logout(){
-  currentUser='';
-  document.getElementById('lockScreen').style.display='flex';
-  document.getElementById('app').style.display='none';
-  document.getElementById('pwInput').value='';
-  document.getElementById('loginDoctor').value='';
-  document.getElementById('pwError').style.display='none';
-  try{sessionStorage.removeItem('gyn_session');}catch(e){}
-}
+function logout(){currentUser='';document.getElementById('lockScreen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('pwInput').value='';document.getElementById('loginDoctor').value='';document.getElementById('pwError').style.display='none';try{sessionStorage.removeItem('gyn_session');}catch(e){}}
 
-// ===== タブ切り替え =====
 function switchTab(t){
-  ['newsfeed','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats'].forEach(name=>{
-    document.getElementById('tab-'+name).style.display=t===name?'block':'none';
-  });
+  ['newsfeed','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats'].forEach(name=>{document.getElementById('tab-'+name).style.display=t===name?'block':'none';});
   document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.toggle('active',btn.getAttribute('data-tab')===t));
   if(t==='newsfeed') renderNewsfeed();
   if(t==='absence') fetchAbsences();
   if(t==='shinkan') fetchShinkan();
-  if(t==='cal1'||t==='cal2'||t==='cal3'){
-    // カレンダーに不在データを反映するため常に取得
-    fetchAbsences();
-  }
   if(t==='stats') initStats();
   if(t==='cal1') renderCal('cal1');
-  if(t==='cal2') renderCal('cal2');
-  if(t==='cal3') renderWeekCal();
+  if(t==='cal2'){fetchShinkan();renderCal('cal2');}
+  if(t==='cal3'){fetchShinkan();renderWeekCal();}
   if(t==='list') renderList();
   if(t==='edit') renderEdit();
   if(t==='log') renderLog();
@@ -743,12 +614,12 @@ function refreshUI(){
   if(active==='cal3') renderWeekCal();
   if(active==='list') renderList();
   if(active==='edit') renderEdit();
+  if(active==='stats'&&statsUnlocked) renderStats();
 }
 
-// ===== カウンター =====
 function updateCounter(){
   const satD={},sunD={};
-  records.forEach(r=>{const d=parseDate(r.admitDate);if(!d) return;const w=d.getDay();if(w===6)satD[r.admitDate]=(satD[r.admitDate]||0)+1;if(w===0)sunD[r.admitDate]=(sunD[r.admitDate]||0)+1;});
+  records.forEach(r=>{const d=parseDate(r.admitDate);if(!d)return;const w=d.getDay();if(w===6)satD[r.admitDate]=(satD[r.admitDate]||0)+1;if(w===0)sunD[r.admitDate]=(sunD[r.admitDate]||0)+1;});
   const sMax=Math.max(0,...Object.values(satD),0),suMax=Math.max(0,...Object.values(sunD),0);
   const sTotal=Object.values(satD).reduce((a,b)=>a+b,0),suTotal=Object.values(sunD).reduce((a,b)=>a+b,0);
   document.getElementById('satCount').textContent=sTotal+'名（最大'+sMax+'/2）';document.getElementById('satCount').className='counter-num '+(sMax>=2?'over':'ok');
@@ -757,7 +628,6 @@ function updateCounter(){
   document.getElementById('sunBar').style.width=Math.min(suMax/2*100,100)+'%';document.getElementById('sunBar').className='counter-fill '+(suMax>=2?'fill-warn':'fill-ok');
 }
 
-// ===== 土日入院一覧 =====
 function renderList(){
   updateCounter();
   const wr=records.filter(r=>{const d=parseDate(r.admitDate);return d&&(d.getDay()===6||d.getDay()===0);});
@@ -767,15 +637,14 @@ function renderList(){
   let html='';
   Object.keys(grp).sort().forEach(key=>{
     const ad=parseDate(key),cnt=grp[key].length,over=cnt>2;
-    html+='<div style="margin-bottom:14px"><div style="background:'+(over?'#fdecea':ad&&ad.getDay()===6?'#e8f0fb':'#fff4f4')+';border-radius:8px 8px 0 0;padding:8px 12px;display:flex;justify-content:space-between"><span style="font-weight:700;font-size:13px">'+fmt(ad)+'（'+cnt+'名）</span>'+(over?'<span style="color:#c0392b;font-size:12px;font-weight:600">⚠ 上限超過</span>':'')+' </div>';
-    html+='<div style="overflow-x:auto"><table class="reg-table" style="border-radius:0 0 8px 8px"><thead><tr><th>患者ID</th><th>主治医</th><th>術式</th><th>退院日</th><th></th></tr></thead><tbody>';
+    html+='<div style="margin-bottom:14px"><div style="background:'+(over?'#fdecea':ad&&ad.getDay()===6?'#e8f0fb':'#fff4f4')+';border-radius:8px 8px 0 0;padding:8px 12px;display:flex;justify-content:space-between"><span style="font-weight:700;font-size:13px">'+fmt(ad)+'（'+cnt+'名）</span>'+(over?'<span style="color:#c0392b;font-size:12px;font-weight:600">⚠ 上限超過</span>':'')+'</div>';
+    html+='<div style="overflow-x:auto"><table class="reg-table"><thead><tr><th>患者ID</th><th>主治医</th><th>術式</th><th>退院日</th><th></th></tr></thead><tbody>';
     grp[key].forEach(r=>{const dd=parseDate(r.dischargeDate);html+='<tr><td style="font-weight:600">'+r.patientId+'</td><td>'+(r.doctor||'—')+'</td><td style="font-size:11px">'+(SHORT[r.surgery]||r.surgery||'—')+'</td><td>'+(dd?'<span class="badge '+badgeClass(dd)+'" style="font-size:11px">'+fmt(dd)+'</span>':'—')+'</td><td><button class="btn btn-sm btn-danger" data-id="'+r.id+'" onclick="delRecord(this.dataset.id)">削除</button></td></tr>';});
     html+='</tbody></table></div></div>';
   });
   el.innerHTML=html;
 }
 
-// ===== 登録一覧・修正 =====
 function renderEdit(){
   const el=document.getElementById('editList');
   if(!records.length){el.innerHTML='<p style="font-size:13px;color:#aaa">登録されていません</p>';return;}
@@ -784,40 +653,28 @@ function renderEdit(){
   sorted.forEach(r=>{
     const ad=parseDate(r.admitDate),od=parseDate(r.opDate),dd=parseDate(r.dischargeDate);
     const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'—';
-    rows+='<tr><td style="font-weight:600">'+r.patientId+'</td><td>'+(r.doctor||'—')+'</td><td style="white-space:nowrap;font-size:11px">'+fmt(ad)+'</td><td style="white-space:nowrap;font-size:11px">'+fmt(od)+'</td><td style="font-size:11px;max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(SHORT[r.surgery]||r.surgery||'—')+'</td><td><span class="badge '+(r.opCol==='A'?'badge-blue':'badge-purple')+'" style="font-size:11px">'+ord+'</span></td><td>'+(dd?'<span class="badge '+badgeClass(dd)+'" style="font-size:11px">'+fmt(dd)+'</span>':'—')+'</td><td style="white-space:nowrap"><button class="btn btn-sm btn-edit" data-id="'+r.id+'" onclick="editRecord(this.dataset.id)">修正</button> <button class="btn btn-sm btn-danger" data-id="'+r.id+'" onclick="delRecord(this.dataset.id)">削除</button></td></tr>';
+    rows+='<tr><td style="font-weight:600">'+r.patientId+'</td><td>'+(r.doctor||'—')+'</td><td style="white-space:nowrap;font-size:11px">'+fmt(ad)+'</td><td style="white-space:nowrap;font-size:11px">'+fmt(od)+'</td><td style="font-size:11px;max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(SHORT[r.surgery]||r.surgery||'—')+'</td><td><span class="badge '+(r.opCol==='A'?'badge-blue':r.opCol==='B'?'badge-purple':'badge-amber')+'" style="font-size:11px">'+ord+'</span></td><td>'+(dd?'<span class="badge '+badgeClass(dd)+'" style="font-size:11px">'+fmt(dd)+'</span>':'—')+'</td><td style="white-space:nowrap"><button class="btn btn-sm btn-edit" data-id="'+r.id+'" onclick="editRecord(this.dataset.id)">修正</button> <button class="btn btn-sm btn-danger" data-id="'+r.id+'" onclick="delRecord(this.dataset.id)">削除</button></td></tr>';
   });
   el.innerHTML='<div style="overflow-x:auto"><table class="reg-table"><thead><tr><th>ID</th><th>主治医</th><th>入院日</th><th>手術日</th><th>術式</th><th>列/順</th><th>退院日</th><th>操作</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
+
 function editRecord(id){
   const r=records.find(x=>x.id===id);if(!r) return;
-  ['patientId','doctorName','admitDoctor','surgeon','surgeon2','assist1','assist2','surgerySelect','opCol','opNum','opTime','opDate','editingId'].forEach(f=>{
-    const el=document.getElementById(f);if(!el) return;
-    if(f==='patientId') el.value=r.patientId||'';
-    else if(f==='doctorName') el.value=r.doctor||'';
-    else if(f==='admitDoctor') el.value=r.admitDoctor||'';
-    else if(f==='surgerySelect') el.value=r.surgery||'';
-    else if(f==='editingId') el.value=r.id;
-    else el.value=r[f.replace('op','op')]||r[f]||'';
-  });
-  // direct field mapping
+  document.getElementById('patientId').value=r.patientId||'';
+  document.getElementById('doctorName').value=r.doctor||'';
+  document.getElementById('admitDoctor').value=r.admitDoctor||'';
   document.getElementById('surgeon').value=r.surgeon||'';
   document.getElementById('surgeon2').value=r.surgeon2||'';
   document.getElementById('assist1').value=r.assist1||'';
   document.getElementById('assist2').value=r.assist2||'';
+  document.getElementById('surgerySelect').value=r.surgery||'';
   document.getElementById('opCol').value=r.opCol||'';
   document.getElementById('opNum').value=r.opNum||'';
-  document.getElementById('opTime').value=r.opTime||'';
   document.getElementById('opDate').value=r.opDate||'';
-  // 準備チェックボックス復元
-  const prepVals=(r.prep||'').split(',').filter(Boolean);
-  [{id:'prep_geka',val:'外応'},{id:'prep_hinyoki',val:'泌応'},{id:'prep_ureter',val:'尿ステ'},{id:'prep_sample',val:'試供'}].forEach(p=>{
-    const el=document.getElementById(p.id);if(el)el.checked=prepVals.includes(p.val);
-  });
-  const pv=(r.prep||'').split(',');
-  document.getElementById('prep_surgical').checked=pv.includes('外応');
-  document.getElementById('prep_urology').checked=pv.includes('泌応');
-  document.getElementById('prep_stent').checked=pv.includes('尿ステ');
-  document.getElementById('prep_sample').checked=pv.includes('試供');
+  document.getElementById('editingId').value=r.id;
+  // onColChangeを実行して術式選択肢を制御してからopTimeを設定
+  if(r.opCol) onColChange();
+  document.getElementById('opTime').value=r.opTime||'';
   document.getElementById('output').innerHTML='<div class="alert alert-info">修正モード：変更後「登録」を押してください</div>';
   switchTab('calc');window.scrollTo(0,0);
 }
@@ -833,23 +690,11 @@ function autoLoad(pid){
   document.getElementById('surgerySelect').value=r.surgery||'';
   document.getElementById('opCol').value=r.opCol||'';
   document.getElementById('opNum').value=r.opNum||'';
-  document.getElementById('opTime').value=r.opTime||'';
-  document.getElementById('prep1').value=r.prep1||'';
-  document.getElementById('prep2').value=r.prep2||'';
-  document.getElementById('prep3').value=r.prep3||'';
   document.getElementById('opDate').value=r.opDate||'';
-  // 準備チェックボックス復元
-  const prepVals=(r.prep||'').split(',').filter(Boolean);
-  [{id:'prep_geka',val:'外応'},{id:'prep_hinyoki',val:'泌応'},{id:'prep_ureter',val:'尿ステ'},{id:'prep_sample',val:'試供'}].forEach(p=>{
-    const el=document.getElementById(p.id);if(el)el.checked=prepVals.includes(p.val);
-  });
   document.getElementById('editingId').value=r.id;
-  const prepVals2=(r.prep||'').split(',');
-  document.getElementById('prep_surgical').checked=prepVals2.includes('外応');
-  document.getElementById('prep_urology').checked=prepVals2.includes('泌応');
-  document.getElementById('prep_stent').checked=prepVals2.includes('尿ステ');
-  document.getElementById('prep_sample').checked=prepVals2.includes('試供');
-  document.getElementById('output').innerHTML='<div class="alert alert-info">既存データを読み込みました。修正後「退院日を計算・登録」を押してください</div>';
+  if(r.opCol) onColChange();
+  document.getElementById('opTime').value=r.opTime||'';
+  document.getElementById('output').innerHTML='<div class="alert alert-info">既存データを読み込みました。修正後「登録」を押してください</div>';
 }
 async function delRecord(id){
   if(!ADMINS.has(currentUser)){toast('削除は竹内先生・穴井先生のみです',false);return;}
@@ -860,77 +705,86 @@ async function delRecord(id){
   try{await gasDelete(id);await fetchAndRender(false);setSpin(false);toast('✓ 削除しました',true);}
   catch(e){setSpin(false);toast('⚠ 削除に失敗しました',false);}
 }
-function clearAll(){if(!ADMINS.has(currentUser)){toast('操作権限がありません',false);return;}if(!confirm('全データを削除しますか？')) return;Promise.all(records.map(r=>gasDelete(r.id))).then(()=>{records=[];refreshUI();toast('✓ 全件削除しました',true);}).catch(()=>toast('⚠ 削除に失敗しました',false));}
-function clearForm(){['prep_geka','prep_hinyoki','prep_ureter','prep_sample'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});['patientId','doctorName','admitDoctor','surgeon','surgeon2','assist1','assist2','surgerySelect','opCol','opNum','opTime','editingId'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('opDate').value=ymd(new Date());document.getElementById('output').innerHTML='';}
+function clearAll(){if(!ADMINS.has(currentUser)){toast('操作権限がありません',false);return;}if(!confirm('全データを削除しますか？'))return;Promise.all(records.map(r=>gasDelete(r.id))).then(()=>{records=[];refreshUI();toast('✓ 全件削除しました',true);}).catch(()=>toast('⚠ 削除に失敗しました',false));}
+function clearForm(){['patientId','doctorName','admitDoctor','surgeon','surgeon2','assist1','assist2','surgerySelect','opCol','opNum','opTime','editingId'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('opDate').value=ymd(new Date());document.getElementById('output').innerHTML='';}
 
-// ===== 退院日計算 =====
+function onColChange(){
+  const col=document.getElementById('opCol').value;
+  const surgSel=document.getElementById('surgerySelect');
+  const opNumDiv=document.getElementById('opNum').closest('.field');
+  if(col==='C'){
+    if(opNumDiv) opNumDiv.style.display='none';
+    Array.from(surgSel.options).forEach(o=>{if(o.value&&o.value!=='op_laser_ex'&&o.value!=='op_scope_ex'&&o.value!=='op_other_ex')o.disabled=true;else o.disabled=false;});
+    if(surgSel.value!=='op_laser_ex'&&surgSel.value!=='op_scope_ex'&&surgSel.value!=='op_other_ex')surgSel.value='';
+  }else{
+    if(opNumDiv) opNumDiv.style.display='';
+    Array.from(surgSel.options).forEach(o=>{if(o.value==='op_laser_ex'||o.value==='op_scope_ex'||o.value==='op_other_ex')o.disabled=true;else o.disabled=false;});
+    if(surgSel.value==='op_laser_ex'||surgSel.value==='op_scope_ex'||surgSel.value==='op_other_ex')surgSel.value='';
+  }
+}
+
 async function calculate(){
   if(!ADMINS.has(currentUser)){toast('症例登録は竹内先生・穴井先生のみです',false);return;}
   const pid=document.getElementById('patientId').value.trim();
   const doc=document.getElementById('doctorName').value;
   const admitDoc=document.getElementById('admitDoctor').value;
-  const prepItems=['prep_geka','prep_hinyoki','prep_ureter','prep_sample']
-    .filter(id=>document.getElementById(id)&&document.getElementById(id).checked)
-    .map(id=>document.getElementById(id).value);
-  const prep=prepItems.join(',');
   const opStr=document.getElementById('opDate').value;
   const surgery=document.getElementById('surgerySelect').value;
-  const opCol=document.getElementById('opCol').value,opNum=document.getElementById('opNum').value;
+  const opCol=document.getElementById('opCol').value;
+  const opNum=document.getElementById('opNum').value;
   const opTime=document.getElementById('opTime').value;
-  const surgeon=document.getElementById('surgeon').value,surgeon2=document.getElementById('surgeon2').value;
-  const assist1=document.getElementById('assist1').value,assist2=document.getElementById('assist2').value;
+  const surgeon=document.getElementById('surgeon').value;
+  const surgeon2=document.getElementById('surgeon2').value;
+  const assist1=document.getElementById('assist1').value;
+  const assist2=document.getElementById('assist2').value;
   const editingId=document.getElementById('editingId').value;
   const out=document.getElementById('output');
   if(!pid){out.innerHTML='<div class="alert alert-warn">患者IDを入力してください</div>';return;}
   if(!doc){out.innerHTML='<div class="alert alert-warn">主治医を選択してください</div>';return;}
   if(!surgery){out.innerHTML='<div class="alert alert-warn">術式を選択してください</div>';return;}
   const opDate=opStr?parseDate(opStr):null;
-  // C列は木曜日のみ（手術日が入力されている場合）
-  if(opCol==='C'&&opDate&&opDate.getDay()!==4){
-    out.innerHTML='<div class="alert alert-warn">C列（外来手術）は木曜日のみ登録できます</div>';return;
-  }
-  // 外来術式はC列のみ
-  if((surgery==='op_laser_ex'||surgery==='op_scope_ex'||surgery==='op_other_ex')&&opCol!=='C'){
-    out.innerHTML='<div class="alert alert-warn">外来手術はC列を選択してください</div>';return;
-  }
-  if(!editingId){
-    const dup=records.find(r=>r.patientId===pid&&r.opDate===opStr);
-    if(dup){if(!confirm('患者ID「'+pid+'」の'+opStr+'はすでに登録されています。\n上書きしますか？')){out.innerHTML='<div class="alert alert-info">登録をキャンセルしました</div>';return;}document.getElementById('editingId').value=dup.id;}
-  }
+  if(opCol==='C'&&opDate&&opDate.getDay()!==4){out.innerHTML='<div class="alert alert-warn">C列（外来手術）は木曜日のみ登録できます</div>';return;}
+  if((surgery==='op_laser_ex'||surgery==='op_scope_ex'||surgery==='op_other_ex')&&opCol!=='C'){out.innerHTML='<div class="alert alert-warn">外来手術はC列を選択してください</div>';return;}
+  if(!editingId){const dup=records.find(r=>r.patientId===pid&&r.opDate===opStr&&opStr);if(dup){if(!confirm('患者ID「'+pid+'」の'+opStr+'はすでに登録されています。\n上書きしますか？')){out.innerHTML='<div class="alert alert-info">登録をキャンセルしました</div>';return;}document.getElementById('editingId').value=dup.id;}}
   const isEctopic=surgery==='ectopic',isExcluded=EXCLUDED.has(surgery)||opCol==='C';
-  const admitDate=(opDate&&opCol!=='C')?(isEctopic?new Date(opDate):addDays(opDate,-1)):null;
+  const admitDate=(opDate&&!isExcluded)?(isEctopic?new Date(opDate):addDays(opDate,-1)):null;
   const id=document.getElementById('editingId').value||genId();
   let alertsHTML='';
-  const admitDay=admitDate?admitDate.getDay():-1;
-  if(admitDay===6||admitDay===0){
-    const admitYMD=ymd(admitDate);
-    const same=records.filter(r=>r.admitDate===admitYMD&&r.id!==id);
-    alertsHTML+=same.length>=2?'<div class="alert alert-red">⚠ '+fmt(admitDate)+'の入院が上限（2名）に達しています</div>':'<div class="alert alert-warn">'+fmt(admitDate)+'の入院 '+(same.length+1)+' / 2 名目として登録します</div>';
-  }
+  if(admitDate){const admitDay=admitDate.getDay();if(admitDay===6||admitDay===0){const admitYMD=ymd(admitDate);const same=records.filter(r=>r.admitDate===admitYMD&&r.id!==id);alertsHTML+=same.length>=2?'<div class="alert alert-red">⚠ '+fmt(admitDate)+'の入院が上限（2名）に達しています</div>':'<div class="alert alert-warn">'+fmt(admitDate)+'の入院 '+(same.length+1)+' / 2 名目として登録します</div>';}}
   let dischargeDate=null,adjustNote='';
   if(!isExcluded&&admitDate){
     const nights=NIGHTS[surgery],isFixed=FIXED.has(surgery);
     const earliest=addDays(admitDate,nights);dischargeDate=new Date(earliest);let adjusted=false;
     if(!isFixed&&isBad(dischargeDate)){dischargeDate=nextWorkday(dischargeDate);adjusted=true;}
-    if(isFixed) adjustNote='<div class="alert alert-warn" style="margin-top:10px;margin-bottom:0">この術式は'+nights+'泊'+(nights+1)+'日固定です</div>';
-    else if(adjusted){const dw=earliest.getDay();const reason=isHoliday(earliest)?'祝日':dw===5?'金曜':dw===6?'土曜':'日曜';adjustNote='<div class="alert alert-info" style="margin-top:10px;margin-bottom:0">最短退院日（'+fmt(earliest)+'）は'+reason+'のため次の平日に調整しました</div>';}
-    else adjustNote='<div class="alert alert-ok" style="margin-top:10px;margin-bottom:0">最短日数で月〜木退院が可能です</div>';
+    if(isFixed) adjustNote='<div class="alert alert-warn" style="margin-top:10px">この術式は'+nights+'泊'+(nights+1)+'日固定です</div>';
+    else if(adjusted){const dw=earliest.getDay();const reason=isHoliday(earliest)?'祝日':dw===5?'金曜':dw===6?'土曜':'日曜';adjustNote='<div class="alert alert-info" style="margin-top:10px">最短退院日（'+fmt(earliest)+'）は'+reason+'のため次の平日に調整しました</div>';}
+    else adjustNote='<div class="alert alert-ok" style="margin-top:10px">最短日数で月〜木退院が可能です</div>';
   }
-  const prep1=document.getElementById('prep1').value;
-  const prep2=document.getElementById('prep2').value;
-  const prep3=document.getElementById('prep3').value;
-  const record={id,patientId:pid,doctor:doc,admitDoctor:admitDoc||'',surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',surgery,prep:prep||'',opCol:opCol||'',opNum:opCol==='C'?'':opNum||'',opTime:opTime||'',opDate:opDate?ymd(opDate):'',admitDate:admitDate?ymd(admitDate):'',dischargeDate:dischargeDate?ymd(dischargeDate):'',registeredBy:currentUser,confirmedBy:{}};
+  const record={id,patientId:pid,doctor:doc,admitDoctor:admitDoc||'',surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',surgery,opCol:opCol||'',opNum:opCol==='C'?'':opNum||'',opTime:opTime||'',opDate:opDate?ymd(opDate):'',admitDate:admitDate?ymd(admitDate):'',dischargeDate:dischargeDate?ymd(dischargeDate):''};
   setSpin(true);
   try{await gasPut(record);addLog(editingId?'修正':'登録',pid,SHORT[surgery]||surgery);document.getElementById('editingId').value=record.id;await fetchAndRender(false);setSpin(false);toast('✓ 登録しました',true);}
   catch(e){setSpin(false);toast('⚠ 保存に失敗しました',false);}
   const orderStr=opCol&&opNum?opCol+opNum:'';
-  out.innerHTML=alertsHTML+'<div class="result-card"><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px"><div><div class="result-label">患者ID</div><div style="font-size:16px;font-weight:700">'+pid+'</div></div><div><div class="result-label">外来主治医</div><div style="font-size:14px;font-weight:600">'+doc+' 先生</div></div>'+(admitDoc?'<div><div class="result-label">入院主治医</div><div style="font-size:14px;font-weight:600">'+admitDoc+' 先生</div></div>':'')+(surgeon?'<div><div class="result-label">執刀医１</div><div style="font-size:13px;font-weight:600">'+surgeon+'</div></div>':'')+(surgeon2?'<div><div class="result-label">執刀医２</div><div style="font-size:13px;font-weight:600">'+surgeon2+'</div></div>':'')+(orderStr?'<div><div class="result-label">手術順番</div><span class="badge '+(opCol==='A'?'badge-blue':'badge-purple')+'">'+orderStr+'</span></div>':'')+(opTime?'<div><div class="result-label">予定時間</div><div style="font-size:13px;font-weight:600">'+opTime+'h</div></div>':'')+'<div style="flex:0 0 100%"><span class="badge badge-purple" style="font-size:11px">'+(LABELS[surgery]||surgery)+'</span></div></div><div class="result-grid"><div><div class="result-label">入院日</div><div class="result-val">'+(admitDate?fmt(admitDate):'未定')+'</div>'+(isEctopic?'<div style="font-size:10px;color:#888">当日入院（急患）</div>':'')+'</div><div><div class="result-label">手術日</div><div class="result-val">'+fmt(opDate)+'</div></div><div><div class="result-label">退院推奨日</div><div class="result-val" style="color:#1a6640">'+(dischargeDate?fmt(dischargeDate):opDate?'除外対象':'未定')+'</div></div></div>'+(!isExcluded&&dischargeDate?'<div class="detail-row"><span class="detail-key">退院曜日</span><span class="badge '+badgeClass(dischargeDate)+'">'+DAYS[dischargeDate.getDay()]+'曜日</span></div>':'')+(adjustNote||'')+'</div>';
+  out.innerHTML=alertsHTML
+    +'<div class="result-card"><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">'
+    +'<div><div class="result-label">患者ID</div><div style="font-size:16px;font-weight:700">'+pid+'</div></div>'
+    +'<div><div class="result-label">外来主治医</div><div style="font-size:14px;font-weight:600">'+doc+' 先生</div></div>'
+    +(admitDoc?'<div><div class="result-label">入院主治医</div><div style="font-size:14px;font-weight:600">'+admitDoc+' 先生</div></div>':'')
+    +(surgeon?'<div><div class="result-label">執刀医１</div><div style="font-size:13px;font-weight:600">'+surgeon+'</div></div>':'')
+    +(surgeon2?'<div><div class="result-label">執刀医２</div><div style="font-size:13px;font-weight:600">'+surgeon2+'</div></div>':'')
+    +(orderStr?'<div><div class="result-label">手術順番</div><span class="badge '+(opCol==='A'?'badge-blue':opCol==='B'?'badge-purple':'badge-amber')+'">'+orderStr+'</span></div>':'')
+    +(opTime?'<div><div class="result-label">予定時間</div><div style="font-size:13px;font-weight:600">'+opTime+'h</div></div>':'')
+    +'<div style="flex:0 0 100%"><span class="badge badge-purple" style="font-size:11px">'+(LABELS[surgery]||surgery)+'</span></div>'
+    +'</div><div class="result-grid">'
+    +'<div><div class="result-label">入院日</div><div class="result-val">'+(admitDate?fmt(admitDate):'未定')+'</div>'+(isEctopic?'<div style="font-size:10px;color:#888">当日入院（急患）</div>':'')+'</div>'
+    +'<div><div class="result-label">手術日</div><div class="result-val">'+(opDate?fmt(opDate):'未定')+'</div></div>'
+    +'<div><div class="result-label">退院推奨日</div><div class="result-val" style="color:#1a6640">'+(dischargeDate?fmt(dischargeDate):opDate?'除外対象':'未定')+'</div></div>'
+    +'</div>'
+    +(!isExcluded&&dischargeDate?'<div class="detail-row"><span class="detail-key">退院曜日</span><span class="badge '+badgeClass(dischargeDate)+'">'+DAYS[dischargeDate.getDay()]+'曜日</span></div>':'')
+    +(adjustNote||'')
+    +'</div>';
   if(isExcluded) out.innerHTML+='<div class="alert alert-info">カレンダー②③に表示されます（退院日計算は除外対象）</div>';
 }
-
-// ===== カレンダー =====
-function moveMonth(cal,d){if(cal==='cal1'){cal1Month+=d;if(cal1Month>11){cal1Month=0;cal1Year++;}if(cal1Month<0){cal1Month=11;cal1Year--;}}else{cal2Month+=d;if(cal2Month>11){cal2Month=0;cal2Year++;}if(cal2Month<0){cal2Month=11;cal2Year--;}}renderCal(cal);}
-window.addEventListener('resize',()=>{if(document.getElementById('tab-cal1').style.display!=='none')renderCal('cal1');if(document.getElementById('tab-cal2').style.display!=='none')renderCal('cal2');if(document.getElementById('tab-cal3').style.display!=='none')renderWeekCal();});
 
 function renderCal(cal){try{_renderCal(cal);}catch(e){console.error('renderCal:',e);}}
 function _renderCal(cal){
@@ -941,16 +795,15 @@ function _renderCal(cal){
   ['日','月','火','水','木','金','土'].forEach((h,i)=>{const el=document.createElement('div');el.className='cal-day-hdr'+([' sun','','','','','','sat'][i]||'');el.textContent=h;grid.appendChild(el);});
   const firstDay=new Date(year,month,1).getDay(),daysInMonth=new Date(year,month+1,0).getDate(),daysInPrev=new Date(year,month,0).getDate();
   const todayD=today0();
-  // 不在データをキー（日付）でマップ
-  const absMap={};
-  absences.forEach(a=>{if(!absMap[a.date])absMap[a.date]=[];absMap[a.date].push(a);});
-  // 新患データをキー（日付）でマップ
-  const shinkanMap={};
-  shinkans.forEach(s=>{if(!shinkanMap[s.date])shinkanMap[s.date]=[];shinkanMap[s.date].push(s);});
-  // 手術イベント
+  const absMap={};absences.forEach(a=>{if(!absMap[a.date])absMap[a.date]=[];absMap[a.date].push(a);});
+  const shinkanMap={};shinkans.forEach(s=>{if(!shinkanMap[s.date])shinkanMap[s.date]=[];shinkanMap[s.date].push(s);});
   const evs={};
-  const addEv=(key,type,r)=>{if(!key) return;if(!evs[key])evs[key]=[];evs[key].push({type,patientId:r.patientId,doctor:r.doctor||'',admitDoctor:r.admitDoctor||'',surgeon:r.surgeon||'',surgeon2:r.surgeon2||'',assist1:r.assist1||'',assist2:r.assist2||'',surgery:r.surgery,opCol:r.opCol||'',opNum:r.opNum||'',opTime:r.opTime||'',prep:r.prep||''});};
-  records.forEach(r=>{if(!r.opDate) return;if(isCal1){if(!EXCLUDED.has(r.surgery)&&r.opCol!=='C'){if(r.admitDate)addEv(r.admitDate,'admit',r);addEv(r.opDate,'op',r);if(r.dischargeDate)addEv(r.dischargeDate,'discharge',r);}}else{addEv(r.opDate,'op',r);}});
+  const addEv=(key,type,r)=>{if(!key)return;if(!evs[key])evs[key]=[];evs[key].push({type,patientId:r.patientId,doctor:r.doctor||'',admitDoctor:r.admitDoctor||'',surgeon:r.surgeon||'',surgeon2:r.surgeon2||'',assist1:r.assist1||'',assist2:r.assist2||'',surgery:r.surgery,opCol:r.opCol||'',opNum:r.opNum||'',opTime:r.opTime||''});};
+  records.forEach(r=>{
+    if(!r.opDate) return;
+    if(isCal1){if(!EXCLUDED.has(r.surgery)&&r.opCol!=='C'){if(r.admitDate)addEv(r.admitDate,'admit',r);addEv(r.opDate,'op',r);if(r.dischargeDate)addEv(r.dischargeDate,'discharge',r);}}
+    else{addEv(r.opDate,'op',r);}
+  });
   const w=window.innerWidth;
   const maxShow=isCal1?(w>=900?99:w>=600?4:2):(w>=900?99:w>=600?5:3);
   const fs=w>=1200?'11px':w>=900?'10px':'9px';
@@ -962,39 +815,19 @@ function _renderCal(cal){
     else{day=i-firstDay+1;date=new Date(year,month,day);}
     const key=ymd(date),dow=date.getDay();
     let cls='cal-cell';
-    if(!isCur) cls+=' other-month';
-    if(date.getTime()===todayD.getTime()) cls+=' today';
-    if(dow===0) cls+=' sun';else if(dow===6) cls+=' sat';else if(isCur&&isHoliday(date)) cls+=' holiday';
+    if(!isCur)cls+=' other-month';
+    if(date.getTime()===todayD.getTime())cls+=' today';
+    if(dow===0)cls+=' sun';else if(dow===6)cls+=' sat';else if(isCur&&isHoliday(date))cls+=' holiday';
     const cell=document.createElement('div');cell.className=cls;
-    // 日付ヘッダー（不在バッジを右に並べる）
-    const dateRow=document.createElement('div');
-    dateRow.style.cssText='display:flex;align-items:center;gap:2px;margin-bottom:2px;flex-wrap:wrap';
+    const dateRow=document.createElement('div');dateRow.style.cssText='display:flex;align-items:center;gap:2px;margin-bottom:2px;flex-wrap:wrap';
     const dateDiv=document.createElement('span');dateDiv.className='cal-date';dateDiv.style.marginBottom='0';dateDiv.textContent=day;dateRow.appendChild(dateDiv);
-    // 新患バッジを日付の横に表示（カレンダー②のみ）
     if(!isCal1&&isCur&&shinkanMap[key]){
-      shinkanMap[key].forEach(s=>{
-        const docs=(s.doctors||'').split(',').filter(Boolean);
-        if(docs.length){
-          const badge=document.createElement('span');
-          badge.className='ev-shinkan';
-          badge.title='新患担当: '+docs.join('、');
-          badge.textContent='新患:'+docs.map(d=>d.slice(0,2)).join('・');
-          dateRow.appendChild(badge);
-        }
-      });
+      shinkanMap[key].forEach(s=>{const docs=(s.doctors||'').split(',').filter(Boolean);if(docs.length){const badge=document.createElement('span');badge.className='ev-shinkan';badge.title='新患担当: '+docs.join('、');badge.textContent='新患:'+docs.map(d=>d.slice(0,2)).join('・');dateRow.appendChild(badge);}});
     }
-    // 不在バッジを日付の横に表示
     if(isCur&&absMap[key]){
-      absMap[key].forEach(a=>{
-        const badge=document.createElement('span');
-        badge.className='ev-abs '+(a.type==='終日'?'ev-abs-all':a.type==='午前'?'ev-abs-am':'ev-abs-pm');
-        badge.title=a.person+' '+a.type+(a.reason?' ('+a.reason+')':'');
-        badge.textContent=a.person.slice(0,2)+(a.type==='終日'?'終':a.type==='午前'?'前':'後');
-        dateRow.appendChild(badge);
-      });
+      absMap[key].forEach(a=>{const badge=document.createElement('span');badge.className='ev-abs '+(a.type==='終日'?'ev-abs-all':a.type==='午前'?'ev-abs-am':'ev-abs-pm');badge.title=a.person+' '+a.type+(a.reason?' ('+a.reason+')':'');badge.textContent=a.person.slice(0,2)+(a.type==='終日'?'終':a.type==='午前'?'前':'後');dateRow.appendChild(badge);});
     }
     cell.appendChild(dateRow);
-    // 手術イベント
     const dayEvs=evs[key]||[];
     const sorted=[...dayEvs].sort((a,b)=>{const o={op:0,admit:1,discharge:2};if(o[a.type]!==o[b.type])return o[a.type]-o[b.type];return((a.opCol||'Z')+(a.opNum||'9'))<((b.opCol||'Z')+(b.opNum||'9'))?-1:1;});
     sorted.slice(0,maxShow).forEach(ev=>{
@@ -1012,18 +845,22 @@ function _renderCal(cal){
           const docStr=parts.join('/');
           if(docStr){const l2=document.createElement('div');l2.style.cssText='font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=docStr;div.appendChild(l2);}
         }else{
-          const staff=[];if(ev.doctor)staff.push('外:'+ev.doctor);if(ev.admitDoctor)staff.push('入:'+ev.admitDoctor);if(ev.surgeon)staff.push('執1:'+ev.surgeon);if(ev.surgeon2)staff.push('執2:'+ev.surgeon2);if(ev.assist1)staff.push('助1:'+ev.assist1);if(ev.assist2)staff.push('助2:'+ev.assist2);if(ev.opTime)staff.push(ev.opTime+'h');if(ev.prep){(ev.prep).split(',').filter(Boolean).forEach(p=>{const b=document.createElement('span');b.style.cssText='background:#fef3c7;color:#92400e;border-radius:3px;padding:0 3px;font-size:8px;font-weight:700;margin-right:2px';b.textContent=p;l1.appendChild(b);});}
+          const staff=[];if(ev.doctor)staff.push('外:'+ev.doctor);if(ev.admitDoctor)staff.push('入:'+ev.admitDoctor);if(ev.surgeon)staff.push('執1:'+ev.surgeon);if(ev.surgeon2)staff.push('執2:'+ev.surgeon2);if(ev.assist1)staff.push('助1:'+ev.assist1);if(ev.assist2)staff.push('助2:'+ev.assist2);if(ev.opTime)staff.push(ev.opTime+'h');
           if(staff.length){const l2=document.createElement('div');l2.style.cssText='font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=staff.join(' ');div.appendChild(l2);}
         }
-      }else{const l1=document.createElement('div');l1.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:'+fs+';font-weight:700';l1.textContent=(ev.type==='admit'?'入院':'退院')+' '+ev.patientId+' '+(SHORT[ev.surgery]||'')+(ev.doctor?' '+ev.doctor:'');div.appendChild(l1);}
+      }else{
+        const l1=document.createElement('div');l1.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:'+fs+';font-weight:700';
+        l1.textContent=(ev.type==='admit'?'入院':'退院')+' '+ev.patientId+' '+(SHORT[ev.surgery]||'')+(ev.doctor?' 外'+ev.doctor:'');div.appendChild(l1);
+      }
       cell.appendChild(div);
     });
     if(sorted.length>maxShow){const m=document.createElement('div');m.style.cssText='font-size:10px;color:#999;text-align:right;padding:1px 4px';m.textContent='+'+(sorted.length-maxShow)+'件';cell.appendChild(m);}
     grid.appendChild(cell);
   }
 }
+function moveMonth(cal,d){if(cal==='cal1'){cal1Month+=d;if(cal1Month>11){cal1Month=0;cal1Year++;}if(cal1Month<0){cal1Month=11;cal1Year--;}}else{cal2Month+=d;if(cal2Month>11){cal2Month=0;cal2Year++;}if(cal2Month<0){cal2Month=11;cal2Year--;}}renderCal(cal);}
+window.addEventListener('resize',()=>{if(document.getElementById('tab-cal1').style.display!=='none')renderCal('cal1');if(document.getElementById('tab-cal2').style.display!=='none')renderCal('cal2');if(document.getElementById('tab-cal3').style.display!=='none')renderWeekCal();});
 
-// ===== 週間カレンダー =====
 function getMonday(d){const day=d.getDay(),diff=day===0?-6:1-day,mon=new Date(d);mon.setDate(d.getDate()+diff);mon.setHours(0,0,0,0);return mon;}
 function addDaysW(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
 function moveWeek(d){cal3BaseMonday=addDaysW(cal3BaseMonday,d*7);renderWeekCal();}
@@ -1033,9 +870,9 @@ function renderWeekCal(){
   const monday=cal3BaseMonday,sunday=addDaysW(monday,6),todayD=today0();
   function fmtS(d){return (d.getMonth()+1)+'/'+d.getDate();}
   document.getElementById('cal3Title').textContent=monday.getFullYear()+'年 '+fmtS(monday)+' 〜 '+fmtS(sunday);
-  const evs={};
-  records.forEach(r=>{if(!r.opDate) return;const d=parseDate(r.opDate);if(!d) return;const key=ymd(d);if(!evs[key])evs[key]=[];evs[key].push(r);});
+  const evs={};records.forEach(r=>{if(!r.opDate)return;const d=parseDate(r.opDate);if(!d)return;const key=ymd(d);if(!evs[key])evs[key]=[];evs[key].push(r);});
   const absMap={};absences.forEach(a=>{if(!absMap[a.date])absMap[a.date]=[];absMap[a.date].push(a);});
+  const shinkanMap={};shinkans.forEach(s=>{if(!shinkanMap[s.date])shinkanMap[s.date]=[];shinkanMap[s.date].push(s);});
   const grid=document.getElementById('cal3Grid');grid.innerHTML='';
   const dayNames=['日','月','火','水','木','金','土'];
   for(let i=0;i<7;i++){
@@ -1043,56 +880,45 @@ function renderWeekCal(){
     const isToday=date.getTime()===todayD.getTime();
     const dayEvs=(evs[key]||[]).sort((a,b)=>((a.opCol||'Z')+(a.opNum||'9'))<((b.opCol||'Z')+(b.opNum||'9'))?-1:1);
     const dayAbs=absMap[key]||[];
+    const daySk=shinkanMap[key]||[];
     const card=document.createElement('div');card.className='week-day-card';
     const hdr=document.createElement('div');
-    let hdrCls='week-day-header ';
-    if(isToday) hdrCls+='today-hdr';else if(dow===0) hdrCls+='sun';else if(dow===6) hdrCls+='sat';else if(isHoliday(date)) hdrCls+='hol';else hdrCls+='normal';
+    let hdrCls='week-day-header ';if(isToday)hdrCls+='today-hdr';else if(dow===0)hdrCls+='sun';else if(dow===6)hdrCls+='sat';else if(isHoliday(date))hdrCls+='hol';else hdrCls+='normal';
     hdr.className=hdrCls;
-    // ヘッダー：日付 + 不在バッジ + 件数
     const hdrLeft=document.createElement('div');hdrLeft.style.cssText='display:flex;align-items:center;gap:4px;flex-wrap:wrap';
     const hdrDate=document.createElement('span');hdrDate.textContent=(date.getMonth()+1)+'月'+date.getDate()+'日（'+dayNames[dow]+'）'+(isHoliday(date)?' 🎌':'');hdrLeft.appendChild(hdrDate);
-    // 新患バッジ
-    const daySk=(()=>{const m={};shinkans.forEach(s=>{if(!m[s.date])m[s.date]=[];m[s.date].push(s);});return m[key]||[];})();
-    daySk.forEach(s=>{
-      const docs=(s.doctors||'').split(',').filter(Boolean);
-      if(docs.length){const badge=document.createElement('span');badge.className='shinkan-badge';badge.title='新患担当';badge.textContent='新患:'+docs.join('・');hdrLeft.appendChild(badge);}
-    });
+    daySk.forEach(s=>{const docs=(s.doctors||'').split(',').filter(Boolean);if(docs.length){const badge=document.createElement('span');badge.className='shinkan-badge';badge.title='新患担当';badge.textContent='新患:'+docs.join('・');hdrLeft.appendChild(badge);}});
     dayAbs.forEach(a=>{const badge=document.createElement('span');badge.className='abs-badge '+(a.type==='終日'?'abs-all':a.type==='午前'?'abs-am':'abs-pm');badge.title=a.person+' '+a.type+(a.reason?' ('+a.reason+')':'');badge.textContent=a.person+(a.type==='終日'?' 終日':a.type==='午前'?' 午前':' 午後');hdrLeft.appendChild(badge);});
     hdr.appendChild(hdrLeft);
     if(dayEvs.length){const cnt=document.createElement('span');cnt.className='week-count';cnt.textContent=dayEvs.length+'件';hdr.appendChild(cnt);}
     card.appendChild(hdr);
     const body=document.createElement('div');body.className='week-day-body';
-    if(!dayEvs.length&&!dayAbs.length){const empty=document.createElement('div');empty.className='week-empty';empty.textContent='手術なし';body.appendChild(empty);}
-    else if(!dayEvs.length){const empty=document.createElement('div');empty.className='week-empty';empty.textContent='手術なし';body.appendChild(empty);}
+    if(!dayEvs.length){const empty=document.createElement('div');empty.className='week-empty';empty.textContent='手術なし';body.appendChild(empty);}
     dayEvs.forEach(r=>{
-      const isA=r.opCol==='A',isB=r.opCol==='B';
-      const ev=document.createElement('div');const isC=r.opCol==='C';ev.className='week-ev '+(isA?'ev-A':isB?'ev-B':isC?'ev-C':'ev-A');ev.onclick=((rec)=>()=>showDetail(rec))(r);
+      const isA=r.opCol==='A',isB=r.opCol==='B',isC=r.opCol==='C';
+      const ev=document.createElement('div');ev.className='week-ev '+(isA?'ev-A':isB?'ev-B':isC?'ev-C':'ev-A');ev.onclick=((rec)=>()=>showDetail(rec))(r);
       const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'';
       const row1=document.createElement('div');row1.className='week-ev-row1';
-      if(ord){const p=document.createElement('span');p.className='order-pill '+(isA?'pill-A':'pill-B');p.style.fontSize='11px';p.textContent=ord;row1.appendChild(p);}
+      if(ord){const p=document.createElement('span');p.className='order-pill '+(isA?'pill-A':isB?'pill-B':'pill-C');p.style.fontSize='11px';p.textContent=ord;row1.appendChild(p);}
       const idSpan=document.createElement('span');idSpan.textContent=r.patientId;row1.appendChild(idSpan);
       if(r.opTime){const ts=document.createElement('span');ts.style.cssText='font-size:11px;font-weight:400;color:#555;margin-left:auto';ts.textContent=r.opTime+'h';row1.appendChild(ts);}
       ev.appendChild(row1);
       const row2=document.createElement('div');row2.className='week-ev-row2';
       const parts=[SHORT[r.surgery]||r.surgery||''];
       if(r.doctor)parts.push('外:'+r.doctor);if(r.admitDoctor)parts.push('入:'+r.admitDoctor);if(r.surgeon)parts.push('執1:'+r.surgeon);if(r.surgeon2)parts.push('執2:'+r.surgeon2);if(r.assist1)parts.push('助1:'+r.assist1);if(r.assist2)parts.push('助2:'+r.assist2);
-      const preps=[r.prep1,r.prep2,r.prep3].filter(Boolean);
-      if(preps.length){const row3=document.createElement('div');row3.className='week-ev-row2';row3.style.color='#b45309';row3.textContent='準備: '+preps.join(' / ');ev.appendChild(row3);}
-      if(r.prep)parts.push('['+r.prep+']');
       row2.textContent=parts.filter(Boolean).join('　');ev.appendChild(row2);body.appendChild(ev);
     });
     card.appendChild(body);grid.appendChild(card);
   }
 }
 
-// ===== 詳細モーダル =====
 function showDetail(r){
   if(!r) return;
   const ad=parseDate(r.admitDate),od=parseDate(r.opDate),dd=parseDate(r.dischargeDate);
   const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'—';
-  const ordColor=r.opCol==='A'?'#3b7dd8':'#7c3aed';
+  const ordColor=r.opCol==='A'?'#3b7dd8':r.opCol==='B'?'#7c3aed':'#eab308';
   let html='<div class="modal-title">'+r.patientId+'　<span style="font-size:12px;font-weight:400;color:#888">'+(SHORT[r.surgery]||r.surgery||'')+'</span></div>';
-  [['入院日',fmt(ad)],['手術日',fmt(od)],['退院予定日',dd?fmt(dd):'除外対象'],['外来主治医',r.doctor||'—'],['入院主治医',r.admitDoctor||'—'],['執刀医１',r.surgeon||'—'],['執刀医２',r.surgeon2||'—'],['助手１',r.assist1||'—'],['助手２',r.assist2||'—'],['準備',[r.prep1,r.prep2,r.prep3].filter(Boolean).join(' / ')||'—']].forEach(([label,val])=>{if(val&&val!=='—')html+='<div class="modal-row"><div class="modal-label">'+label+'</div><div class="modal-value">'+val+'</div></div>';});
+  [['入院日',fmt(ad)],['手術日',fmt(od)],['退院予定日',dd?fmt(dd):'除外対象'],['外来主治医',r.doctor||'—'],['入院主治医',r.admitDoctor||'—'],['執刀医１',r.surgeon||'—'],['執刀医２',r.surgeon2||'—'],['助手１',r.assist1||'—'],['助手２',r.assist2||'—']].forEach(([label,val])=>{if(val&&val!=='—')html+='<div class="modal-row"><div class="modal-label">'+label+'</div><div class="modal-value">'+val+'</div></div>';});
   html+='<hr class="modal-divider">';
   const info=[];if(ord!=='—')info.push('<span style="background:'+ordColor+';color:#fff;padding:2px 10px;border-radius:12px;font-size:13px;font-weight:700">'+ord+'</span>');if(r.opTime)info.push('<span style="font-size:13px;font-weight:600;color:#555">予定 '+r.opTime+'h</span>');
   if(info.length)html+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+info.join('')+'</div>';
@@ -1103,32 +929,9 @@ function hideModal(){document.getElementById('detailModal').style.display='none'
 function closeModal(e){if(e.target===document.getElementById('detailModal'))hideModal();}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')hideModal();});
 
-// ===== 不在入力 =====
-function updateAbsReason(){
-  const type=document.getElementById('absType').value;
-  const sel=document.getElementById('absReason');
-  sel.innerHTML='<option value="">-- 選択 --</option>';
-  if(type&&ABS_REASONS[type]) ABS_REASONS[type].forEach(r=>{const o=document.createElement('option');o.textContent=r;sel.appendChild(o);});
-}
-function clearAbsForm(){
-  document.getElementById('absDate').value=ymd(new Date());
-    document.getElementById('shinkanDate').value=ymd(new Date());
-  document.getElementById('absPerson').value='';
-  document.getElementById('absType').value='';
-  document.getElementById('absReason').innerHTML='<option value="">-- 選択 --</option>';
-  document.getElementById('editingAbsId').value='';
-}
-function editAbsence(id){
-  const a=absences.find(x=>x.id===id);if(!a) return;
-  document.getElementById('absDate').value=a.date||'';
-  document.getElementById('absPerson').value=a.person||'';
-  document.getElementById('absType').value=a.type||'';
-  updateAbsReason();
-  document.getElementById('absReason').value=a.reason||'';
-  document.getElementById('editingAbsId').value=a.id;
-  window.scrollTo(0,0);
-  toast('修正モード：変更後「登録」を押してください',true);
-}
+function updateAbsReason(){const type=document.getElementById('absType').value;const sel=document.getElementById('absReason');sel.innerHTML='<option value="">-- 選択 --</option>';if(type&&ABS_REASONS[type])ABS_REASONS[type].forEach(r=>{const o=document.createElement('option');o.textContent=r;sel.appendChild(o);});}
+function clearAbsForm(){document.getElementById('absDate').value=ymd(new Date());document.getElementById('absPerson').value='';document.getElementById('absType').value='';document.getElementById('absReason').innerHTML='<option value="">-- 選択 --</option>';document.getElementById('editingAbsId').value='';}
+function editAbsence(id){const a=absences.find(x=>x.id===id);if(!a)return;document.getElementById('absDate').value=a.date||'';document.getElementById('absPerson').value=a.person||'';document.getElementById('absType').value=a.type||'';updateAbsReason();document.getElementById('absReason').value=a.reason||'';document.getElementById('editingAbsId').value=a.id;window.scrollTo(0,0);toast('修正モード：変更後「登録」を押してください',true);}
 async function saveAbsence(){
   const date=document.getElementById('absDate').value,person=document.getElementById('absPerson').value;
   const type=document.getElementById('absType').value,reason=document.getElementById('absReason').value;
@@ -1136,26 +939,21 @@ async function saveAbsence(){
   const editingAbsId=document.getElementById('editingAbsId').value;
   const abs={id:editingAbsId||'abs_'+genId(),date,person,type,reason:reason||''};
   try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsertAbsence',record:abs})});await fetchAbsences();clearAbsForm();toast('✓ 不在を登録しました',true);}
-  catch(e){absences.push(abs);safeLS('gyn_absences',JSON.stringify(absences));renderAbsences();clearAbsForm();toast('✓ 不在を登録しました（ローカル保存）',true);if(document.getElementById('tab-cal1').style.display!=='none')renderCal('cal1');if(document.getElementById('tab-cal2').style.display!=='none')renderCal('cal2');if(document.getElementById('tab-cal3').style.display!=='none')renderWeekCal();}
+  catch(e){absences=absences.filter(s=>s.id!==abs.id);absences.push(abs);safeLS('gyn_absences',JSON.stringify(absences));renderAbsences();clearAbsForm();toast('✓ 不在を登録しました（ローカル保存）',true);}
 }
 async function fetchAbsences(){
-  document.getElementById('absSpin').style.display='inline-block';
-  try{const r=await fetch(GAS_URL+'?action=getAbsences&t='+Date.now());const d=await r.json();if(d.absences&&Array.isArray(d.absences))absences=d.absences.map(a=>{const nd=parseDate(a.date);return {...a,date:nd?ymd(nd):a.date};});}
+  if(document.getElementById('absSpin'))document.getElementById('absSpin').style.display='inline-block';
+  try{const r=await fetch(GAS_URL+'?action=getAbsences&t='+Date.now());const d=await r.json();if(d.absences&&Array.isArray(d.absences))absences=d.absences.map(a=>{const nd=parseDate(a.date);return{...a,date:nd?ymd(nd):a.date};});}
   catch(e){try{const s=safeLS('gyn_absences');if(s)absences=JSON.parse(s);}catch(ex){}}
-  document.getElementById('absSpin').style.display='none';
+  if(document.getElementById('absSpin'))document.getElementById('absSpin').style.display='none';
   renderAbsences();
-  // カレンダーも再描画（不在バッジを反映）
-  if(document.getElementById('tab-cal1').style.display!=='none') renderCal('cal1');
-  if(document.getElementById('tab-cal2').style.display!=='none') renderCal('cal2');
-  if(document.getElementById('tab-cal3').style.display!=='none') renderWeekCal();
+  if(document.getElementById('tab-cal1').style.display!=='none')renderCal('cal1');
+  if(document.getElementById('tab-cal2').style.display!=='none')renderCal('cal2');
+  if(document.getElementById('tab-cal3').style.display!=='none')renderWeekCal();
 }
-async function delAbsence(id){
-  absences=absences.filter(a=>a.id!==id);
-  try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteAbsence',id})});}catch(e){}
-  safeLS('gyn_absences',JSON.stringify(absences));renderAbsences();
-}
+async function delAbsence(id){absences=absences.filter(a=>a.id!==id);try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteAbsence',id})});}catch(e){}safeLS('gyn_absences',JSON.stringify(absences));renderAbsences();}
 function renderAbsences(){
-  const el=document.getElementById('absenceList');
+  const el=document.getElementById('absenceList');if(!el)return;
   if(!absences.length){el.innerHTML='<p style="font-size:13px;color:#aaa">登録されていません</p>';return;}
   const grp={};[...absences].sort((a,b)=>a.date<b.date?-1:1).forEach(a=>{if(!grp[a.date])grp[a.date]=[];grp[a.date].push(a);});
   let html='';
@@ -1169,41 +967,108 @@ function renderAbsences(){
 }
 function loadAbsences(){try{const s=safeLS('gyn_absences');if(s)absences=JSON.parse(s);}catch(e){}}
 
-// ===== 統計 =====
-function unlockStats(){
-  const pw=prompt('パスワードを入力してください');
-  if(pw===STATS_PW&&currentUser===LOG_ADMIN){statsUnlocked=true;document.getElementById('statsLock').style.display='none';document.getElementById('statsContent').style.display='block';buildStatsTargets();renderStats();}
-  else alert('竹内先生のアカウントでログインし、正しいパスワードを入力してください');
+function clearShinkanForm(){document.getElementById('shinkanDate').value=ymd(new Date());['shinkanDoc1','shinkanDoc2','shinkanDoc3'].forEach(id=>document.getElementById(id).value='');document.getElementById('editingShinkanId').value='';}
+function editShinkan(id){const s=shinkans.find(x=>x.id===id);if(!s)return;document.getElementById('shinkanDate').value=s.date||'';const docs=(s.doctors||'').split(',').filter(Boolean);document.getElementById('shinkanDoc1').value=docs[0]||'';document.getElementById('shinkanDoc2').value=docs[1]||'';document.getElementById('shinkanDoc3').value=docs[2]||'';document.getElementById('editingShinkanId').value=s.id;window.scrollTo(0,0);toast('修正モード：変更後「登録」を押してください',true);}
+async function saveShinkan(){
+  if(!ADMINS.has(currentUser)){toast('新患担当の登録は竹内先生・穴井先生のみです',false);return;}
+  const date=document.getElementById('shinkanDate').value;if(!date){toast('日付を入力してください',false);return;}
+  const d=parseDate(date);if(!d){toast('日付が正しくありません',false);return;}
+  const dow=d.getDay();if(dow!==1&&dow!==3&&dow!==5){toast('新患は月・水・金曜日のみです',false);return;}
+  const docs=[document.getElementById('shinkanDoc1').value,document.getElementById('shinkanDoc2').value,document.getElementById('shinkanDoc3').value].filter(Boolean);
+  if(!docs.length){toast('担当医師を1名以上選択してください',false);return;}
+  const editingShinkanId=document.getElementById('editingShinkanId').value;
+  const rec={id:editingShinkanId||'sk_'+genId(),date,doctors:docs.join(',')};
+  try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsertShinkan',record:rec})});await fetchShinkan();clearShinkanForm();toast('✓ 新患担当を登録しました',true);}
+  catch(e){shinkans=shinkans.filter(s=>s.date!==date);shinkans.push(rec);safeLS('gyn_shinkans',JSON.stringify(shinkans));renderShinkans();clearShinkanForm();toast('✓ 新患担当を登録しました（ローカル保存）',true);}
 }
-function initStats(){
-  if(currentUser===LOG_ADMIN){statsUnlocked=true;document.getElementById('statsLock').style.display='none';document.getElementById('statsContent').style.display='block';}
-  else{document.getElementById('statsLock').style.display='block';document.getElementById('statsContent').style.display='none';return;}
-  if(!records.length){fetchAndRender(false).then(()=>{buildStatsTargets();renderStats();});}
-  else{buildStatsTargets();renderStats();}
+async function fetchShinkan(){
+  if(document.getElementById('shinkanSpin'))document.getElementById('shinkanSpin').style.display='inline-block';
+  try{const r=await fetch(GAS_URL+'?action=getShinkans&t='+Date.now());const d=await r.json();if(d.shinkans&&Array.isArray(d.shinkans))shinkans=d.shinkans.map(s=>{const nd=parseDate(s.date);return{...s,date:nd?ymd(nd):s.date};});}
+  catch(e){try{const s=safeLS('gyn_shinkans');if(s)shinkans=JSON.parse(s);}catch(ex){}}
+  if(document.getElementById('shinkanSpin'))document.getElementById('shinkanSpin').style.display='none';
+  renderShinkans();
+  if(document.getElementById('tab-cal2').style.display!=='none')renderCal('cal2');
+  if(document.getElementById('tab-cal3').style.display!=='none')renderWeekCal();
 }
+async function delShinkan(id){shinkans=shinkans.filter(s=>s.id!==id);try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteShinkan',id})});}catch(e){}safeLS('gyn_shinkans',JSON.stringify(shinkans));renderShinkans();}
+function renderShinkans(){
+  const el=document.getElementById('shinkanList');if(!el)return;
+  if(!shinkans.length){el.innerHTML='<p style="font-size:13px;color:#aaa">登録されていません</p>';return;}
+  const sorted=[...shinkans].sort((a,b)=>a.date<b.date?-1:1);
+  const grp={};sorted.forEach(s=>{if(!grp[s.date])grp[s.date]=[];grp[s.date].push(s);});
+  let html='';
+  Object.keys(grp).sort().forEach(date=>{
+    const d=parseDate(date),dow=d?d.getDay():-1;
+    const bg=dow===1?'#f0f4ff':dow===3?'#f0fff4':'#fff8f0';
+    html+='<div style="margin-bottom:10px"><div style="background:'+bg+';border-radius:8px 8px 0 0;padding:8px 12px;font-weight:700;font-size:13px">'+fmt(d)+'</div><div style="background:#fff;border-radius:0 0 8px 8px;padding:8px 12px;border:1px solid #f0f0f0;border-top:none">';
+    grp[date].forEach(s=>{const docs=(s.doctors||'').split(',').filter(Boolean);html+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">';docs.forEach(doc=>{html+='<span class="shinkan-badge">'+doc+'</span>';});html+='<button class="btn btn-sm btn-edit" style="padding:2px 8px;font-size:11px;margin-left:auto" data-id="'+s.id+'" onclick="editShinkan(this.dataset.id)">修正</button><button class="btn btn-sm btn-danger" style="padding:2px 8px;font-size:11px" data-id="'+s.id+'" onclick="delShinkan(this.dataset.id)">削除</button></div>';});
+    html+='</div></div>';
+  });
+  el.innerHTML=html;
+}
+function loadShinkans(){try{const s=safeLS('gyn_shinkans');if(s)shinkans=JSON.parse(s);}catch(e){}}
+
+function getConfirmed(){try{const s=safeLS('gyn_confirmed_'+currentUser);return s?JSON.parse(s):{};} catch(e){return {};}}
+function setConfirmed(id){const c=getConfirmed();c[id]=true;safeLS('gyn_confirmed_'+currentUser,JSON.stringify(c));}
+function renderNewsfeed(){
+  const el=document.getElementById('newsfeedContent');
+  if(!records.length){el.innerHTML='<div class="card" style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:12px">📋</div><div style="color:#888;font-size:14px">データを読み込み中...</div></div>';return;}
+  const confirmed=getConfirmed(),isAdmin=ADMINS.has(currentUser);
+  const myRecords=records.filter(r=>r.doctor===currentUser&&!confirmed[r.id]);
+  let html='';
+  if(myRecords.length>0){
+    html+='<div style="margin-bottom:16px"><div style="font-size:15px;font-weight:700;color:#c0392b;margin-bottom:10px">🔔 手術日が決まりました！（'+myRecords.length+'件）</div>';
+    myRecords.sort((a,b)=>a.opDate<b.opDate?-1:1).forEach(r=>{
+      const od=parseDate(r.opDate),ad=parseDate(r.admitDate),dd=parseDate(r.dischargeDate);
+      html+='<div class="card" style="border:2px solid #e74c3c;margin-bottom:12px"><div style="background:#fdecea;border-radius:8px 8px 0 0;padding:10px 14px;margin:-14px -14px 12px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:700;color:#c0392b">🏥 手術日が決まりました!</div><span class="badge badge-purple" style="font-size:11px">'+(SHORT[r.surgery]||r.surgery||'—')+'</span></div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+        +'<div><div class="result-label">患者ID</div><div style="font-size:16px;font-weight:700">'+r.patientId+'</div></div>'
+        +'<div><div class="result-label">外来主治医</div><div style="font-size:14px;font-weight:600">'+(r.doctor||'—')+'</div></div>'
+        +(r.admitDoctor?'<div><div class="result-label">入院主治医</div><div style="font-size:14px;font-weight:600">'+r.admitDoctor+'</div></div>':'')
+        +'<div><div class="result-label">入院日</div><div style="font-size:13px;font-weight:600">'+(ad?fmt(ad):'未定')+'</div></div>'
+        +'<div><div class="result-label">手術日</div><div style="font-size:14px;font-weight:700;color:#3b7dd8">'+(od?fmt(od):'未定')+'</div></div>'
+        +'<div><div class="result-label">退院推奨日</div><div style="font-size:13px;font-weight:600;color:#1a6640">'+(dd?fmt(dd):'未定')+'</div></div>'
+        +(r.opCol&&r.opNum?'<div><div class="result-label">手術順番</div><span class="badge '+(r.opCol==='A'?'badge-blue':r.opCol==='B'?'badge-purple':'badge-amber')+'">'+r.opCol+r.opNum+'</span></div>':'')
+        +(r.opTime?'<div><div class="result-label">予定手術時間</div><div style="font-size:13px;font-weight:600">'+r.opTime+'h</div></div>':'')
+        +'</div><button class="btn btn-primary" style="width:100%;padding:12px" data-id="'+r.id+'" onclick="confirmRecord(this.dataset.id)">✓ 確認しました</button></div>';
+    });
+    html+='</div>';
+  }
+  if(isAdmin){
+    const recent=[...records].sort((a,b)=>a.opDate<b.opDate?-1:1).slice(0,10);
+    html+='<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px">📋 直近の登録症例（手術日順）</div>';
+    if(!recent.length){html+='<p style="color:#aaa;font-size:13px">登録されていません</p>';}
+    else{recent.forEach(r=>{const od=parseDate(r.opDate);html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0"><div><div style="font-size:13px;font-weight:600">'+r.patientId+'</div><div style="font-size:11px;color:#888">'+(SHORT[r.surgery]||'—')+' / '+(r.doctor||'—')+'</div></div><div style="font-size:12px;font-weight:600;color:#3b7dd8">'+(od?fmt(od):'未定')+'</div></div>';});}
+    html+='</div>';
+    if(myRecords.length===0){const myAll=records.filter(r=>r.doctor===currentUser);if(myAll.length>0)html+='<div class="card" style="text-align:center;padding:12px;background:#e6f7ee;border:none;margin-bottom:12px"><div style="color:#1a6640;font-size:13px;font-weight:600">✅ 自分の症例はすべて確認済みです</div></div>';}
+  }else{
+    const myAll=records.filter(r=>r.doctor===currentUser);
+    const myConfirmed=myAll.filter(r=>confirmed[r.id]);
+    if(myAll.length===0){html+='<div class="card" style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:12px">📭</div><div style="color:#888;font-size:14px">あなたの症例はまだ登録されていません</div></div>';}
+    else if(myRecords.length===0){
+      html+='<div class="card" style="text-align:center;padding:20px;background:#e6f7ee;border:none"><div style="font-size:24px;margin-bottom:8px">✅</div><div style="color:#1a6640;font-size:14px;font-weight:600">すべて確認済みです</div></div>';
+      if(myConfirmed.length>0){html+='<div class="card"><div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px">確認済み症例</div>';[...myConfirmed].sort((a,b)=>a.opDate<b.opDate?-1:1).forEach(r=>{const od=parseDate(r.opDate);html+='<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:12px"><span style="font-weight:600">'+r.patientId+'</span><span style="color:#888">'+(SHORT[r.surgery]||'—')+'</span><span style="color:#3b7dd8">'+(od?fmt(od):'未定')+'</span></div>';});html+='</div>';}
+    }
+  }
+  el.innerHTML=html||'<div class="card" style="text-align:center;padding:30px;color:#888">表示する情報がありません</div>';
+}
+function confirmRecord(id){setConfirmed(id);renderNewsfeed();toast('✓ 確認しました',true);}
+
+function unlockStats(){const pw=prompt('パスワードを入力してください');if(pw===STATS_PW&&currentUser===LOG_ADMIN){statsUnlocked=true;document.getElementById('statsLock').style.display='none';document.getElementById('statsContent').style.display='block';buildStatsTargets();renderStats();}else alert('竹内先生のアカウントでログインし、正しいパスワードを入力してください');}
+function initStats(){if(currentUser===LOG_ADMIN){statsUnlocked=true;document.getElementById('statsLock').style.display='none';document.getElementById('statsContent').style.display='block';}else{document.getElementById('statsLock').style.display='block';document.getElementById('statsContent').style.display='none';return;}if(!records.length){fetchAndRender(false).then(()=>{buildStatsTargets();renderStats();});}else{buildStatsTargets();renderStats();}}
 function buildStatsTargets(){
   const period=document.getElementById('statsPeriod').value;
-  const sel=document.getElementById('statsTarget');
-  const cur=sel.value;sel.innerHTML='';
+  const sel=document.getElementById('statsTarget');const cur=sel.value;sel.innerHTML='';
   const dates=records.map(r=>parseDate(r.opDate)).filter(Boolean);
   if(!dates.length){sel.innerHTML='<option value="">データなし</option>';return;}
-  if(period==='month'){
-    const months=[...new Set(dates.map(d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')))].sort().reverse();
-    months.forEach(m=>{const o=document.createElement('option');o.value=m;const y=m.slice(0,4),mo=parseInt(m.slice(5));o.textContent=y+'年'+mo+'月';sel.appendChild(o);});
-  }else{
-    const years=[...new Set(dates.map(d=>d.getFullYear()))].sort().reverse();
-    years.forEach(y=>{const o=document.createElement('option');o.value=String(y);o.textContent=y+'年';sel.appendChild(o);});
-  }
-  if(cur) sel.value=cur;
+  if(period==='month'){const months=[...new Set(dates.map(d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')))].sort().reverse();months.forEach(m=>{const o=document.createElement('option');o.value=m;const y=m.slice(0,4),mo=parseInt(m.slice(5));o.textContent=y+'年'+mo+'月';sel.appendChild(o);});}
+  else{const years=[...new Set(dates.map(d=>d.getFullYear()))].sort().reverse();years.forEach(y=>{const o=document.createElement('option');o.value=String(y);o.textContent=y+'年';sel.appendChild(o);});}
+  if(cur)sel.value=cur;
 }
 function getFilteredRecords(){
   const period=document.getElementById('statsPeriod').value,target=document.getElementById('statsTarget').value;
-  if(!target) return [];
-  return records.filter(r=>{
-    const d=parseDate(r.opDate);if(!d) return false;
-    if(period==='month'){return (d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'))===target;}
-    else{return String(d.getFullYear())===target;}
-  });
+  if(!target)return [];
+  return records.filter(r=>{const d=parseDate(r.opDate);if(!d)return false;if(period==='month'){return(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'))===target;}else{return String(d.getFullYear())===target;}});
 }
 function makeTable(title,rows,colHeader,maxVal){
   if(!rows.length) return '';
@@ -1218,26 +1083,17 @@ function makeDetailTable(title,rowKeys,colKeys,data){
   let html='<div class="stats-section-title">'+title+'</div><div style="overflow-x:auto"><table class="stats-table"><thead><tr><th>術式</th>';
   colKeys.forEach(c=>html+='<th class="num" style="min-width:48px;font-size:10px">'+c+'</th>');
   html+='<th class="num">計</th></tr></thead><tbody>';
-  rowKeys.forEach(rk=>{
-    const rowTotal=colKeys.reduce((s,ck)=>s+(data[rk]&&data[rk][ck]?data[rk][ck]:0),0);
-    if(rowTotal===0) return;
-    html+='<tr><td style="white-space:nowrap;font-size:11px">'+rk+'</td>';
-    colKeys.forEach(ck=>{const v=data[rk]&&data[rk][ck]?data[rk][ck]:0;html+='<td class="num">'+(v>0?v:'')+'</td>';});
-    html+='<td class="num">'+rowTotal+'</td></tr>';
-  });
-  html+='<tr class="total-row"><td>合計</td>';
-  let grand=0;
-  colKeys.forEach(ck=>{const ct=rowKeys.reduce((s,rk)=>s+(data[rk]&&data[rk][ck]?data[rk][ck]:0),0);html+='<td class="num">'+ct+'</td>';grand+=ct;});
-  html+='<td class="num">'+grand+'</td></tr></tbody></table></div>';
+  rowKeys.forEach(rk=>{const rowTotal=colKeys.reduce((s,ck)=>s+(data[rk]&&data[rk][ck]?data[rk][ck]:0),0);if(rowTotal===0)return;html+='<tr><td style="white-space:nowrap;font-size:11px">'+rk+'</td>';colKeys.forEach(ck=>{const v=data[rk]&&data[rk][ck]?data[rk][ck]:0;html+='<td class="num">'+(v>0?v:'')+'</td>';});html+='<td class="num">'+rowTotal+'</td></tr>';});
+  html+='<tr class="total-row"><td>合計</td>';let grand=0;colKeys.forEach(ck=>{const ct=rowKeys.reduce((s,rk)=>s+(data[rk]&&data[rk][ck]?data[rk][ck]:0),0);html+='<td class="num">'+ct+'</td>';grand+=ct;});html+='<td class="num">'+grand+'</td></tr></tbody></table></div>';
   return html;
 }
 function renderStats(){
-  if(!statsUnlocked) return;
+  if(!statsUnlocked)return;
   const out=document.getElementById('statsOutput');
   const target=document.getElementById('statsTarget').value;
   const period=document.getElementById('statsPeriod').value;
   if(!records.length){out.innerHTML='<div class="card"><p style="color:#aaa;font-size:13px">データを取得中です...</p></div>';return;}
-  if(!target||target===''){out.innerHTML='<div class="card"><p style="color:#aaa;font-size:13px">対象期間を選択してください</p></div>';return;}
+  if(!target){out.innerHTML='<div class="card"><p style="color:#aaa;font-size:13px">対象期間を選択してください</p></div>';return;}
   const recs=getFilteredRecords();
   const periodLabel=period==='month'?(()=>{const[y,m]=target.split('-');return y+'年'+parseInt(m)+'月';})():(target+'年');
   const allDocs=DOCTORS;
@@ -1246,292 +1102,56 @@ function renderStats(){
   const surgCount={};allDocs.forEach(d=>{surgCount[d]=0;});recs.forEach(r=>{[r.surgeon,r.surgeon2].filter(Boolean).forEach(s=>{surgCount[s]=(surgCount[s]||0)+1;});});
   const opCount={};recs.forEach(r=>{const k=SHORT[r.surgery]||r.surgery||'不明';opCount[k]=(opCount[k]||0)+1;});
   const docOpData={},admitDocOpData={},surgOpData={},opKeys=new Set();
-  recs.forEach(r=>{const op=SHORT[r.surgery]||r.surgery||'不明';opKeys.add(op);
-    if(r.doctor){if(!docOpData[op])docOpData[op]={};docOpData[op][r.doctor]=(docOpData[op][r.doctor]||0)+1;}
-    if(r.admitDoctor){if(!admitDocOpData[op])admitDocOpData[op]={};admitDocOpData[op][r.admitDoctor]=(admitDocOpData[op][r.admitDoctor]||0)+1;}[r.surgeon,r.surgeon2].filter(Boolean).forEach(s=>{if(!surgOpData[op])surgOpData[op]={};surgOpData[op][s]=(surgOpData[op][s]||0)+1;});});
+  recs.forEach(r=>{const op=SHORT[r.surgery]||r.surgery||'不明';opKeys.add(op);if(r.doctor){if(!docOpData[op])docOpData[op]={};docOpData[op][r.doctor]=(docOpData[op][r.doctor]||0)+1;}if(r.admitDoctor){if(!admitDocOpData[op])admitDocOpData[op]={};admitDocOpData[op][r.admitDoctor]=(admitDocOpData[op][r.admitDoctor]||0)+1;}[r.surgeon,r.surgeon2].filter(Boolean).forEach(s=>{if(!surgOpData[op])surgOpData[op]={};surgOpData[op][s]=(surgOpData[op][s]||0)+1;});});
+  const shinkanDocCount={};allDocs.forEach(d=>{shinkanDocCount[d]=0;});
+  shinkans.forEach(s=>{const sd=parseDate(s.date);if(!sd)return;let include=false;if(period==='month'){include=(sd.getFullYear()+'-'+String(sd.getMonth()+1).padStart(2,'0'))===target;}else{include=String(sd.getFullYear())===target;}if(include)(s.doctors||'').split(',').filter(Boolean).forEach(d=>{shinkanDocCount[d]=(shinkanDocCount[d]||0)+1;});});
   const docMax=Math.max(...Object.values(docCount),1);
   const admitDocMax=Math.max(...Object.values(admitDocCount),1);
   const surgMax=Math.max(...Object.values(surgCount).filter(v=>v>0),1);
   const opMax=recs.length>0?Math.max(...Object.values(opCount),1):1;
+  const shinkanMax=Math.max(...Object.values(shinkanDocCount).filter(v=>v>0),1);
   const sortedOps=[...opKeys].sort();
   let html='<div class="card" style="background:#e8f0fb;border:none;margin-bottom:16px"><div style="font-size:14px;font-weight:700;color:#1a4a8a">'+periodLabel+' 集計結果</div><div style="font-size:13px;color:#555;margin-top:4px">対象症例数：'+recs.length+'件</div></div>';
-  // ⑧ 新患統計
-  const shinkanDocCount={};
-  DOCTORS.forEach(d=>{shinkanDocCount[d]=0;});
-  shinkans.forEach(s=>{
-    const sd=parseDate(s.date);if(!sd) return;
-    let include=false;
-    if(period==='month'){include=(sd.getFullYear()+'-'+String(sd.getMonth()+1).padStart(2,'0'))===target;}
-    else{include=String(sd.getFullYear())===target;}
-    if(include)(s.doctors||'').split(',').filter(Boolean).forEach(d=>{shinkanDocCount[d]=(shinkanDocCount[d]||0)+1;});
-  });
-  const shinkanMax=Math.max(...Object.values(shinkanDocCount).filter(v=>v>0),1);
   html+='<div class="card">'+makeTable('⑧ 新患担当回数',allDocs.map(d=>[d,shinkanDocCount[d]||0]),'医師',shinkanMax)+'</div>';
-
   html+='<div class="card">'+makeTable('① 外来主治医別 手術件数',allDocs.map(d=>[d,docCount[d]||0]),'外来主治医',docMax)+'</div>';
   html+='<div class="card">'+makeTable('② 入院主治医別 手術件数',allDocs.map(d=>[d,admitDocCount[d]||0]),'入院主治医',admitDocMax)+'</div>';
   html+='<div class="card">'+makeTable('③ 執刀医別 手術件数',allDocs.map(d=>[d,surgCount[d]||0]),'執刀医',surgMax)+'</div>';
-  if(sortedOps.length){html+='<div class="card">'+makeTable('③ 術式別 手術件数',Object.entries(opCount),'術式',opMax)+'</div>';}
-  if(sortedOps.length){
-    html+='<div class="card">'+makeDetailTable('⑤ 外来主治医 × 術式 クロス集計',sortedOps,allDocs,docOpData)+'</div>';
-    html+='<div class="card">'+makeDetailTable('⑥ 入院主治医 × 術式 クロス集計',sortedOps,allDocs,admitDocOpData)+'</div>';
-    html+='<div class="card">'+makeDetailTable('⑦ 執刀医 × 術式 クロス集計',sortedOps,allDocs,surgOpData)+'</div>';
-  }
+  if(sortedOps.length){html+='<div class="card">'+makeTable('④ 術式別 手術件数',Object.entries(opCount),'術式',opMax)+'</div>';}
+  if(sortedOps.length){html+='<div class="card">'+makeDetailTable('⑤ 外来主治医 × 術式 クロス集計',sortedOps,allDocs,docOpData)+'</div>';html+='<div class="card">'+makeDetailTable('⑥ 入院主治医 × 術式 クロス集計',sortedOps,allDocs,admitDocOpData)+'</div>';html+='<div class="card">'+makeDetailTable('⑦ 執刀医 × 術式 クロス集計',sortedOps,allDocs,surgOpData)+'</div>';}
   out.innerHTML=html;
 }
 
-// ===== 新患担当 =====
-let shinkans=[];
-
-function clearShinkanForm(){
-  document.getElementById('shinkanDate').value=ymd(new Date());
-  ['shinkanDoc1','shinkanDoc2','shinkanDoc3'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('editingShinkanId').value='';
-}
-
-function editShinkan(id){
-  const s=shinkans.find(x=>x.id===id);if(!s) return;
-  document.getElementById('shinkanDate').value=s.date||'';
-  const docs=(s.doctors||'').split(',').filter(Boolean);
-  document.getElementById('shinkanDoc1').value=docs[0]||'';
-  document.getElementById('shinkanDoc2').value=docs[1]||'';
-  document.getElementById('shinkanDoc3').value=docs[2]||'';
-  document.getElementById('editingShinkanId').value=s.id;
-  window.scrollTo(0,0);
-  toast('修正モード：変更後「登録」を押してください',true);
-}
-
-async function saveShinkan(){
-  if(!ADMINS.has(currentUser)){toast('新患担当の登録は竹内先生・穴井先生のみです',false);return;}
-  const date=document.getElementById('shinkanDate').value;
-  if(!date){toast('日付を入力してください',false);return;}
-  const d=parseDate(date);
-  if(!d){toast('日付が正しくありません',false);return;}
-  const dow=d.getDay();
-  if(dow!==1&&dow!==3&&dow!==5){toast('新患は月・水・金曜日のみです',false);return;}
-  const docs=[
-    document.getElementById('shinkanDoc1').value,
-    document.getElementById('shinkanDoc2').value,
-    document.getElementById('shinkanDoc3').value
-  ].filter(Boolean);
-  if(!docs.length){toast('担当医師を1名以上選択してください',false);return;}
-  const editingShinkanId=document.getElementById('editingShinkanId').value;
-  const rec={id:editingShinkanId||'sk_'+genId(),date,doctors:docs.join(',')};
-  try{
-    await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsertShinkan',record:rec})});
-    await fetchShinkan();clearShinkanForm();toast('✓ 新患担当を登録しました',true);
-  }catch(e){
-    shinkans=shinkans.filter(s=>s.date!==date);
-    shinkans.push(rec);
-    try{safeLS('gyn_shinkans',JSON.stringify(shinkans));}catch(ex){}
-    renderShinkans();clearShinkanForm();toast('✓ 新患担当を登録しました（ローカル保存）',true);
-  }
-}
-
-async function fetchShinkan(){
-  if(document.getElementById('shinkanSpin')) document.getElementById('shinkanSpin').style.display='inline-block';
-  try{
-    const r=await fetch(GAS_URL+'?action=getShinkans&t='+Date.now());
-    const d=await r.json();
-    if(d.shinkans&&Array.isArray(d.shinkans)){
-      shinkans=d.shinkans.map(s=>{const nd=parseDate(s.date);return{...s,date:nd?ymd(nd):s.date};});
-    }
-  }catch(e){
-    try{const s=safeLS('gyn_shinkans');if(s)shinkans=JSON.parse(s);}catch(ex){}
-  }
-  if(document.getElementById('shinkanSpin')) document.getElementById('shinkanSpin').style.display='none';
-  renderShinkans();
-  // カレンダーを再描画
-  if(document.getElementById('tab-cal1').style.display!=='none') renderCal('cal1');
-  if(document.getElementById('tab-cal2').style.display!=='none') renderCal('cal2');
-  if(document.getElementById('tab-cal3').style.display!=='none') renderWeekCal();
-}
-
-async function delShinkan(id){
-  shinkans=shinkans.filter(s=>s.id!==id);
-  try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteShinkan',id})});}catch(e){}
-  try{safeLS('gyn_shinkans',JSON.stringify(shinkans));}catch(ex){}
-  renderShinkans();
-}
-
-function renderShinkans(){
-  const el=document.getElementById('shinkanList');
-  if(!el) return;
-  if(!shinkans.length){el.innerHTML='<p style="font-size:13px;color:#aaa">登録されていません</p>';return;}
-  const sorted=[...shinkans].sort((a,b)=>a.date<b.date?-1:1);
-  const grp={};sorted.forEach(s=>{if(!grp[s.date])grp[s.date]=[];grp[s.date].push(s);});
-  let html='';
-  Object.keys(grp).sort().forEach(date=>{
-    const d=parseDate(date);
-    const dow=d?d.getDay():-1;
-    const dowLabel=['日','月','火','水','木','金','土'][dow]||'';
-    const bg=dow===1?'#f0f4ff':dow===3?'#f0fff4':'#fff8f0';
-    html+='<div style="margin-bottom:10px">';
-    html+='<div style="background:'+bg+';border-radius:8px 8px 0 0;padding:8px 12px;font-weight:700;font-size:13px">'+fmt(d)+'</div>';
-    html+='<div style="background:#fff;border-radius:0 0 8px 8px;padding:8px 12px;border:1px solid #f0f0f0;border-top:none">';
-    grp[date].forEach(s=>{
-      const docs=(s.doctors||'').split(',').filter(Boolean);
-      html+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">';
-      docs.forEach(doc=>{html+='<span class="shinkan-badge">'+doc+'</span>';});
-      html+='<button class="btn btn-sm btn-edit" style="padding:2px 8px;font-size:11px;margin-left:auto" data-id="'+s.id+'" onclick="editShinkan(this.dataset.id)">修正</button>';
-      html+='<button class="btn btn-sm btn-danger" style="padding:2px 8px;font-size:11px" data-id="'+s.id+'" onclick="delShinkan(this.dataset.id)">削除</button>';
-      html+='</div>';
-    });
-    html+='</div></div>';
-  });
-  el.innerHTML=html;
-}
-
-function loadShinkans(){
-  try{const s=safeLS('gyn_shinkans');if(s)shinkans=JSON.parse(s);}catch(e){}
-}
-
-// ===== NEW!フィード =====
-// 確認済み記録はlocalStorageに保存
-function getConfirmed(){try{const s=safeLS('gyn_confirmed_'+currentUser);return s?JSON.parse(s):{};} catch(e){return {};}}
-function setConfirmed(id){const c=getConfirmed();c[id]=true;safeLS('gyn_confirmed_'+currentUser,JSON.stringify(c));}
-
-function renderNewsfeed(){
-  const el=document.getElementById('newsfeedContent');
-  if(!records.length){
-    el.innerHTML='<div class="card" style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:12px">📋</div><div style="color:#888;font-size:14px">データを読み込み中...</div></div>';
-    return;
-  }
-
-  const confirmed=getConfirmed();
-  const isAdmin=ADMINS.has(currentUser);
-
-  // 自分が外来主治医の症例で未確認のもの（全員対象）
-  const myRecords=records.filter(r=>r.doctor===currentUser&&!confirmed[r.id]);
-
-  let html='';
-
-  // 未確認通知（全員）
-  if(myRecords.length>0){
-    html+='<div style="margin-bottom:16px">';
-    html+='<div style="font-size:15px;font-weight:700;color:#c0392b;margin-bottom:10px">🔔 手術日が決まりました！（'+myRecords.length+'件）</div>';
-    myRecords.sort((a,b)=>a.opDate<b.opDate?-1:1).forEach(r=>{
-      const od=parseDate(r.opDate),ad=parseDate(r.admitDate),dd=parseDate(r.dischargeDate);
-      html+='<div class="card" style="border:2px solid #e74c3c;margin-bottom:12px">'
-        +'<div style="background:#fdecea;border-radius:8px 8px 0 0;padding:10px 14px;margin:-14px -14px 12px;display:flex;justify-content:space-between;align-items:center">'
-        +'<div style="font-size:15px;font-weight:700;color:#c0392b">🏥 手術日が決まりました!</div>'
-        +'<span class="badge badge-purple" style="font-size:11px">'+(SHORT[r.surgery]||r.surgery||'—')+'</span>'
-        +'</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
-        +'<div><div class="result-label">患者ID</div><div style="font-size:16px;font-weight:700">'+r.patientId+'</div></div>'
-        +'<div><div class="result-label">外来主治医</div><div style="font-size:14px;font-weight:600">'+(r.doctor||'—')+'</div></div>'
-        +(r.admitDoctor?'<div><div class="result-label">入院主治医</div><div style="font-size:14px;font-weight:600">'+r.admitDoctor+'</div></div>':'')
-        +'<div><div class="result-label">入院日</div><div style="font-size:13px;font-weight:600">'+(ad?fmt(ad):'未定')+'</div></div>'
-        +'<div><div class="result-label">手術日</div><div style="font-size:14px;font-weight:700;color:#3b7dd8">'+(od?fmt(od):'未定')+'</div></div>'
-        +'<div><div class="result-label">退院推奨日</div><div style="font-size:13px;font-weight:600;color:#1a6640">'+(dd?fmt(dd):'未定')+'</div></div>'
-        +(r.opCol&&r.opNum?'<div><div class="result-label">手術順番</div><span class="badge '+(r.opCol==='A'?'badge-blue':'badge-purple')+'">'+r.opCol+r.opNum+'</span></div>':'')
-        +(r.opTime?'<div><div class="result-label">予定手術時間</div><div style="font-size:13px;font-weight:600">'+r.opTime+'h</div></div>':'')
-        +'</div>'
-        +'<button class="btn btn-primary" style="width:100%;padding:12px" data-id="'+r.id+'" onclick="confirmRecord(this.dataset.id)">✓ 確認しました</button>'
-        +'</div>';
-    });
-    html+='</div>';
-  }
-
-  // 管理者向け：最近の登録一覧（竹内・穴井）
-  if(isAdmin){
-    const recent=[...records].sort((a,b)=>a.opDate<b.opDate?-1:1).slice(0,10);
-    html+='<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px">📋 直近の登録症例（手術日順）</div>';
-    if(!recent.length){html+='<p style="color:#aaa;font-size:13px">登録されていません</p>';}
-    else{
-      recent.forEach(r=>{
-        const od=parseDate(r.opDate);
-        html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0">'
-          +'<div><div style="font-size:13px;font-weight:600">'+r.patientId+'</div>'
-          +'<div style="font-size:11px;color:#888">'+(SHORT[r.surgery]||r.surgery||'—')+' / '+(r.doctor||'—')+'</div></div>'
-          +'<div style="font-size:12px;font-weight:600;color:#3b7dd8">'+(od?fmt(od):'未定')+'</div>'
-          +'</div>';
-      });
-    }
-    html+='</div>';
-  }
-
-  // 一般医師向け：自分の確認済み症例（管理者以外）
-  if(!isAdmin){
-    const myAll=records.filter(r=>r.doctor===currentUser);
-    const myConfirmed=myAll.filter(r=>confirmed[r.id]);
-    if(myAll.length===0){
-      html+='<div class="card" style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:12px">📭</div><div style="color:#888;font-size:14px">あなたの症例はまだ登録されていません</div></div>';
-    } else if(myRecords.length===0){
-      html+='<div class="card" style="text-align:center;padding:20px;background:#e6f7ee;border:none"><div style="font-size:24px;margin-bottom:8px">✅</div><div style="color:#1a6640;font-size:14px;font-weight:600">すべて確認済みです</div></div>';
-      if(myConfirmed.length>0){
-        html+='<div class="card"><div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px">確認済み症例</div>';
-        [...myConfirmed].sort((a,b)=>a.opDate<b.opDate?-1:1).forEach(r=>{
-          const od=parseDate(r.opDate);
-          html+='<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:12px">'
-            +'<span style="font-weight:600">'+r.patientId+'</span>'
-            +'<span style="color:#888">'+(SHORT[r.surgery]||'—')+'</span>'
-            +'<span style="color:#3b7dd8">'+(od?fmt(od):'未定')+'</span>'
-            +'</div>';
-        });
-        html+='</div>';
-      }
-    }
-  }
-  // 管理者で自分の症例がある場合の確認済み表示（穴井先生など）
-  if(isAdmin){
-    const myAll=records.filter(r=>r.doctor===currentUser);
-    const myConfirmed=myAll.filter(r=>confirmed[r.id]);
-    if(myRecords.length===0&&myAll.length>0){
-      html+='<div class="card" style="text-align:center;padding:12px;background:#e6f7ee;border:none;margin-bottom:12px"><div style="color:#1a6640;font-size:13px;font-weight:600">✅ 自分の症例はすべて確認済みです</div></div>';
-    }
-  }
-
-  el.innerHTML=html||'<div class="card" style="text-align:center;padding:30px;color:#888">表示する情報がありません</div>';
-}
-
-function confirmRecord(id){
-  setConfirmed(id);
-  renderNewsfeed();
-  toast('✓ 確認しました',true);
-}
-
-// ===== 検索 =====
-let searchHighlightPid='';
-function onSearch(pid){searchHighlightPid=pid.trim();renderSearch(pid.trim());}
-function clearSearch(){document.getElementById('searchInput').value='';searchHighlightPid='';document.getElementById('searchResult').innerHTML='';document.querySelectorAll('.search-match').forEach(el=>el.classList.remove('search-match'));}
+function onSearch(pid){document.querySelector('#tab-search .search-highlight-pid') && null;renderSearch(pid.trim());}
+function clearSearch(){document.getElementById('searchInput').value='';document.getElementById('searchResult').innerHTML='';document.querySelectorAll('.search-match').forEach(el=>el.classList.remove('search-match'));}
 function renderSearch(pid){
-  const el=document.getElementById('searchResult');
-  if(!pid){el.innerHTML='';return;}
+  const el=document.getElementById('searchResult');if(!pid){el.innerHTML='';return;}
   const found=records.filter(r=>r.patientId&&r.patientId.toLowerCase().includes(pid.toLowerCase()));
   if(!found.length){el.innerHTML='<div class="card"><p style="font-size:13px;color:#aaa">「'+pid+'」に一致する患者が見つかりません</p></div>';return;}
   let html='<div style="font-size:12px;color:#888;margin-bottom:8px">'+found.length+'件見つかりました</div>';
   found.forEach(r=>{
     const ad=parseDate(r.admitDate),od=parseDate(r.opDate),dd=parseDate(r.dischargeDate);
     const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'—';
-    html+='<div class="card" style="margin-bottom:10px;cursor:pointer;border:2px solid #e8e8e8" onclick="showDetailAndHighlight(\''+r.id+'\')">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div><div style="font-size:16px;font-weight:700">'+r.patientId+'</div><div style="font-size:12px;color:#888;margin-top:2px">'+(SHORT[r.surgery]||r.surgery||'—')+'</div></div><span class="badge '+(r.opCol==='A'?'badge-blue':'badge-purple')+'" style="font-size:12px">'+ord+'</span></div>';
-    html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px"><div><div style="font-size:10px;color:#888">入院日</div><div style="font-size:12px;font-weight:600">'+fmt(ad)+'</div></div><div><div style="font-size:10px;color:#888">手術日</div><div style="font-size:12px;font-weight:600">'+fmt(od)+'</div></div><div><div style="font-size:10px;color:#888">退院日</div><div style="font-size:12px;font-weight:600">'+(dd?fmt(dd):'除外対象')+'</div></div></div>';
-    html+='<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:#555">'+(r.doctor?'<span>主:'+r.doctor+'</span>':'')+(r.surgeon?'<span>執1:'+r.surgeon+'</span>':'')+(r.surgeon2?'<span>執2:'+r.surgeon2+'</span>':'')+(r.assist1?'<span>助1:'+r.assist1+'</span>':'')+(r.assist2?'<span>助2:'+r.assist2+'</span>':'')+(r.opTime?'<span>'+r.opTime+'h</span>':'')+'</div>';
-    html+='<div style="font-size:11px;color:#3b7dd8;margin-top:8px">タップして詳細表示 →</div></div>';
+    html+='<div class="card" style="margin-bottom:10px;cursor:pointer;border:2px solid #e8e8e8" onclick="showDetailAndHighlight(\''+r.id+'\')">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div><div style="font-size:16px;font-weight:700">'+r.patientId+'</div><div style="font-size:12px;color:#888;margin-top:2px">'+(SHORT[r.surgery]||r.surgery||'—')+'</div></div><span class="badge '+(r.opCol==='A'?'badge-blue':r.opCol==='B'?'badge-purple':'badge-amber')+'" style="font-size:12px">'+ord+'</span></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px"><div><div style="font-size:10px;color:#888">入院日</div><div style="font-size:12px;font-weight:600">'+fmt(ad)+'</div></div><div><div style="font-size:10px;color:#888">手術日</div><div style="font-size:12px;font-weight:600">'+fmt(od)+'</div></div><div><div style="font-size:10px;color:#888">退院日</div><div style="font-size:12px;font-weight:600">'+(dd?fmt(dd):'除外対象')+'</div></div></div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:#555">'+(r.doctor?'<span>主:'+r.doctor+'</span>':'')+(r.surgeon?'<span>執1:'+r.surgeon+'</span>':'')+(r.opTime?'<span>'+r.opTime+'h</span>':'')+'</div>'
+      +'<div style="font-size:11px;color:#3b7dd8;margin-top:8px">タップして詳細表示 →</div></div>';
   });
   el.innerHTML=html;
 }
 function showDetailAndHighlight(id){
-  const r=records.find(x=>x.id===id);if(!r) return;
-  showDetail(r);
-  searchHighlightPid=r.patientId;
-  setTimeout(()=>{
-    switchTab('cal1');
-    const od=parseDate(r.opDate);if(od){cal1Year=od.getFullYear();cal1Month=od.getMonth();}
-    setTimeout(()=>{renderCal('cal1');document.querySelectorAll('.cal-ev').forEach(ev=>{if(ev.textContent.includes(searchHighlightPid)){const cell=ev.closest('.cal-cell');if(cell){cell.classList.add('search-match');cell.scrollIntoView({behavior:'smooth',block:'center'});}}});},100);
-  },200);
+  const r=records.find(x=>x.id===id);if(!r)return;showDetail(r);
+  setTimeout(()=>{switchTab('cal1');const od=parseDate(r.opDate);if(od){cal1Year=od.getFullYear();cal1Month=od.getMonth();}setTimeout(()=>{renderCal('cal1');document.querySelectorAll('.cal-ev').forEach(ev=>{if(ev.textContent.includes(r.patientId)){const cell=ev.closest('.cal-cell');if(cell){cell.classList.add('search-match');cell.scrollIntoView({behavior:'smooth',block:'center'});}}});},100);},200);
 }
 
-// ===== 操作ログ =====
 function renderLog(){
-  const el=document.getElementById('logList');
-  if(!logs.length){el.innerHTML='<p style="font-size:13px;color:#aaa">ログはありません</p>';return;}
+  const el=document.getElementById('logList');if(!logs.length){el.innerHTML='<p style="font-size:13px;color:#aaa">ログはありません</p>';return;}
   const ac={登録:'badge-green',修正:'badge-blue',削除:'badge-red'};
   let rows='';logs.forEach(l=>{rows+='<tr><td style="white-space:nowrap;font-size:12px">'+l.ts+'</td><td style="font-weight:600;font-size:12px">'+l.user+'</td><td><span class="badge '+(ac[l.action]||'badge-blue')+'" style="font-size:11px">'+l.action+'</span></td><td style="font-weight:600;font-size:12px">'+l.patientId+'</td><td style="font-size:11px;color:#555">'+l.detail+'</td></tr>';});
   el.innerHTML='<div style="overflow-x:auto"><table class="reg-table"><thead><tr><th>日時</th><th>操作者</th><th>操作</th><th>患者ID</th><th>術式</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 function clearLogs(){if(currentUser!==LOG_ADMIN){alert('ログの消去は'+LOG_ADMIN+'先生のみです');return;}if(!confirm('ログを全削除しますか？'))return;logs=[];saveLogs();renderLog();}
+
 </script>
 </body>
 </html>
