@@ -269,6 +269,23 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
           </select>
         </div>
       </div>
+      <div class="form-grid-3">
+        <div class="field"><label>準備１</label>
+          <select id="prep1"><option value="">--</option>
+            <option>外科応援</option><option>泌尿器応援</option><option>尿管ステント</option><option>試供品あり</option>
+          </select>
+        </div>
+        <div class="field"><label>準備２</label>
+          <select id="prep2"><option value="">--</option>
+            <option>外科応援</option><option>泌尿器応援</option><option>尿管ステント</option><option>試供品あり</option>
+          </select>
+        </div>
+        <div class="field"><label>準備３</label>
+          <select id="prep3"><option value="">--</option>
+            <option>外科応援</option><option>泌尿器応援</option><option>尿管ステント</option><option>試供品あり</option>
+          </select>
+        </div>
+      </div>
       <div class="form-grid">
         <div class="field"><label>執刀医１</label><select id="surgeon"><option value="">-- 選択 --</option></select></div>
         <div class="field"><label>執刀医２</label><select id="surgeon2"><option value="">-- 選択 --</option></select></div>
@@ -277,8 +294,34 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
         <div class="field"><label>助手１</label><select id="assist1"><option value="">-- 選択 --</option></select></div>
         <div class="field"><label>助手２</label><select id="assist2"><option value="">-- 選択 --</option></select></div>
       </div>
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="calculate()">退院日を計算・登録</button>
+      <div style="margin-bottom:10px">
+        <div class="section-label" style="margin-bottom:8px">準備</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:6px 12px;border-radius:8px;user-select:none"><input type="checkbox" id="prep_surgical" value="外応" style="width:16px;height:16px"> 外科応援</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:6px 12px;border-radius:8px;user-select:none"><input type="checkbox" id="prep_urology" value="泌応" style="width:16px;height:16px"> 泌尿器応援</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:6px 12px;border-radius:8px;user-select:none"><input type="checkbox" id="prep_stent" value="尿ステ" style="width:16px;height:16px"> 尿管ステント</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:6px 12px;border-radius:8px;user-select:none"><input type="checkbox" id="prep_sample" value="試供" style="width:16px;height:16px"> 試供品あり</label>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="section-label">準備</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:7px 12px;border-radius:8px;border:1px solid #ddd">
+            <input type="checkbox" id="prep_geka" value="外応" style="width:16px;height:16px"> 外科応援（外応）
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:7px 12px;border-radius:8px;border:1px solid #ddd">
+            <input type="checkbox" id="prep_hinyoki" value="泌応" style="width:16px;height:16px"> 泌尿器応援（泌応）
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:7px 12px;border-radius:8px;border:1px solid #ddd">
+            <input type="checkbox" id="prep_ureter" value="尿ステ" style="width:16px;height:16px"> 尿管ステント（尿ステ）
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:7px 12px;border-radius:8px;border:1px solid #ddd">
+            <input type="checkbox" id="prep_sample" value="試供" style="width:16px;height:16px"> 試供品あり（試供）
+          </label>
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn btn-primary" onclick="calculate()">登録</button>
         <button class="btn" onclick="clearForm()">クリア</button>
       </div>
     </div>
@@ -493,7 +536,7 @@ const SHORT={op_laser_ex:'外来レーザー',op_scope_ex:'外来子宮鏡',op_o
 const LABELS={op_laser_ex:'外来レーザー蒸散術',op_scope_ex:'外来子宮鏡手術',op_other_ex:'外来その他',lap_other:'腹腔鏡その他',open_other:'開腹その他',vaginal_other:'経腟その他',cs_other:'帝王切開',vaginal_other:'経腟その他',ec_open_ln:'子宮体癌 開腹（LN+）',ec_open_noln:'子宮体癌 開腹（LN-）',oc_open_ln:'卵巣癌 開腹（LN+）',oc_open_noln:'卵巣癌 開腹（LN-）',cx_radical:'頸癌 広汎子宮全摘',lap_radical:'腹腔鏡下 広汎子宮全摘',cx_semi_ln:'頸癌 準広汎（LN+）',cx_simple_ln:'頸癌 単純TH（LN+）',cx_semi_noln:'頸癌 準広汎（LN-）',cx_simple_noln:'頸癌 単純TH（LN-）',open_benign_ut:'良性子宮 開腹',open_benign_ov:'良性卵巣 開腹',lap_malig_ln:'腹腔鏡 悪性（LN+）',lap_malig_noln:'腹腔鏡 悪性（LN-）',lap_benign:'腹腔鏡 良性',lap_adnexa:'腹腔鏡 付属器',robot_malig_ln:'ロボ 悪性（LN+）',robot_malig_noln:'ロボ 悪性（LN-）',robot_benign:'ロボ 良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
 const DAYS=['日','月','火','水','木','金','土'];
 const HOLIDAYS=new Set(['2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24','2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06','2025-07-21','2025-08-11','2025-09-15','2025-09-22','2025-09-23','2025-10-13','2025-11-03','2025-11-23','2025-11-24','2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06','2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23','2026-12-23']);
-const ABS_REASONS={'終日':['直明け','有給','夏季休暇','学会','リフレッシュ休暇','忌引き'],'午前':['有給','午前C/S','午前会議'],'午後':['有給','午後C/S','午後会議','午後遺伝カウンセリング','午後胎児エコー']};
+const ABS_REASONS={'終日':['直明け','有給','夏季休暇','学会','リフレッシュ休暇','忌引き','他科手術応援'],'午前':['有給','午前C/S','午前会議','他科手術応援'],'午後':['有給','午後C/S','午後会議','午後遺伝カウンセリング','午後胎児エコー','他科手術応援']};
 
 let records=[],logs=[],absences=[],currentUser='';
 let cal1Year,cal1Month,cal2Year,cal2Month,cal3BaseMonday;
@@ -765,7 +808,17 @@ function editRecord(id){
   document.getElementById('opNum').value=r.opNum||'';
   document.getElementById('opTime').value=r.opTime||'';
   document.getElementById('opDate').value=r.opDate||'';
-  document.getElementById('output').innerHTML='<div class="alert alert-info">修正モード：変更後「退院日を計算・登録」を押してください</div>';
+  // 準備チェックボックス復元
+  const prepVals=(r.prep||'').split(',').filter(Boolean);
+  [{id:'prep_geka',val:'外応'},{id:'prep_hinyoki',val:'泌応'},{id:'prep_ureter',val:'尿ステ'},{id:'prep_sample',val:'試供'}].forEach(p=>{
+    const el=document.getElementById(p.id);if(el)el.checked=prepVals.includes(p.val);
+  });
+  const pv=(r.prep||'').split(',');
+  document.getElementById('prep_surgical').checked=pv.includes('外応');
+  document.getElementById('prep_urology').checked=pv.includes('泌応');
+  document.getElementById('prep_stent').checked=pv.includes('尿ステ');
+  document.getElementById('prep_sample').checked=pv.includes('試供');
+  document.getElementById('output').innerHTML='<div class="alert alert-info">修正モード：変更後「登録」を押してください</div>';
   switchTab('calc');window.scrollTo(0,0);
 }
 function autoLoad(pid){
@@ -781,8 +834,21 @@ function autoLoad(pid){
   document.getElementById('opCol').value=r.opCol||'';
   document.getElementById('opNum').value=r.opNum||'';
   document.getElementById('opTime').value=r.opTime||'';
+  document.getElementById('prep1').value=r.prep1||'';
+  document.getElementById('prep2').value=r.prep2||'';
+  document.getElementById('prep3').value=r.prep3||'';
   document.getElementById('opDate').value=r.opDate||'';
+  // 準備チェックボックス復元
+  const prepVals=(r.prep||'').split(',').filter(Boolean);
+  [{id:'prep_geka',val:'外応'},{id:'prep_hinyoki',val:'泌応'},{id:'prep_ureter',val:'尿ステ'},{id:'prep_sample',val:'試供'}].forEach(p=>{
+    const el=document.getElementById(p.id);if(el)el.checked=prepVals.includes(p.val);
+  });
   document.getElementById('editingId').value=r.id;
+  const prepVals2=(r.prep||'').split(',');
+  document.getElementById('prep_surgical').checked=prepVals2.includes('外応');
+  document.getElementById('prep_urology').checked=prepVals2.includes('泌応');
+  document.getElementById('prep_stent').checked=prepVals2.includes('尿ステ');
+  document.getElementById('prep_sample').checked=prepVals2.includes('試供');
   document.getElementById('output').innerHTML='<div class="alert alert-info">既存データを読み込みました。修正後「退院日を計算・登録」を押してください</div>';
 }
 async function delRecord(id){
@@ -795,7 +861,7 @@ async function delRecord(id){
   catch(e){setSpin(false);toast('⚠ 削除に失敗しました',false);}
 }
 function clearAll(){if(!ADMINS.has(currentUser)){toast('操作権限がありません',false);return;}if(!confirm('全データを削除しますか？')) return;Promise.all(records.map(r=>gasDelete(r.id))).then(()=>{records=[];refreshUI();toast('✓ 全件削除しました',true);}).catch(()=>toast('⚠ 削除に失敗しました',false));}
-function clearForm(){['patientId','doctorName','admitDoctor','surgeon','surgeon2','assist1','assist2','surgerySelect','opCol','opNum','opTime','editingId'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('opDate').value=ymd(new Date());document.getElementById('output').innerHTML='';}
+function clearForm(){['prep_geka','prep_hinyoki','prep_ureter','prep_sample'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});['patientId','doctorName','admitDoctor','surgeon','surgeon2','assist1','assist2','surgerySelect','opCol','opNum','opTime','editingId'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('opDate').value=ymd(new Date());document.getElementById('output').innerHTML='';}
 
 // ===== 退院日計算 =====
 async function calculate(){
@@ -803,6 +869,10 @@ async function calculate(){
   const pid=document.getElementById('patientId').value.trim();
   const doc=document.getElementById('doctorName').value;
   const admitDoc=document.getElementById('admitDoctor').value;
+  const prepItems=['prep_geka','prep_hinyoki','prep_ureter','prep_sample']
+    .filter(id=>document.getElementById(id)&&document.getElementById(id).checked)
+    .map(id=>document.getElementById(id).value);
+  const prep=prepItems.join(',');
   const opStr=document.getElementById('opDate').value;
   const surgery=document.getElementById('surgerySelect').value;
   const opCol=document.getElementById('opCol').value,opNum=document.getElementById('opNum').value;
@@ -846,7 +916,10 @@ async function calculate(){
     else if(adjusted){const dw=earliest.getDay();const reason=isHoliday(earliest)?'祝日':dw===5?'金曜':dw===6?'土曜':'日曜';adjustNote='<div class="alert alert-info" style="margin-top:10px;margin-bottom:0">最短退院日（'+fmt(earliest)+'）は'+reason+'のため次の平日に調整しました</div>';}
     else adjustNote='<div class="alert alert-ok" style="margin-top:10px;margin-bottom:0">最短日数で月〜木退院が可能です</div>';
   }
-  const record={id,patientId:pid,doctor:doc,admitDoctor:admitDoc||'',surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',surgery,opCol:opCol||'',opNum:opCol==='C'?'':opNum||'',opTime:opTime||'',opDate:opDate?ymd(opDate):'',admitDate:admitDate?ymd(admitDate):'',dischargeDate:dischargeDate?ymd(dischargeDate):'',registeredBy:currentUser,confirmedBy:{}};
+  const prep1=document.getElementById('prep1').value;
+  const prep2=document.getElementById('prep2').value;
+  const prep3=document.getElementById('prep3').value;
+  const record={id,patientId:pid,doctor:doc,admitDoctor:admitDoc||'',surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',surgery,prep:prep||'',opCol:opCol||'',opNum:opCol==='C'?'':opNum||'',opTime:opTime||'',opDate:opDate?ymd(opDate):'',admitDate:admitDate?ymd(admitDate):'',dischargeDate:dischargeDate?ymd(dischargeDate):'',registeredBy:currentUser,confirmedBy:{}};
   setSpin(true);
   try{await gasPut(record);addLog(editingId?'修正':'登録',pid,SHORT[surgery]||surgery);document.getElementById('editingId').value=record.id;await fetchAndRender(false);setSpin(false);toast('✓ 登録しました',true);}
   catch(e){setSpin(false);toast('⚠ 保存に失敗しました',false);}
@@ -876,7 +949,7 @@ function _renderCal(cal){
   shinkans.forEach(s=>{if(!shinkanMap[s.date])shinkanMap[s.date]=[];shinkanMap[s.date].push(s);});
   // 手術イベント
   const evs={};
-  const addEv=(key,type,r)=>{if(!key) return;if(!evs[key])evs[key]=[];evs[key].push({type,patientId:r.patientId,doctor:r.doctor||'',admitDoctor:r.admitDoctor||'',surgeon:r.surgeon||'',surgeon2:r.surgeon2||'',assist1:r.assist1||'',assist2:r.assist2||'',surgery:r.surgery,opCol:r.opCol||'',opNum:r.opNum||'',opTime:r.opTime||''});};
+  const addEv=(key,type,r)=>{if(!key) return;if(!evs[key])evs[key]=[];evs[key].push({type,patientId:r.patientId,doctor:r.doctor||'',admitDoctor:r.admitDoctor||'',surgeon:r.surgeon||'',surgeon2:r.surgeon2||'',assist1:r.assist1||'',assist2:r.assist2||'',surgery:r.surgery,opCol:r.opCol||'',opNum:r.opNum||'',opTime:r.opTime||'',prep:r.prep||''});};
   records.forEach(r=>{if(!r.opDate) return;if(isCal1){if(!EXCLUDED.has(r.surgery)&&r.opCol!=='C'){if(r.admitDate)addEv(r.admitDate,'admit',r);addEv(r.opDate,'op',r);if(r.dischargeDate)addEv(r.dischargeDate,'discharge',r);}}else{addEv(r.opDate,'op',r);}});
   const w=window.innerWidth;
   const maxShow=isCal1?(w>=900?99:w>=600?4:2):(w>=900?99:w>=600?5:3);
@@ -939,7 +1012,8 @@ function _renderCal(cal){
           const docStr=parts.join('/');
           if(docStr){const l2=document.createElement('div');l2.style.cssText='font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=docStr;div.appendChild(l2);}
         }else{
-          const staff=[];if(ev.doctor)staff.push('外:'+ev.doctor);if(ev.admitDoctor)staff.push('入:'+ev.admitDoctor);if(ev.surgeon)staff.push('執1:'+ev.surgeon);if(ev.surgeon2)staff.push('執2:'+ev.surgeon2);if(ev.assist1)staff.push('助1:'+ev.assist1);if(ev.assist2)staff.push('助2:'+ev.assist2);if(ev.opTime)staff.push(ev.opTime+'h');if(staff.length){const l2=document.createElement('div');l2.style.cssText='font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=staff.join(' ');div.appendChild(l2);}
+          const staff=[];if(ev.doctor)staff.push('外:'+ev.doctor);if(ev.admitDoctor)staff.push('入:'+ev.admitDoctor);if(ev.surgeon)staff.push('執1:'+ev.surgeon);if(ev.surgeon2)staff.push('執2:'+ev.surgeon2);if(ev.assist1)staff.push('助1:'+ev.assist1);if(ev.assist2)staff.push('助2:'+ev.assist2);if(ev.opTime)staff.push(ev.opTime+'h');if(ev.prep){(ev.prep).split(',').filter(Boolean).forEach(p=>{const b=document.createElement('span');b.style.cssText='background:#fef3c7;color:#92400e;border-radius:3px;padding:0 3px;font-size:8px;font-weight:700;margin-right:2px';b.textContent=p;l1.appendChild(b);});}
+          if(staff.length){const l2=document.createElement('div');l2.style.cssText='font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=staff.join(' ');div.appendChild(l2);}
         }
       }else{const l1=document.createElement('div');l1.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:'+fs+';font-weight:700';l1.textContent=(ev.type==='admit'?'入院':'退院')+' '+ev.patientId+' '+(SHORT[ev.surgery]||'')+(ev.doctor?' '+ev.doctor:'');div.appendChild(l1);}
       cell.appendChild(div);
@@ -1002,6 +1076,9 @@ function renderWeekCal(){
       const row2=document.createElement('div');row2.className='week-ev-row2';
       const parts=[SHORT[r.surgery]||r.surgery||''];
       if(r.doctor)parts.push('外:'+r.doctor);if(r.admitDoctor)parts.push('入:'+r.admitDoctor);if(r.surgeon)parts.push('執1:'+r.surgeon);if(r.surgeon2)parts.push('執2:'+r.surgeon2);if(r.assist1)parts.push('助1:'+r.assist1);if(r.assist2)parts.push('助2:'+r.assist2);
+      const preps=[r.prep1,r.prep2,r.prep3].filter(Boolean);
+      if(preps.length){const row3=document.createElement('div');row3.className='week-ev-row2';row3.style.color='#b45309';row3.textContent='準備: '+preps.join(' / ');ev.appendChild(row3);}
+      if(r.prep)parts.push('['+r.prep+']');
       row2.textContent=parts.filter(Boolean).join('　');ev.appendChild(row2);body.appendChild(ev);
     });
     card.appendChild(body);grid.appendChild(card);
@@ -1015,7 +1092,7 @@ function showDetail(r){
   const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'—';
   const ordColor=r.opCol==='A'?'#3b7dd8':'#7c3aed';
   let html='<div class="modal-title">'+r.patientId+'　<span style="font-size:12px;font-weight:400;color:#888">'+(SHORT[r.surgery]||r.surgery||'')+'</span></div>';
-  [['入院日',fmt(ad)],['手術日',fmt(od)],['退院予定日',dd?fmt(dd):'除外対象'],['外来主治医',r.doctor||'—'],['入院主治医',r.admitDoctor||'—'],['執刀医１',r.surgeon||'—'],['執刀医２',r.surgeon2||'—'],['助手１',r.assist1||'—'],['助手２',r.assist2||'—']].forEach(([label,val])=>{if(val&&val!=='—')html+='<div class="modal-row"><div class="modal-label">'+label+'</div><div class="modal-value">'+val+'</div></div>';});
+  [['入院日',fmt(ad)],['手術日',fmt(od)],['退院予定日',dd?fmt(dd):'除外対象'],['外来主治医',r.doctor||'—'],['入院主治医',r.admitDoctor||'—'],['執刀医１',r.surgeon||'—'],['執刀医２',r.surgeon2||'—'],['助手１',r.assist1||'—'],['助手２',r.assist2||'—'],['準備',[r.prep1,r.prep2,r.prep3].filter(Boolean).join(' / ')||'—']].forEach(([label,val])=>{if(val&&val!=='—')html+='<div class="modal-row"><div class="modal-label">'+label+'</div><div class="modal-value">'+val+'</div></div>';});
   html+='<hr class="modal-divider">';
   const info=[];if(ord!=='—')info.push('<span style="background:'+ordColor+';color:#fff;padding:2px 10px;border-radius:12px;font-size:13px;font-weight:700">'+ord+'</span>');if(r.opTime)info.push('<span style="font-size:13px;font-weight:600;color:#555">予定 '+r.opTime+'h</span>');
   if(info.length)html+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+info.join('')+'</div>';
