@@ -292,6 +292,9 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
             <input type="checkbox" id="prep_sample" value="試供"> 試供品あり（試供）
           </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="prep_rapid" value="迅速"> 術中迅速（迅速）
+          </label>
         </div>
       </div>
       <div class="btn-row" style="margin-top:12px">
@@ -701,8 +704,13 @@ function editRecord(id){
   document.getElementById('opTime').value=r.opTime||'';
   document.getElementById('opDate').value=r.opDate||'';
   document.getElementById('editingId').value=r.id;
-  document.getElementById('output').innerHTML='<div class="alert alert-info">修正モード：変更後「登録」を押してください</div>';
   switchTab('calc');window.scrollTo(0,0);
+  // switchTab後に値を再設定（タブ切替による上書きを防ぐ）
+  setTimeout(()=>{
+    document.getElementById('surgerySelect').value=r.surgery||'';
+    document.getElementById('opTime').value=r.opTime||'';
+    document.getElementById('output').innerHTML='<div class="alert alert-info">修正モード：変更後「登録」を押してください</div>';
+  },50);
 }
 function autoLoad(pid){
   if(!pid) return;
