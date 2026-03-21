@@ -779,11 +779,62 @@ async function calculate(){
   const surgeon2=document.getElementById('surgeon2').value;
   const assist1=document.getElementById('assist1').value;
   const assist2=document.getElementById('assist2').value;
-    const prep=prepItems.join(',');
-  const record={id,patientId:pid,doctor:doc,admitDoctor:admitDoc||'',surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',prep:prep||'',surgery,opCol:opCol||'',opNum:opCol==='C'?'':opNum||'',opTime:opTime||'',opDate:opDate?ymd(opDate):'',admitDate:admitDate?ymd(admitDate):'',dischargeDate:dischargeDate?ymd(dischargeDate):''}; 
+  const prepItems=['prep_geka','prep_hinyoki','prep_ureter','prep_sample','prep_rapid']
+    .filter(id=>document.getElementById(id)&&document.getElementById(id).checked)
+    .map(id=>document.getElementById(id).value);
+  const prep=prepItems.join(',');
+  const editingId=document.getElementById('editingId').value;
+  const out=document.getElementById('output');
+
+  if(!pid){out.innerHTML='<div class="alert alert-warn">患者IDを入力してください</div>';return;}
+  if(!doc){out.innerHTML='<div class="alert alert-warn">主治医を選択してください</div>';return;}
+  if(!surgery){out.innerHTML='<div class="alert alert-warn">術式を選択してください</div>';return;}
+  const opDate=opStr?parseDate(opStr):null;
+  if(opCol==='C'&&opDate&&opDate.getDay()!==4){out.innerHTML='<div class="alert alert-warn">C列（外来手術）は木曜日のみ登録できます</div>';return;}
+  if((surgery==='op_laser_ex'||surgery==='op_scope_ex'||surgery==='op_other_ex')&&opCol!=='C'){out.innerHTML='<div class="alert alert-warn">外来手術はC列を選択してください</div>';return;}
+
+  if(!editingId){
+    const dup=records.find(r=>r.patientId===pid&&r.opDate===opStr&&opStr);
+    if(dup){if(!confirm('患者ID「'+pid+'」の'+opStr+'はすでに登録されています。\n上書きしますか？')){out.innerHTML='<div class="alert alert-info">登録をキャンセルしました</div>';return;}document.getElementById('editingId').value=dup.id;}
+  }
+
+  const isEctopic=surgery==='ectopic',isExcluded=EXCLUDED.has(surgery)||opCol==='C';
+  const admitDate=(opDate&&!isExcluded)?(isEctopic?new Date(opDate):addDays(opDate,-1)):null;
+  const id=document.getElementById('editingId').value||genId();
+  let alertsHTML='';
+  if(admitDate){
+    const admitDay=admitDate.getDay();
+    if(admitDay===6||admitDay===0){
+      const admitYMD=ymd(admitDate);
+      const same=records.filter(r=>r.admitDate===admitYMD&&r.id!==id);
+      alertsHTML+=same.length>=2
+        ?'<div class="alert alert-red">⚠ '+fmt(admitDate)+'の入院が上限（2名）に達しています</div>'
+        :'<div class="alert alert-warn">'+fmt(admitDate)+'の入院 '+(same.length+1)+' / 2 名目として登録します</div>';
+    }
+  }
+  let dischargeDate=null,adjustNote='';
+  if(!isExcluded&&admitDate){
+    const nights=NIGHTS[surgery],isFixed=FIXED.has(surgery);
+    const earliest=addDays(admitDate,nights);
+    dischargeDate=new Date(earliest);let adjusted=false;
+    if(!isFixed&&isBad(dischargeDate)){dischargeDate=nextWorkday(dischargeDate);adjusted=true;}
+    if(isFixed) adjustNote='<div class="alert alert-warn" style="margin-top:10px">この術式は'+nights+'泊'+(nights+1)+'日固定です</div>';
+    else if(adjusted){const dw=earliest.getDay();const reason=isHoliday(earliest)?'祝日':dw===5?'金曜':dw===6?'土曜':'日曜';adjustNote='<div class="alert alert-info" style="margin-top:10px">最短退院日（'+fmt(earliest)+'）は'+reason+'のため次の平日に調整しました</div>';}
+    else adjustNote='<div class="alert alert-ok" style="margin-top:10px">最短日数で月〜木退院が可能です</div>';
+  }
+
+  const record={id,patientId:pid,doctor:doc,admitDoctor:admitDoc||'',surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',prep:prep||'',surgery,opCol:opCol||'',opNum:opCol==='C'?'':opNum||'',opTime:opTime||'',opDate:opDate?ymd(opDate):'',admitDate:admitDate?ymd(admitDate):'',dischargeDate:dischargeDate?ymd(dischargeDate):''};
+
   setSpin(true);
-  try{await gasPut(record);addLog(editingId?'修正':'登録',pid,SHORT[surgery]||surgery);document.getElementById('editingId').value=record.id;await fetchAndRender(false);setSpin(false);toast('✓ 登録しました',true);}
-  catch(e){setSpin(false);toast('⚠ 保存に失敗しました',false);}
+  try{
+    await gasPut(record);
+    addLog(editingId?'修正':'登録',pid,SHORT[surgery]||surgery);
+    document.getElementById('editingId').value=record.id;
+    await fetchAndRender(false);
+    setSpin(false);
+    toast('✓ 登録しました',true);
+  }catch(e){setSpin(false);toast('⚠ 保存に失敗しました',false);}
+
   const orderStr=opCol&&opNum?opCol+opNum:'';
   out.innerHTML=alertsHTML
     +'<div class="result-card"><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">'
@@ -794,6 +845,7 @@ async function calculate(){
     +(surgeon2?'<div><div class="result-label">執刀医２</div><div style="font-size:13px;font-weight:600">'+surgeon2+'</div></div>':'')
     +(orderStr?'<div><div class="result-label">手術順番</div><span class="badge '+(opCol==='A'?'badge-blue':opCol==='B'?'badge-purple':'badge-amber')+'">'+orderStr+'</span></div>':'')
     +(opTime?'<div><div class="result-label">予定時間</div><div style="font-size:13px;font-weight:600">'+opTime+'h</div></div>':'')
+    +(prep?'<div><div class="result-label">準備</div><div style="font-size:12px;font-weight:600">'+prep.split(',').map(p=>'【'+p+'】').join(' ')+'</div></div>':'')
     +'<div style="flex:0 0 100%"><span class="badge badge-purple" style="font-size:11px">'+(LABELS[surgery]||surgery)+'</span></div>'
     +'</div><div class="result-grid">'
     +'<div><div class="result-label">入院日</div><div class="result-val">'+(admitDate?fmt(admitDate):'未定')+'</div>'+(isEctopic?'<div style="font-size:10px;color:#888">当日入院（急患）</div>':'')+'</div>'
@@ -925,7 +977,7 @@ function renderWeekCal(){
       ev.appendChild(row1);
       const row2=document.createElement('div');row2.className='week-ev-row2';
       const parts=[SHORT[r.surgery]||r.surgery||''];
-      if(r.doctor)parts.push('外:'+r.doctor);if(r.admitDoctor)parts.push('入:'+r.admitDoctor);if(r.surgeon)parts.push('執1:'+r.surgeon);if(r.surgeon2)parts.push('執2:'+r.surgeon2);if(r.assist1)parts.push('助1:'+r.assist1);if(r.assist2)parts.push('助2:'+r.assist2);if(r.prep)(r.prep).split(',').filter(Boolean).forEach(p=>parts.push('【'+p+'】'));if(r.prep)(r.prep).split(',').filter(Boolean).forEach(p=>parts.push('['+p+']'));
+      if(r.doctor)parts.push('外:'+r.doctor);if(r.admitDoctor)parts.push('入:'+r.admitDoctor);if(r.surgeon)parts.push('執1:'+r.surgeon);if(r.surgeon2)parts.push('執2:'+r.surgeon2);if(r.assist1)parts.push('助1:'+r.assist1);if(r.assist2)parts.push('助2:'+r.assist2);if(r.prep)(r.prep).split(',').filter(Boolean).forEach(p=>parts.push('【'+p+'】'));
       row2.textContent=parts.filter(Boolean).join('　');ev.appendChild(row2);body.appendChild(ev);
     });
     card.appendChild(body);grid.appendChild(card);
