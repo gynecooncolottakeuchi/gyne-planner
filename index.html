@@ -542,7 +542,13 @@ function isBad(d){const w=d.getDay();return w===5||w===6||w===0||isHoliday(d);}
 function nextWorkday(d){let r=new Date(d);while(isBad(r))r=addDays(r,1);return r;}
 function badgeClass(d){if(!d||isNaN(d.getTime())) return 'badge-blue';const w=d.getDay();return w===1?'badge-green':w>=2&&w<=4?'badge-blue':w===6?'badge-amber':'badge-red';}
 function today0(){const t=new Date();t.setHours(0,0,0,0);return t;}
-function normalizeRecord(r){if(!r) return r;['opDate','admitDate','dischargeDate'].forEach(k=>{if(r[k]){const d=parseDate(r[k]);r[k]=d?ymd(d):'';}});if(!r.id)r.id=genId();if(r.admitDoctor===undefined)r.admitDoctor='';return r;}
+function normalizeRecord(r){if(!r) return r;['opDate','admitDate','dischargeDate'].forEach(k=>{if(r[k]){const d=parseDate(r[k]);r[k]=d?ymd(d):'';}});if(!r.id)r.id=genId();if(r.admitDoctor===undefined)r.admitDoctor='';if(r.prep===undefined)r.prep='';
+  // opTimeを選択肢に合わせて正規化（"6" -> "6.0", "2.5" -> "2.5"）
+  if(r.opTime){
+    const n=parseFloat(r.opTime);
+    if(!isNaN(n)) r.opTime=Number.isInteger(n)?n.toFixed(1):String(n);
+  }
+  return r;}
 function safeLS(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){}}
 
 function saveLogs(){safeLS('gyn_logs',JSON.stringify(logs));}
@@ -706,16 +712,26 @@ function editRecord(id){
   document.getElementById('editingId').value=r.id;
   switchTab('calc');window.scrollTo(0,0);
   // switchTab後に値を再設定（closure変数を明示的にキャプチャ）
-  const _surgery=r.surgery||'',_opTime=r.opTime||'',_prep=r.prep||'';
+  const _surgery=r.surgery||'',_opTime=String(r.opTime||'').trim(),_prep=r.prep||'';
+  // switchTab後に確実に値を設定（200ms待機）
   setTimeout(()=>{
     document.getElementById('surgerySelect').value=_surgery;
-    document.getElementById('opTime').value=_opTime;
+    // opTimeはセレクトのoptionと完全一致させる
+    const opTimeSel=document.getElementById('opTime');
+    let matched=false;
+    for(let i=0;i<opTimeSel.options.length;i++){
+      if(opTimeSel.options[i].value===_opTime||opTimeSel.options[i].text===_opTime){
+        opTimeSel.selectedIndex=i;matched=true;break;
+      }
+    }
+    if(!matched) opTimeSel.value=_opTime;
     // prepチェックボックスを復元
+    const prepVals=_prep.split(',').filter(Boolean);
     ['prep_geka','prep_hinyoki','prep_ureter','prep_sample','prep_rapid'].forEach(id=>{
-      const el=document.getElementById(id);if(el)el.checked=_prep.split(',').includes(el.value);
+      const el=document.getElementById(id);if(el)el.checked=prepVals.includes(el.value);
     });
     document.getElementById('output').innerHTML='<div class="alert alert-info">修正モード：変更後「登録」を押してください</div>';
-  },100);
+  },200);
 }
 function autoLoad(pid){
   if(!pid) return;
