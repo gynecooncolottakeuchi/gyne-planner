@@ -682,7 +682,13 @@ function renderList(){
 function renderEdit(){
   const el=document.getElementById('editList');
   if(!records.length){el.innerHTML='<p style="font-size:13px;color:#aaa">登録されていません</p>';return;}
-  const sorted=[...records].sort((a,b)=>a.opDate<b.opDate?-1:1);
+  const sorted=[...records].sort((a,b)=>{
+    if(a.opDate!==b.opDate) return a.opDate<b.opDate?-1:1;
+    const colOrder={'A':0,'B':1,'C':2};
+    const ca=colOrder[a.opCol]??3,cb=colOrder[b.opCol]??3;
+    if(ca!==cb) return ca-cb;
+    return (parseInt(a.opNum)||99)-(parseInt(b.opNum)||99);
+  });
   let rows='';
   sorted.forEach(r=>{
     const ad=parseDate(r.admitDate),od=parseDate(r.opDate),dd=parseDate(r.dischargeDate);
