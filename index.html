@@ -1074,7 +1074,10 @@ async function saveAbsence(){
   const type=document.getElementById('absType').value,reason=document.getElementById('absReason').value;
   if(!date||!person||!type){toast('日付・不在者・区分を入力してください',false);return;}
   const editingAbsId=document.getElementById('editingAbsId').value;
-  const abs={id:editingAbsId||'abs_'+genId(),date,person,type,reason:reason||''};
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const registeredAt=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+pad(now.getHours())+':'+pad(now.getMinutes());
+  const abs={id:editingAbsId||'abs_'+genId(),date,person,type,reason:reason||'',registeredBy:currentUser,registeredAt};
   try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsertAbsence',record:abs})});await fetchAbsences();clearAbsForm();toast('✓ 不在を登録しました',true);}
   catch(e){absences=absences.filter(s=>s.id!==abs.id);absences.push(abs);safeLS('gyn_absences',JSON.stringify(absences));renderAbsences();clearAbsForm();toast('✓ 不在を登録しました（ローカル保存）',true);}
 }
@@ -1443,11 +1446,13 @@ function renderAbsLog(){
       +'<td style="font-weight:600;font-size:12px">'+a.person+'</td>'
       +'<td><span class="abs-badge '+cls+'" style="font-size:11px">'+a.type+'</span></td>'
       +'<td style="font-size:12px;color:#555">'+(a.reason||'—')+'</td>'
+      +'<td style="font-size:11px;color:#888">'+(a.registeredBy||'—')+'</td>'
+      +'<td style="font-size:11px;color:#888;white-space:nowrap">'+(a.registeredAt||'—')+'</td>'
       +'<td><button class="btn btn-sm btn-danger" style="padding:2px 8px;font-size:11px" data-id="'+a.id+'" onclick="delAbsence(this.dataset.id);renderAbsLog()">削除</button></td>'
       +'</tr>';
   });
   el.innerHTML='<div style="overflow-x:auto"><table class="reg-table">'
-    +'<thead><tr><th>日付</th><th>不在者</th><th>区分</th><th>理由</th><th></th></tr></thead>'
+    +'<thead><tr><th>日付</th><th>不在者</th><th>区分</th><th>理由</th><th>入力者</th><th>入力時間</th><th></th></tr></thead>'
     +'<tbody>'+rows+'</tbody></table></div>';
 }
 
