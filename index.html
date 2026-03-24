@@ -859,7 +859,63 @@ async function calculate(){
   if(!surgery){out.innerHTML='<div class="alert alert-warn">術式を選択してください</div>';return;}
   const opDate=opStr?parseDate(opStr):null;
   if(opCol==='C'&&opDate&&opDate.getDay()!==4){out.innerHTML='<div class="alert alert-warn">C列（外来手術）は木曜日のみ登録できます</div>';return;}
+
+  // 不在チェック：手術日に不在の医師が担当医に入っていないか
+  if(opDate){
+    const opDateStr=ymd(opDate);
+    const absOnDay=absences.filter(a=>a.date===opDateStr);
+    if(absOnDay.length>0){
+      // 担当医フィールドに入力された医師
+      const staffFields=[
+        {label:'入院主治医',val:admitDoc},
+        {label:'執刀医１',val:surgeon},
+        {label:'執刀医２',val:surgeon2},
+        {label:'助手１',val:assist1},
+        {label:'助手２',val:assist2}
+      ].filter(f=>f.val);
+      const conflicts=[];
+      staffFields.forEach(f=>{
+        const absMatch=absOnDay.find(a=>a.person===f.val);
+        if(absMatch){
+          const typeLabel=absMatch.type==='終日'?'終日不在':absMatch.type==='午前'?'午前不在':'午後不在';
+          conflicts.push(f.label+'：'+f.val+'（'+typeLabel+(absMatch.reason?'・'+absMatch.reason:'')+'）');
+        }
+      });
+      if(conflicts.length>0){
+        alert('⚠ 不在の医師が担当に含まれています。\n\n'+conflicts.join('\n')+'\n\n入力内容を確認してください。');
+        return;
+      }
+    }
+  }
   if((surgery==='op_laser_ex'||surgery==='op_scope_ex'||surgery==='op_other_ex')&&opCol!=='C'){out.innerHTML='<div class="alert alert-warn">外来手術はC列を選択してください</div>';return;}
+
+  // 既存登録済み症例の不在チェック（同じ手術日の他の症例）
+  if(opDate){
+    const opDateStr=ymd(opDate);
+    const absOnDay=absences.filter(a=>a.date===opDateStr);
+    if(absOnDay.length>0){
+      const staffFields2=[
+        {label:'入院主治医',val:admitDoc},
+        {label:'執刀医１',val:surgeon},
+        {label:'執刀医２',val:surgeon2},
+        {label:'助手１',val:assist1},
+        {label:'助手２',val:assist2}
+      ].filter(f=>f.val);
+      const warnings=[];
+      staffFields2.forEach(f=>{
+        const absMatch=absOnDay.find(a=>a.person===f.val);
+        if(absMatch){
+          const typeLabel=absMatch.type==='終日'?'終日不在':absMatch.type==='午前'?'午前不在':'午後不在';
+          warnings.push(f.label+'：'+f.val+'（'+typeLabel+(absMatch.reason?'・'+absMatch.reason:'')+'）');
+        }
+      });
+      if(warnings.length>0){
+        if(!confirm('⚠ 不在の医師が担当に含まれています：\n'+warnings.join('\n')+'\n\nそれでも登録しますか？')){
+          out.innerHTML='<div class="alert alert-info">登録をキャンセルしました</div>';return;
+        }
+      }
+    }
+  }
 
   if(!editingId){
     const dup=records.find(r=>r.patientId===pid&&r.opDate===opStr&&opStr);
@@ -1092,6 +1148,19 @@ async function saveAbsence(){
   const date=document.getElementById('absDate').value,person=document.getElementById('absPerson').value;
   const type=document.getElementById('absType').value,reason=document.getElementById('absReason').value;
   if(!date||!person||!type){toast('日付・不在者・区分を入力してください',false);return;}
+  // 不在入力時チェック：その日に担当として登録されている症例がないか
+  const absConflicts=[];
+  records.forEach(r=>{
+    if(r.opDate!==date&&r.admitDate!==date) return;
+    [{label:'入院主治医',val:r.admitDoctor},{label:'執刀医１',val:r.surgeon},{label:'執刀医２',val:r.surgeon2},{label:'助手１',val:r.assist1},{label:'助手２',val:r.assist2}]
+      .filter(f=>f.val===person)
+      .forEach(f=>absConflicts.push('患者ID '+r.patientId+'（手術日:'+r.opDate+'）'+f.label));
+  });
+  if(absConflicts.length>0){
+    alert('⚠ '+person+'先生は以下の症例に登録されているため不在入力できません。\n\n'+absConflicts.join('\n')+'\n\n竹内に連絡してください。');
+    return;
+  }
+
   const editingAbsId=document.getElementById('editingAbsId').value;
   const now=new Date();
   const pad=n=>String(n).padStart(2,'0');
