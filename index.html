@@ -179,6 +179,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <button class="tab-btn" onclick="switchTab('log')" data-tab="log">操作ログ</button>
     <button class="tab-btn" onclick="switchTab('search')" data-tab="search">🔍 検索</button>
     <button class="tab-btn" onclick="switchTab('stats')" data-tab="stats">📊 統計</button>
+    <button class="tab-btn" onclick="switchTab('absstats')" data-tab="absstats">📊 不在統計</button>
   </div>
 
   <!-- NEW!タブ -->
@@ -234,6 +235,9 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
               <option value="robot_malig_ln">ロボット 子宮悪性（LN+）8泊9日</option>
               <option value="robot_malig_noln">ロボット 子宮悪性（LN-）6泊7日</option>
               <option value="robot_benign">ロボット 子宮良性 6泊7日</option>
+            </optgroup>
+            <optgroup label="D&E・D&C">
+              <option value="de_dc">D&amp;E（D&amp;C）3泊4日（固定）</option>
             </optgroup>
             <optgroup label="その他（A/B列）">
               <option value="lap_other">腹腔鏡その他（除外）</option>
@@ -486,6 +490,32 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
       <div id="statsOutput"></div>
     </div>
   </div>
+  <!-- 不在統計 -->
+  <div id="tab-absstats" class="content" style="display:none">
+    <div id="absStatsLock" style="text-align:center;padding:40px">
+      <div style="font-size:48px;margin-bottom:16px">🔒</div>
+      <div style="font-size:15px;font-weight:600;color:#555;margin-bottom:16px">このタブは竹内先生専用です</div>
+      <button class="btn btn-primary" onclick="unlockAbsStats()">パスワードを入力</button>
+    </div>
+    <div id="absStatsContent" style="display:none">
+      <div class="card">
+        <div class="section-label">集計条件</div>
+        <div class="form-grid">
+          <div class="field"><label>期間</label>
+            <select id="absStatsPeriod" onchange="buildAbsStatsTargets();renderAbsStats()">
+              <option value="month">月別</option>
+              <option value="year">年別</option>
+            </select>
+          </div>
+          <div class="field"><label>対象月/年</label>
+            <select id="absStatsTarget" onchange="renderAbsStats()"></select>
+          </div>
+        </div>
+      </div>
+      <div id="absStatsOutput"></div>
+    </div>
+  </div>
+
 </div>
 
 <!-- 詳細モーダル -->
@@ -507,11 +537,11 @@ const STATS_PW='20140609';
 const ADMINS=new Set(['竹内','穴井']);
 function getPassword(user){return PASSWORDS[user]||PASSWORD_DEFAULT;}
 const DOCTORS=['豊福','後藤','竹内','小山','平川','穴井','小林','内田','川野','杉山','中島','広瀬','山本','中野','小西','西田','池田','家城','田中'];
-const NIGHTS={op_laser_ex:0,op_scope_ex:0,op_other_ex:0,lap_other:null,open_other:null,vaginal_other:null,cs_other:null,ec_open_ln:12,ec_open_noln:8,oc_open_ln:12,oc_open_noln:8,cx_radical:null,lap_radical:null,cx_semi_ln:12,cx_simple_ln:12,cx_semi_noln:8,cx_simple_noln:8,open_benign_ut:8,open_benign_ov:8,lap_malig_ln:8,lap_malig_noln:6,lap_benign:6,lap_adnexa:6,robot_malig_ln:8,robot_malig_noln:6,robot_benign:6,vaginal_hyst:8,vnotes:6,cone:3,laser:3,hyst_scope:3,ectopic:5};
-const FIXED=new Set(['cone','laser','hyst_scope','op_laser_ex','op_scope_ex','op_other_ex']);
+const NIGHTS={op_laser_ex:0,op_scope_ex:0,op_other_ex:0,lap_other:null,open_other:null,vaginal_other:null,cs_other:null,de_dc:3,ec_open_ln:12,ec_open_noln:8,oc_open_ln:12,oc_open_noln:8,cx_radical:null,lap_radical:null,cx_semi_ln:12,cx_simple_ln:12,cx_semi_noln:8,cx_simple_noln:8,open_benign_ut:8,open_benign_ov:8,lap_malig_ln:8,lap_malig_noln:6,lap_benign:6,lap_adnexa:6,robot_malig_ln:8,robot_malig_noln:6,robot_benign:6,vaginal_hyst:8,vnotes:6,cone:3,laser:3,hyst_scope:3,ectopic:5};
+const FIXED=new Set(['cone','laser','hyst_scope','op_laser_ex','op_scope_ex','op_other_ex','de_dc']);
 const EXCLUDED=new Set(['cx_radical','lap_radical','lap_other','open_other','vaginal_other','cs_other']);
-const SHORT={op_laser_ex:'外来レーザー',op_scope_ex:'外来子宮鏡',op_other_ex:'外来その他',lap_other:'腹腔鏡その他',open_other:'開腹その他',vaginal_other:'経腟その他',cs_other:'帝王切開',ec_open_ln:'体癌開腹LN+',ec_open_noln:'体癌開腹LN-',oc_open_ln:'卵巣開腹LN+',oc_open_noln:'卵巣開腹LN-',cx_radical:'頸癌広汎',lap_radical:'腹腔鏡広汎',cx_semi_ln:'頸癌準広汎LN+',cx_simple_ln:'頸癌単純LN+',cx_semi_noln:'頸癌準広汎LN-',cx_simple_noln:'頸癌単純LN-',open_benign_ut:'良性子宮開腹',open_benign_ov:'良性卵巣開腹',lap_malig_ln:'腹腔鏡悪LN+',lap_malig_noln:'腹腔鏡悪LN-',lap_benign:'腹腔鏡良性',lap_adnexa:'腹腔鏡付属器',robot_malig_ln:'ロボ悪LN+',robot_malig_noln:'ロボ悪LN-',robot_benign:'ロボ良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
-const LABELS={op_laser_ex:'外来レーザー蒸散術',op_scope_ex:'外来子宮鏡手術',op_other_ex:'外来その他',lap_other:'腹腔鏡その他',open_other:'開腹その他',vaginal_other:'経腟その他',cs_other:'帝王切開',ec_open_ln:'子宮体癌 開腹（LN+）',ec_open_noln:'子宮体癌 開腹（LN-）',oc_open_ln:'卵巣癌 開腹（LN+）',oc_open_noln:'卵巣癌 開腹（LN-）',cx_radical:'頸癌 広汎子宮全摘',lap_radical:'腹腔鏡下 広汎子宮全摘',cx_semi_ln:'頸癌 準広汎（LN+）',cx_simple_ln:'頸癌 単純TH（LN+）',cx_semi_noln:'頸癌 準広汎（LN-）',cx_simple_noln:'頸癌 単純TH（LN-）',open_benign_ut:'良性子宮 開腹',open_benign_ov:'良性卵巣 開腹',lap_malig_ln:'腹腔鏡 悪性（LN+）',lap_malig_noln:'腹腔鏡 悪性（LN-）',lap_benign:'腹腔鏡 良性',lap_adnexa:'腹腔鏡 付属器',robot_malig_ln:'ロボ 悪性（LN+）',robot_malig_noln:'ロボ 悪性（LN-）',robot_benign:'ロボ 良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
+const SHORT={op_laser_ex:'外来レーザー',op_scope_ex:'外来子宮鏡',op_other_ex:'外来その他',lap_other:'腹腔鏡その他',open_other:'開腹その他',vaginal_other:'経腟その他',cs_other:'帝王切開',de_dc:'D&E(D&C)',ec_open_ln:'体癌開腹LN+',ec_open_noln:'体癌開腹LN-',oc_open_ln:'卵巣開腹LN+',oc_open_noln:'卵巣開腹LN-',cx_radical:'頸癌広汎',lap_radical:'腹腔鏡広汎',cx_semi_ln:'頸癌準広汎LN+',cx_simple_ln:'頸癌単純LN+',cx_semi_noln:'頸癌準広汎LN-',cx_simple_noln:'頸癌単純LN-',open_benign_ut:'良性子宮開腹',open_benign_ov:'良性卵巣開腹',lap_malig_ln:'腹腔鏡悪LN+',lap_malig_noln:'腹腔鏡悪LN-',lap_benign:'腹腔鏡良性',lap_adnexa:'腹腔鏡付属器',robot_malig_ln:'ロボ悪LN+',robot_malig_noln:'ロボ悪LN-',robot_benign:'ロボ良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
+const LABELS={op_laser_ex:'外来レーザー蒸散術',op_scope_ex:'外来子宮鏡手術',op_other_ex:'外来その他',lap_other:'腹腔鏡その他',open_other:'開腹その他',vaginal_other:'経腟その他',cs_other:'帝王切開',de_dc:'D&E（D&C）',ec_open_ln:'子宮体癌 開腹（LN+）',ec_open_noln:'子宮体癌 開腹（LN-）',oc_open_ln:'卵巣癌 開腹（LN+）',oc_open_noln:'卵巣癌 開腹（LN-）',cx_radical:'頸癌 広汎子宮全摘',lap_radical:'腹腔鏡下 広汎子宮全摘',cx_semi_ln:'頸癌 準広汎（LN+）',cx_simple_ln:'頸癌 単純TH（LN+）',cx_semi_noln:'頸癌 準広汎（LN-）',cx_simple_noln:'頸癌 単純TH（LN-）',open_benign_ut:'良性子宮 開腹',open_benign_ov:'良性卵巣 開腹',lap_malig_ln:'腹腔鏡 悪性（LN+）',lap_malig_noln:'腹腔鏡 悪性（LN-）',lap_benign:'腹腔鏡 良性',lap_adnexa:'腹腔鏡 付属器',robot_malig_ln:'ロボ 悪性（LN+）',robot_malig_noln:'ロボ 悪性（LN-）',robot_benign:'ロボ 良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
 const DAYS=['日','月','火','水','木','金','土'];
 const HOLIDAYS=new Set(['2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24','2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06','2025-07-21','2025-08-11','2025-09-15','2025-09-22','2025-09-23','2025-10-13','2025-11-03','2025-11-23','2025-11-24','2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06','2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23','2026-12-23']);
 const ABS_REASONS={'終日':['直明け','有給','夏季休暇','学会','リフレッシュ休暇','忌引き'],'午前':['有給','午前C/S','午前会議'],'午後':['有給','午後C/S','午後会議','午後遺伝カウンセリング','午後胎児エコー']};
@@ -618,19 +648,20 @@ function checkPw(){
     fillSelects();loadLogs();loadAbsences();loadShinkans();
     fetchAndRender(false);fetchAbsences();fetchShinkan();
     ['calc','shinkan','edit'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=ADMINS.has(currentUser)?'':'none';});
-    ['log','stats'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=currentUser===LOG_ADMIN?'':'none';});
+    ['log','stats','absstats'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=currentUser===LOG_ADMIN?'':'none';});
     try{sessionStorage.setItem('gyn_session',JSON.stringify({user:doc,pw,ts:Date.now()}));}catch(e){}
   }else{document.getElementById('pwError').style.display='block';document.getElementById('pwInput').value='';}
 }
 function logout(){currentUser='';document.getElementById('lockScreen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('pwInput').value='';document.getElementById('loginDoctor').value='';document.getElementById('pwError').style.display='none';try{sessionStorage.removeItem('gyn_session');}catch(e){}}
 
 function switchTab(t){
-  ['newsfeed','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats'].forEach(name=>{document.getElementById('tab-'+name).style.display=t===name?'block':'none';});
+  ['newsfeed','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats','absstats'].forEach(name=>{document.getElementById('tab-'+name).style.display=t===name?'block':'none';});
   document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.toggle('active',btn.getAttribute('data-tab')===t));
   if(t==='newsfeed') renderNewsfeed();
   if(t==='absence') fetchAbsences();
   if(t==='shinkan') fetchShinkan();
   if(t==='stats') initStats();
+  if(t==='absstats') initAbsStats();
   if(t==='cal1') renderCal('cal1');
   if(t==='cal2'){fetchShinkan();renderCal('cal2');}
   if(t==='cal3'){fetchShinkan();renderWeekCal();}
@@ -640,7 +671,7 @@ function switchTab(t){
 }
 function refreshUI(){
   updateCounter();
-  const tabs=['newsfeed','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats'];
+  const tabs=['newsfeed','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats','absstats'];
   const active=tabs.find(t=>{const el=document.getElementById('tab-'+t);return el&&el.style.display!=='none';});
   if(active==='newsfeed') renderNewsfeed();
   if(active==='cal1') renderCal('cal1');
@@ -1237,6 +1268,154 @@ function renderSearch(pid){
 function showDetailAndHighlight(id){
   const r=records.find(x=>x.id===id);if(!r)return;showDetail(r);
   setTimeout(()=>{switchTab('cal1');const od=parseDate(r.opDate);if(od){cal1Year=od.getFullYear();cal1Month=od.getMonth();}setTimeout(()=>{renderCal('cal1');document.querySelectorAll('.cal-ev').forEach(ev=>{if(ev.textContent.includes(r.patientId)){const cell=ev.closest('.cal-cell');if(cell){cell.classList.add('search-match');cell.scrollIntoView({behavior:'smooth',block:'center'});}}});},100);},200);
+}
+
+// ===== 不在統計 =====
+let absStatsUnlocked=false;
+
+function unlockAbsStats(){
+  const pw=prompt('パスワードを入力してください');
+  if(pw===STATS_PW&&currentUser===LOG_ADMIN){
+    absStatsUnlocked=true;
+    document.getElementById('absStatsLock').style.display='none';
+    document.getElementById('absStatsContent').style.display='block';
+    buildAbsStatsTargets();renderAbsStats();
+  }else alert('竹内先生のアカウントでログインし、正しいパスワードを入力してください');
+}
+
+function initAbsStats(){
+  if(currentUser===LOG_ADMIN){
+    absStatsUnlocked=true;
+    document.getElementById('absStatsLock').style.display='none';
+    document.getElementById('absStatsContent').style.display='block';
+  }else{
+    document.getElementById('absStatsLock').style.display='block';
+    document.getElementById('absStatsContent').style.display='none';
+    return;
+  }
+  if(!absences.length){
+    fetchAbsences().then(()=>{buildAbsStatsTargets();renderAbsStats();});
+  }else{buildAbsStatsTargets();renderAbsStats();}
+}
+
+function buildAbsStatsTargets(){
+  const period=document.getElementById('absStatsPeriod').value;
+  const sel=document.getElementById('absStatsTarget');
+  const cur=sel.value;sel.innerHTML='';
+  const dates=absences.map(a=>parseDate(a.date)).filter(Boolean);
+  if(!dates.length){sel.innerHTML='<option value="">データなし</option>';return;}
+  if(period==='month'){
+    const months=[...new Set(dates.map(d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')))].sort().reverse();
+    months.forEach(m=>{const o=document.createElement('option');o.value=m;const y=m.slice(0,4),mo=parseInt(m.slice(5));o.textContent=y+'年'+mo+'月';sel.appendChild(o);});
+  }else{
+    const years=[...new Set(dates.map(d=>d.getFullYear()))].sort().reverse();
+    years.forEach(y=>{const o=document.createElement('option');o.value=String(y);o.textContent=y+'年';sel.appendChild(o);});
+  }
+  if(cur)sel.value=cur;
+}
+
+function getFilteredAbsences(){
+  const period=document.getElementById('absStatsPeriod').value;
+  const target=document.getElementById('absStatsTarget').value;
+  if(!target)return [];
+  return absences.filter(a=>{
+    const d=parseDate(a.date);if(!d)return false;
+    if(period==='month') return(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'))===target;
+    else return String(d.getFullYear())===target;
+  });
+}
+
+function renderAbsStats(){
+  if(!absStatsUnlocked)return;
+  const out=document.getElementById('absStatsOutput');
+  const target=document.getElementById('absStatsTarget').value;
+  const period=document.getElementById('absStatsPeriod').value;
+  if(!absences.length){out.innerHTML='<div class="card"><p style="color:#aaa;font-size:13px">データを取得中です...</p></div>';return;}
+  if(!target){out.innerHTML='<div class="card"><p style="color:#aaa;font-size:13px">対象期間を選択してください</p></div>';return;}
+
+  const recs=getFilteredAbsences();
+  const periodLabel=period==='month'?(()=>{const[y,m]=target.split('-');return y+'年'+parseInt(m)+'月';})():(target+'年');
+
+  // 全医師 + 全研修医
+  const allPersons=[...DOCTORS,'全研修医'];
+
+  // 1. 医師別 不在回数（終日・午前・午後 内訳付き）
+  const countByPerson={};
+  allPersons.forEach(p=>{countByPerson[p]={終日:0,午前:0,午後:0,total:0};});
+  recs.forEach(a=>{
+    if(!countByPerson[a.person])countByPerson[a.person]={終日:0,午前:0,午後:0,total:0};
+    countByPerson[a.person][a.type]=(countByPerson[a.person][a.type]||0)+1;
+    countByPerson[a.person].total++;
+  });
+
+  // 2. 理由別集計
+  const reasonCount={};
+  recs.forEach(a=>{if(a.reason){reasonCount[a.reason]=(reasonCount[a.reason]||0)+1;}});
+
+  // 3. 各医師別 理由内訳
+  const personReasons={};
+  recs.forEach(a=>{
+    if(!personReasons[a.person])personReasons[a.person]={};
+    if(a.reason)personReasons[a.person][a.reason]=(personReasons[a.person][a.reason]||0)+1;
+  });
+
+  let html='<div class="card" style="background:#e8f0fb;border:none;margin-bottom:16px">'
+    +'<div style="font-size:14px;font-weight:700;color:#1a4a8a">'+periodLabel+' 不在統計</div>'
+    +'<div style="font-size:13px;color:#555;margin-top:4px">対象件数：'+recs.length+'件</div>'
+    +'</div>';
+
+  // ① 医師別不在回数（全体）
+  html+='<div class="card"><div class="stats-section-title">① 医師別 不在回数</div>';
+  html+='<div style="overflow-x:auto"><table class="stats-table"><thead><tr><th>医師</th><th class="num">終日</th><th class="num">午前</th><th class="num">午後</th><th class="num">合計</th></tr></thead><tbody>';
+  const maxTotal=Math.max(...allPersons.map(p=>countByPerson[p]?.total||0),1);
+  allPersons.forEach(p=>{
+    const c=countByPerson[p]||{終日:0,午前:0,午後:0,total:0};
+    html+='<tr><td>'+p+'</td>'
+      +'<td class="num">'+(c.終日||0)+'</td>'
+      +'<td class="num">'+(c.午前||0)+'</td>'
+      +'<td class="num">'+(c.午後||0)+'</td>'
+      +'<td class="num" style="font-weight:700">'+c.total+'</td></tr>';
+  });
+  const totalAll=recs.length;
+  html+='<tr class="total-row"><td>合計</td>'
+    +'<td class="num">'+recs.filter(a=>a.type==='終日').length+'</td>'
+    +'<td class="num">'+recs.filter(a=>a.type==='午前').length+'</td>'
+    +'<td class="num">'+recs.filter(a=>a.type==='午後').length+'</td>'
+    +'<td class="num">'+totalAll+'</td></tr>';
+  html+='</tbody></table></div></div>';
+
+  // ② 理由別集計
+  if(Object.keys(reasonCount).length){
+    html+='<div class="card"><div class="stats-section-title">② 理由別 不在回数</div>';
+    html+='<div style="overflow-x:auto"><table class="stats-table"><thead><tr><th>理由</th><th class="num">件数</th></tr></thead><tbody>';
+    Object.entries(reasonCount).sort((a,b)=>b[1]-a[1]).forEach(([reason,cnt])=>{
+      html+='<tr><td>'+reason+'</td><td class="num">'+cnt+'</td></tr>';
+    });
+    html+='</tbody></table></div></div>';
+  }
+
+  // ③ 医師別 理由内訳
+  html+='<div class="card"><div class="stats-section-title">③ 医師別 理由内訳</div>';
+  const allReasons=[...new Set(recs.map(a=>a.reason).filter(Boolean))].sort();
+  if(allReasons.length){
+    html+='<div style="overflow-x:auto"><table class="stats-table"><thead><tr><th>医師</th>';
+    allReasons.forEach(r=>html+='<th class="num" style="font-size:10px;min-width:48px">'+r+'</th>');
+    html+='<th class="num">計</th></tr></thead><tbody>';
+    allPersons.forEach(p=>{
+      const pr=personReasons[p]||{};
+      const total=Object.values(pr).reduce((s,v)=>s+v,0);
+      if(total===0)return;
+      html+='<tr><td>'+p+'</td>';
+      allReasons.forEach(r=>html+='<td class="num">'+(pr[r]||'')+'</td>');
+      html+='<td class="num" style="font-weight:700">'+total+'</td></tr>';
+    });
+    html+='</tbody></table></div>';
+  }else{
+    html+='<p style="font-size:13px;color:#aaa;padding:8px">理由の登録がありません</p>';
+  }
+  html+='</div>';
+
+  out.innerHTML=html;
 }
 
 function renderLog(){
