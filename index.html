@@ -98,6 +98,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 .ev-B{background:#ede9fe;color:#3b0764;border-left:3px solid #7c3aed}
 .ev-discharge{background:#dcfce7;color:#14532d;border-left:3px solid #22c55e}
 .ev-C{background:#fef9c3;color:#713f12;border-left:3px solid #eab308}
+.ev-incomplete{border:2px dashed #e74c3c !important;position:relative;}
+.ev-incomplete::after{content:'⚠';position:absolute;top:1px;right:3px;font-size:9px;color:#e74c3c;}
 .cal-ev[ondblclick],.week-ev[ondblclick]{cursor:pointer;}
 .cal-ev[ondblclick]:active,.week-ev[ondblclick]:active{opacity:.8;}
 .pill-C{background:#eab308;color:#fff}
@@ -971,20 +973,21 @@ function _renderCal(cal){
     sorted.slice(0,maxShow).forEach(ev=>{
       const isOp=ev.type==='op',isA=isOp&&ev.opCol==='A',isB=isOp&&ev.opCol==='B',isC=isOp&&ev.opCol==='C';
       const div=document.createElement('div');
-      div.className='cal-ev '+(ev.type==='admit'?'ev-admit':isA?'ev-A':isB?'ev-B':isC?'ev-C':'ev-discharge');
+      const isIncomplete=isOp&&(!ev.admitDoctor||!ev.surgeon);
+      div.className='cal-ev '+(ev.type==='admit'?'ev-admit':isA?'ev-A':isB?'ev-B':isC?'ev-C':'ev-discharge')+(isIncomplete?' ev-incomplete':'');
       const _rec=(()=>{const r=records.find(x=>x.patientId===ev.patientId&&x.opDate===key);return r||(()=>{const x={...ev};x.opDate=key;return x;})();})();
       div.onclick=(()=>()=>showDetail(_rec))();
       const ord=ev.opCol&&ev.opNum?ev.opCol+ev.opNum:'';
       if(isOp){
         const l1=document.createElement('div');l1.style.cssText='display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;font-size:'+fs+';font-weight:700';
         if(ord){const p=document.createElement('span');p.className='order-pill '+(isA?'pill-A':isB?'pill-B':'pill-C');p.textContent=ord;l1.appendChild(p);}
-        const t1=document.createElement('span');t1.style.cssText='overflow:hidden;text-overflow:ellipsis;white-space:nowrap';t1.textContent=ev.patientId+' '+(SHORT[ev.surgery]||'');l1.appendChild(t1);div.appendChild(l1);
+        const t1=document.createElement('span');t1.style.cssText='overflow:hidden;text-overflow:ellipsis;white-space:nowrap';t1.textContent=ev.patientId+' '+(SHORT[ev.surgery]||'')+(isIncomplete?' ⚠':'');l1.appendChild(t1);div.appendChild(l1);
         if(isCal1){
           const parts=[];if(ev.doctor)parts.push('外'+ev.doctor);if(ev.admitDoctor)parts.push('入'+ev.admitDoctor);
           const docStr=parts.join('/');
           if(docStr){const l2=document.createElement('div');l2.style.cssText='font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=docStr;div.appendChild(l2);}
         }else{
-          const staff=[];if(ev.doctor)staff.push('外:'+ev.doctor);if(ev.admitDoctor)staff.push('入:'+ev.admitDoctor);if(ev.surgeon)staff.push('執1:'+ev.surgeon);if(ev.surgeon2)staff.push('執2:'+ev.surgeon2);if(ev.assist1)staff.push('助1:'+ev.assist1);if(ev.assist2)staff.push('助2:'+ev.assist2);if(ev.opTime)staff.push(ev.opTime+'h');if(ev.prep)(ev.prep).split(',').filter(Boolean).forEach(p=>staff.push('【'+p+'】'));
+          const staff=[];if(ev.doctor)staff.push('外:'+ev.doctor);if(ev.admitDoctor)staff.push('入:'+ev.admitDoctor);else staff.push('入:未入力⚠');if(ev.surgeon)staff.push('執1:'+ev.surgeon);else staff.push('執1:未入力⚠');if(ev.surgeon2)staff.push('執2:'+ev.surgeon2);if(ev.assist1)staff.push('助1:'+ev.assist1);if(ev.assist2)staff.push('助2:'+ev.assist2);if(ev.opTime)staff.push(ev.opTime+'h');if(ev.prep)(ev.prep).split(',').filter(Boolean).forEach(p=>staff.push('【'+p+'】'));
           if(staff.length){const l2=document.createElement('div');l2.style.cssText='font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=staff.join(' ');div.appendChild(l2);}
         }
       }else{
@@ -1035,16 +1038,17 @@ function renderWeekCal(){
     if(!dayEvs.length){const empty=document.createElement('div');empty.className='week-empty';empty.textContent='手術なし';body.appendChild(empty);}
     dayEvs.forEach(r=>{
       const isA=r.opCol==='A',isB=r.opCol==='B',isC=r.opCol==='C';
-      const ev=document.createElement('div');ev.className='week-ev '+(isA?'ev-A':isB?'ev-B':isC?'ev-C':'ev-A');ev.onclick=((rec)=>()=>showDetail(rec))(r);
+      const ev=document.createElement('div');const isIncompleteW=!r.admitDoctor||!r.surgeon;
+      ev.className='week-ev '+(isA?'ev-A':isB?'ev-B':isC?'ev-C':'ev-A')+(isIncompleteW?' ev-incomplete':'');ev.onclick=((rec)=>()=>showDetail(rec))(r);
       const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'';
       const row1=document.createElement('div');row1.className='week-ev-row1';
       if(ord){const p=document.createElement('span');p.className='order-pill '+(isA?'pill-A':isB?'pill-B':'pill-C');p.style.fontSize='11px';p.textContent=ord;row1.appendChild(p);}
-      const idSpan=document.createElement('span');idSpan.textContent=r.patientId;row1.appendChild(idSpan);
+      const idSpan=document.createElement('span');idSpan.textContent=r.patientId+(isIncompleteW?' ⚠':'');if(isIncompleteW)idSpan.style.color='#e74c3c';row1.appendChild(idSpan);
       if(r.opTime){const ts=document.createElement('span');ts.style.cssText='font-size:11px;font-weight:400;color:#555;margin-left:auto';ts.textContent=r.opTime+'h';row1.appendChild(ts);}
       ev.appendChild(row1);
       const row2=document.createElement('div');row2.className='week-ev-row2';
       const parts=[SHORT[r.surgery]||r.surgery||''];
-      if(r.doctor)parts.push('外:'+r.doctor);if(r.admitDoctor)parts.push('入:'+r.admitDoctor);if(r.surgeon)parts.push('執1:'+r.surgeon);if(r.surgeon2)parts.push('執2:'+r.surgeon2);if(r.assist1)parts.push('助1:'+r.assist1);if(r.assist2)parts.push('助2:'+r.assist2);if(r.prep)(r.prep).split(',').filter(Boolean).forEach(p=>parts.push('【'+p+'】'));
+      if(r.doctor)parts.push('外:'+r.doctor);if(r.admitDoctor)parts.push('入:'+r.admitDoctor);else parts.push('入:未入力⚠');if(r.surgeon)parts.push('執1:'+r.surgeon);else parts.push('執1:未入力⚠');if(r.surgeon2)parts.push('執2:'+r.surgeon2);if(r.assist1)parts.push('助1:'+r.assist1);if(r.assist2)parts.push('助2:'+r.assist2);if(r.prep)(r.prep).split(',').filter(Boolean).forEach(p=>parts.push('【'+p+'】'));
       row2.textContent=parts.filter(Boolean).join('　');ev.appendChild(row2);body.appendChild(ev);
     });
     card.appendChild(body);grid.appendChild(card);
