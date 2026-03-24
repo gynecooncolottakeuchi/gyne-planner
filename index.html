@@ -98,6 +98,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 .ev-B{background:#ede9fe;color:#3b0764;border-left:3px solid #7c3aed}
 .ev-discharge{background:#dcfce7;color:#14532d;border-left:3px solid #22c55e}
 .ev-C{background:#fef9c3;color:#713f12;border-left:3px solid #eab308}
+.cal-ev[ondblclick],.week-ev[ondblclick]{cursor:pointer;}
+.cal-ev[ondblclick]:active,.week-ev[ondblclick]:active{opacity:.8;}
 .pill-C{background:#eab308;color:#fff}
 .ev-abs{border-left:3px solid #f59e0b;font-size:9px;padding:1px 4px;border-radius:3px;margin-bottom:1px}
 .ev-abs-all{background:#fee2e2;color:#991b1b}
@@ -970,7 +972,9 @@ function _renderCal(cal){
       const isOp=ev.type==='op',isA=isOp&&ev.opCol==='A',isB=isOp&&ev.opCol==='B',isC=isOp&&ev.opCol==='C';
       const div=document.createElement('div');
       div.className='cal-ev '+(ev.type==='admit'?'ev-admit':isA?'ev-A':isB?'ev-B':isC?'ev-C':'ev-discharge');
-      div.onclick=(()=>{const rec=records.find(x=>x.patientId===ev.patientId&&x.opDate===key)||(()=>{const x={...ev};x.opDate=key;return x;})();return ()=>showDetail(rec);})();
+      const _rec=(()=>{const r=records.find(x=>x.patientId===ev.patientId&&x.opDate===key);return r||(()=>{const x={...ev};x.opDate=key;return x;})();})();
+      div.onclick=(()=>()=>showDetail(_rec))();
+      if(!isCal1&&ADMINS.has(currentUser)){div.ondblclick=(()=>{const rid=_rec.id;return (e)=>{e.stopPropagation();hideModal();if(rid)editRecord(rid);};})();}
       const ord=ev.opCol&&ev.opNum?ev.opCol+ev.opNum:'';
       if(isOp){
         const l1=document.createElement('div');l1.style.cssText='display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;font-size:'+fs+';font-weight:700';
@@ -1033,6 +1037,7 @@ function renderWeekCal(){
     dayEvs.forEach(r=>{
       const isA=r.opCol==='A',isB=r.opCol==='B',isC=r.opCol==='C';
       const ev=document.createElement('div');ev.className='week-ev '+(isA?'ev-A':isB?'ev-B':isC?'ev-C':'ev-A');ev.onclick=((rec)=>()=>showDetail(rec))(r);
+      if(ADMINS.has(currentUser)){ev.ondblclick=((rid)=>(e)=>{e.stopPropagation();hideModal();if(rid)editRecord(rid);})(r.id);}
       const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'';
       const row1=document.createElement('div');row1.className='week-ev-row1';
       if(ord){const p=document.createElement('span');p.className='order-pill '+(isA?'pill-A':isB?'pill-B':'pill-C');p.style.fontSize='11px';p.textContent=ord;row1.appendChild(p);}
