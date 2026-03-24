@@ -973,7 +973,7 @@ function _renderCal(cal){
     sorted.slice(0,maxShow).forEach(ev=>{
       const isOp=ev.type==='op',isA=isOp&&ev.opCol==='A',isB=isOp&&ev.opCol==='B',isC=isOp&&ev.opCol==='C';
       const div=document.createElement('div');
-      const isIncomplete=isOp&&(!ev.admitDoctor||!ev.surgeon);
+      const isIncomplete=isOp&&(isC?!ev.surgeon:(!ev.admitDoctor||!ev.surgeon));
       div.className='cal-ev '+(ev.type==='admit'?'ev-admit':isA?'ev-A':isB?'ev-B':isC?'ev-C':'ev-discharge')+(isIncomplete?' ev-incomplete':'');
       const _rec=(()=>{const r=records.find(x=>x.patientId===ev.patientId&&x.opDate===key);return r||(()=>{const x={...ev};x.opDate=key;return x;})();})();
       div.onclick=(()=>()=>showDetail(_rec))();
@@ -987,7 +987,7 @@ function _renderCal(cal){
           const docStr=parts.join('/');
           if(docStr){const l2=document.createElement('div');l2.style.cssText='font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=docStr;div.appendChild(l2);}
         }else{
-          const staff=[];if(ev.doctor)staff.push('外:'+ev.doctor);if(ev.admitDoctor)staff.push('入:'+ev.admitDoctor);else staff.push('入:未入力⚠');if(ev.surgeon)staff.push('執1:'+ev.surgeon);else staff.push('執1:未入力⚠');if(ev.surgeon2)staff.push('執2:'+ev.surgeon2);if(ev.assist1)staff.push('助1:'+ev.assist1);if(ev.assist2)staff.push('助2:'+ev.assist2);if(ev.opTime)staff.push(ev.opTime+'h');if(ev.prep)(ev.prep).split(',').filter(Boolean).forEach(p=>staff.push('【'+p+'】'));
+          const staff=[];if(ev.doctor)staff.push('外:'+ev.doctor);if(ev.admitDoctor)staff.push('入:'+ev.admitDoctor);else if(ev.opCol!=='C')staff.push('入:未入力⚠');if(ev.surgeon)staff.push('執1:'+ev.surgeon);else staff.push('執1:未入力⚠');if(ev.surgeon2)staff.push('執2:'+ev.surgeon2);if(ev.assist1)staff.push('助1:'+ev.assist1);if(ev.assist2)staff.push('助2:'+ev.assist2);if(ev.opTime)staff.push(ev.opTime+'h');if(ev.prep)(ev.prep).split(',').filter(Boolean).forEach(p=>staff.push('【'+p+'】'));
           if(staff.length){const l2=document.createElement('div');l2.style.cssText='font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=staff.join(' ');div.appendChild(l2);}
         }
       }else{
@@ -1038,7 +1038,7 @@ function renderWeekCal(){
     if(!dayEvs.length){const empty=document.createElement('div');empty.className='week-empty';empty.textContent='手術なし';body.appendChild(empty);}
     dayEvs.forEach(r=>{
       const isA=r.opCol==='A',isB=r.opCol==='B',isC=r.opCol==='C';
-      const ev=document.createElement('div');const isIncompleteW=!r.admitDoctor||!r.surgeon;
+      const ev=document.createElement('div');const isIncompleteW=isC?!r.surgeon:(!r.admitDoctor||!r.surgeon);
       ev.className='week-ev '+(isA?'ev-A':isB?'ev-B':isC?'ev-C':'ev-A')+(isIncompleteW?' ev-incomplete':'');ev.onclick=((rec)=>()=>showDetail(rec))(r);
       const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'';
       const row1=document.createElement('div');row1.className='week-ev-row1';
@@ -1048,7 +1048,7 @@ function renderWeekCal(){
       ev.appendChild(row1);
       const row2=document.createElement('div');row2.className='week-ev-row2';
       const parts=[SHORT[r.surgery]||r.surgery||''];
-      if(r.doctor)parts.push('外:'+r.doctor);if(r.admitDoctor)parts.push('入:'+r.admitDoctor);else parts.push('入:未入力⚠');if(r.surgeon)parts.push('執1:'+r.surgeon);else parts.push('執1:未入力⚠');if(r.surgeon2)parts.push('執2:'+r.surgeon2);if(r.assist1)parts.push('助1:'+r.assist1);if(r.assist2)parts.push('助2:'+r.assist2);if(r.prep)(r.prep).split(',').filter(Boolean).forEach(p=>parts.push('【'+p+'】'));
+      if(r.doctor)parts.push('外:'+r.doctor);if(r.admitDoctor)parts.push('入:'+r.admitDoctor);else if(r.opCol!=='C')parts.push('入:未入力⚠');if(r.surgeon)parts.push('執1:'+r.surgeon);else parts.push('執1:未入力⚠');if(r.surgeon2)parts.push('執2:'+r.surgeon2);if(r.assist1)parts.push('助1:'+r.assist1);if(r.assist2)parts.push('助2:'+r.assist2);if(r.prep)(r.prep).split(',').filter(Boolean).forEach(p=>parts.push('【'+p+'】'));
       row2.textContent=parts.filter(Boolean).join('　');ev.appendChild(row2);body.appendChild(ev);
     });
     card.appendChild(body);grid.appendChild(card);
