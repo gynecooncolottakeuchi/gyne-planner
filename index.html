@@ -974,7 +974,6 @@ function _renderCal(cal){
       div.className='cal-ev '+(ev.type==='admit'?'ev-admit':isA?'ev-A':isB?'ev-B':isC?'ev-C':'ev-discharge');
       const _rec=(()=>{const r=records.find(x=>x.patientId===ev.patientId&&x.opDate===key);return r||(()=>{const x={...ev};x.opDate=key;return x;})();})();
       div.onclick=(()=>()=>showDetail(_rec))();
-      if(!isCal1&&ADMINS.has(currentUser)){div.ondblclick=(()=>{const rid=_rec.id;return (e)=>{e.stopPropagation();hideModal();if(rid)editRecord(rid);};})();}
       const ord=ev.opCol&&ev.opNum?ev.opCol+ev.opNum:'';
       if(isOp){
         const l1=document.createElement('div');l1.style.cssText='display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;font-size:'+fs+';font-weight:700';
@@ -1037,7 +1036,6 @@ function renderWeekCal(){
     dayEvs.forEach(r=>{
       const isA=r.opCol==='A',isB=r.opCol==='B',isC=r.opCol==='C';
       const ev=document.createElement('div');ev.className='week-ev '+(isA?'ev-A':isB?'ev-B':isC?'ev-C':'ev-A');ev.onclick=((rec)=>()=>showDetail(rec))(r);
-      if(ADMINS.has(currentUser)){ev.ondblclick=((rid)=>(e)=>{e.stopPropagation();hideModal();if(rid)editRecord(rid);})(r.id);}
       const ord=r.opCol&&r.opNum?r.opCol+r.opNum:'';
       const row1=document.createElement('div');row1.className='week-ev-row1';
       if(ord){const p=document.createElement('span');p.className='order-pill '+(isA?'pill-A':isB?'pill-B':'pill-C');p.style.fontSize='11px';p.textContent=ord;row1.appendChild(p);}
@@ -1064,6 +1062,18 @@ function showDetail(r){
   html+='<hr class="modal-divider">';
   const info=[];if(ord!=='—')info.push('<span style="background:'+ordColor+';color:#fff;padding:2px 10px;border-radius:12px;font-size:13px;font-weight:700">'+ord+'</span>');if(r.opTime)info.push('<span style="font-size:13px;font-weight:600;color:#555">予定 '+r.opTime+'h</span>');
   if(info.length)html+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+info.join('')+'</div>';
+  // 管理者のみ修正ボタンを追加
+  if(ADMINS.has(currentUser)&&r.id){
+    const editBtn=document.createElement('button');
+    editBtn.className='btn btn-primary';
+    editBtn.style.cssText='width:100%;margin-top:12px;padding:12px';
+    editBtn.textContent='✏️ この症例を修正する';
+    editBtn.onclick=()=>{hideModal();editRecord(r.id);};
+    document.getElementById('modalContent').innerHTML=html;
+    document.getElementById('modalContent').appendChild(editBtn);
+    document.getElementById('detailModal').style.display='flex';document.body.style.overflow='hidden';
+    return;
+  }
   document.getElementById('modalContent').innerHTML=html;
   document.getElementById('detailModal').style.display='flex';document.body.style.overflow='hidden';
 }
