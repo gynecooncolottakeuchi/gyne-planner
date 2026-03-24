@@ -1151,7 +1151,7 @@ async function saveAbsence(){
   // 不在入力時チェック：その日に担当として登録されている症例がないか
   const absConflicts=[];
   records.forEach(r=>{
-    if(r.opDate!==date&&r.admitDate!==date) return;
+    if(r.opDate!==date) return; // 手術当日のみチェック
     [{label:'入院主治医',val:r.admitDoctor},{label:'執刀医１',val:r.surgeon},{label:'執刀医２',val:r.surgeon2},{label:'助手１',val:r.assist1},{label:'助手２',val:r.assist2}]
       .filter(f=>f.val===person)
       .forEach(f=>absConflicts.push('患者ID '+r.patientId+'（手術日:'+r.opDate+'）'+f.label));
