@@ -637,8 +637,15 @@ function fillSelects(){
 function fillAbsPersonSelect(){
   const sel=document.getElementById('absPerson');if(!sel) return;
   const cur=sel.value;while(sel.options.length>1)sel.remove(1);
-  DOCTORS.forEach(n=>{const o=document.createElement('option');o.textContent=n;sel.appendChild(o);});
-  const r=document.createElement('option');r.value='全研修医';r.textContent='全研修医';sel.appendChild(r);
+  if(ADMINS.has(currentUser)){
+    // 管理者は全員分入力可能
+    DOCTORS.forEach(n=>{const o=document.createElement('option');o.textContent=n;sel.appendChild(o);});
+    const r=document.createElement('option');r.value='全研修医';r.textContent='全研修医';sel.appendChild(r);
+  } else {
+    // 一般医師は自分の分のみ
+    const o=document.createElement('option');o.value=currentUser;o.textContent=currentUser;sel.appendChild(o);
+    sel.value=currentUser;
+  }
   if(cur)sel.value=cur;
 }
 document.addEventListener('DOMContentLoaded',()=>{
@@ -1143,11 +1150,18 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')hideModal();});
 
 function updateAbsReason(){const type=document.getElementById('absType').value;const sel=document.getElementById('absReason');sel.innerHTML='<option value="">-- 選択 --</option>';if(type&&ABS_REASONS[type])ABS_REASONS[type].forEach(r=>{const o=document.createElement('option');o.textContent=r;sel.appendChild(o);});}
 function clearAbsForm(){document.getElementById('absDate').value=ymd(new Date());document.getElementById('absPerson').value='';document.getElementById('absType').value='';document.getElementById('absReason').innerHTML='<option value="">-- 選択 --</option>';document.getElementById('editingAbsId').value='';}
-function editAbsence(id){const a=absences.find(x=>x.id===id);if(!a)return;document.getElementById('absDate').value=a.date||'';document.getElementById('absPerson').value=a.person||'';document.getElementById('absType').value=a.type||'';updateAbsReason();document.getElementById('absReason').value=a.reason||'';document.getElementById('editingAbsId').value=a.id;window.scrollTo(0,0);toast('修正モード：変更後「登録」を押してください',true);}
+function editAbsence(id){const a=absences.find(x=>x.id===id);if(!a)return;
+  if(!ADMINS.has(currentUser)&&a.person!==currentUser){
+    alert('自分の名前の不在のみ修正できます。');return;
+  }if(a.registeredBy&&a.registeredBy!==currentUser&&currentUser!==LOG_ADMIN){toast('自分が入力した不在のみ修正できます',false);return;}document.getElementById('absDate').value=a.date||'';document.getElementById('absPerson').value=a.person||'';document.getElementById('absType').value=a.type||'';updateAbsReason();document.getElementById('absReason').value=a.reason||'';document.getElementById('editingAbsId').value=a.id;window.scrollTo(0,0);toast('修正モード：変更後「登録」を押してください',true);}
 async function saveAbsence(){
   const date=document.getElementById('absDate').value,person=document.getElementById('absPerson').value;
   const type=document.getElementById('absType').value,reason=document.getElementById('absReason').value;
   if(!date||!person||!type){toast('日付・不在者・区分を入力してください',false);return;}
+  // 権限チェック：一般医師は自分の不在のみ入力可能
+  if(!ADMINS.has(currentUser)&&person!==currentUser){
+    alert('自分以外の不在は入力できません。');return;
+  }
   // 不在入力時チェック：その日に担当として登録されている症例がないか
   const absConflicts=[];
   records.forEach(r=>{
@@ -1179,7 +1193,7 @@ async function fetchAbsences(){
   if(document.getElementById('tab-cal2').style.display!=='none')renderCal('cal2');
   if(document.getElementById('tab-cal3').style.display!=='none')renderWeekCal();
 }
-async function delAbsence(id){absences=absences.filter(a=>a.id!==id);try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteAbsence',id})});}catch(e){}safeLS('gyn_absences',JSON.stringify(absences));renderAbsences();}
+async function delAbsence(id){const target=absences.find(a=>a.id===id);if(target&&!ADMINS.has(currentUser)&&target.person!==currentUser){alert('自分の名前の不在のみ削除できます。');return;}absences=absences.filter(a=>a.id!==id);try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteAbsence',id})});}catch(e){}safeLS('gyn_absences',JSON.stringify(absences));renderAbsences();}
 function renderAbsences(){
   const el=document.getElementById('absenceList');if(!el)return;
   if(!absences.length){el.innerHTML='<p style="font-size:13px;color:#aaa">登録されていません</p>';return;}
@@ -1188,7 +1202,19 @@ function renderAbsences(){
   Object.keys(grp).sort().forEach(date=>{
     const d=parseDate(date);
     html+='<div style="margin-bottom:10px"><div style="font-weight:700;font-size:13px;padding:6px 0;border-bottom:1px solid #f0f0f0;margin-bottom:6px">'+fmt(d)+'</div><div style="display:flex;flex-wrap:wrap;gap:6px">';
-    grp[date].forEach(a=>{const cls=a.type==='終日'?'abs-all':a.type==='午前'?'abs-am':'abs-pm';html+='<div style="display:flex;align-items:center;gap:4px;background:#f9f9f9;border-radius:8px;padding:5px 10px;font-size:12px"><span style="font-weight:600">'+a.person+'</span><span class="abs-badge '+cls+'">'+a.type+'</span>'+(a.reason?'<span style="color:#888">'+a.reason+'</span>':'')+'<button class="btn btn-sm btn-edit" style="padding:2px 8px;font-size:11px" data-id="'+a.id+'" onclick="editAbsence(this.dataset.id)">修正</button><button class="btn btn-sm btn-danger" style="padding:2px 8px;font-size:11px" data-id="'+a.id+'" onclick="delAbsence(this.dataset.id)">×</button></div>';});
+    grp[date].forEach(a=>{
+      const cls=a.type==='終日'?'abs-all':a.type==='午前'?'abs-am':'abs-pm';
+      const canEdit=ADMINS.has(currentUser)||a.person===currentUser;
+      html+='<div style="display:flex;align-items:center;gap:4px;background:#f9f9f9;border-radius:8px;padding:5px 10px;font-size:12px">'
+        +'<span style="font-weight:600">'+a.person+'</span>'
+        +'<span class="abs-badge '+cls+'">'+a.type+'</span>'
+        +(a.reason?'<span style="color:#888">'+a.reason+'</span>':'')
+        +(canEdit
+          ?'<button class="btn btn-sm btn-edit" style="padding:2px 8px;font-size:11px" data-id="'+a.id+'" onclick="editAbsence(this.dataset.id)">修正</button>'
+           +'<button class="btn btn-sm btn-danger" style="padding:2px 8px;font-size:11px" data-id="'+a.id+'" onclick="delAbsence(this.dataset.id)">×</button>'
+          :'')
+        +'</div>';
+    });
     html+='</div></div>';
   });
   el.innerHTML=html;
