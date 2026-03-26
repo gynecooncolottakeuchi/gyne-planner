@@ -86,8 +86,10 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 @media(min-width:900px){.cal2 .cal-cell{min-height:170px}}
 /* カレンダー② カスタムグリッド：土日水は狭く、月火木金は広く */
 /* カレンダー②：土日水を1/3幅、月火木金を広く */
-.cal2-custom-grid{display:grid;grid-template-columns:0.25fr 3fr 3.5fr 1fr 3.5fr 3.5fr 0.25fr;gap:3px;width:100%}
-@media(min-width:900px){.cal2-custom-grid{gap:5px}}
+.cal2-custom-grid{display:grid;grid-template-columns:28px 1fr 1fr 28px 1fr 1fr 28px;gap:3px;width:100%}
+@media(min-width:600px){.cal2-custom-grid{grid-template-columns:32px 1fr 1fr 32px 1fr 1fr 32px}}
+@media(min-width:900px){.cal2-custom-grid{grid-template-columns:36px 1fr 1fr 36px 1fr 1fr 36px}}
+@media(min-width:900px){.cal2-custom-grid{gap:5px;grid-template-columns:36px 1fr 1fr 36px 1fr 1fr 36px}}
 .cal2-custom-grid .cal-day-hdr{text-align:center;font-size:11px;font-weight:700;color:#666;padding:6px 2px;background:#fff;border-radius:6px}
 .cal2-custom-grid .cal-day-hdr.sun{color:#e74c3c}.cal2-custom-grid .cal-day-hdr.sat{color:#3b7dd8}
 .cal2-custom-grid .cal-cell.narrow{min-height:80px;padding:3px 2px}
