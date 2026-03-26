@@ -84,6 +84,21 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 @media(min-width:900px){.cal-cell{min-height:140px}}
 .cal2 .cal-cell{min-height:100px}
 @media(min-width:900px){.cal2 .cal-cell{min-height:170px}}
+/* カレンダー② カスタムグリッド：土日水は狭く、月火木金は広く */
+/* カレンダー②：土日水を1/3幅、月火木金を広く */
+.cal2-custom-grid{display:grid;grid-template-columns:1fr 3fr 3fr 1fr 3fr 3fr 1fr;gap:3px;width:100%}
+@media(min-width:900px){.cal2-custom-grid{gap:5px}}
+.cal2-custom-grid .cal-day-hdr{text-align:center;font-size:11px;font-weight:700;color:#666;padding:6px 2px;background:#fff;border-radius:6px}
+.cal2-custom-grid .cal-day-hdr.sun{color:#e74c3c}.cal2-custom-grid .cal-day-hdr.sat{color:#3b7dd8}
+.cal2-custom-grid .cal-cell.narrow{min-height:80px;padding:3px 2px}
+.cal2-custom-grid .cal-cell.narrow .cal-date{font-size:11px;font-weight:700;writing-mode:horizontal-tb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.cal2-custom-grid .cal-cell.narrow .cal-ev{white-space:normal;overflow:visible;height:auto;font-size:8px !important}
+.cal2-custom-grid .cal-cell.narrow .cal-ev div{white-space:normal;overflow:visible;text-overflow:unset;font-size:8px !important}
+/* 月火木金はイベントを折り返し表示 */
+.cal2-custom-grid .cal-cell:not(.narrow) .cal-ev{white-space:normal;overflow:visible;height:auto}
+.cal2-custom-grid .cal-cell:not(.narrow) .cal-ev div{white-space:normal;overflow:visible;text-overflow:unset}
+/* 土日水の狭いセルのヘッダー日付文字を横書きで5文字幅 */
+.cal2-custom-grid .cal-day-hdr.narrow{writing-mode:horizontal-tb;padding:6px 2px;font-size:11px}
 .cal-cell.other-month{background:#f8f8f8;opacity:.55}
 .cal-cell.today{border:2px solid #3b7dd8}
 .cal-cell.sat{background:#f0f4ff}.cal-cell.sun{background:#fff4f4}.cal-cell.holiday{background:#fff0f8}
@@ -406,7 +421,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
       <div class="leg-item"><div class="leg-dot" style="background:#fef9c3;border-left:3px solid #eab308"></div>C列（外来）</div>
       <button class="sync-btn" onclick="syncNow()" style="margin-left:auto">🔄 同期</button>
     </div>
-    <div class="cal-grid cal2" id="cal2Grid"></div>
+    <div class="cal2-custom-grid cal2" id="cal2Grid"></div>
   </div>
 
   <!-- カレンダー③週間手術 -->
@@ -995,7 +1010,12 @@ function _renderCal(cal){
   const year=isCal1?cal1Year:cal2Year,month=isCal1?cal1Month:cal2Month;
   document.getElementById(cal+'Title').textContent=year+'年'+(month+1)+'月';
   const grid=document.getElementById(cal+'Grid');grid.innerHTML='';
-  ['日','月','火','水','木','金','土'].forEach((h,i)=>{const el=document.createElement('div');el.className='cal-day-hdr'+([' sun','','','','','','sat'][i]||'');el.textContent=h;grid.appendChild(el);});
+  ['日','月','火','水','木','金','土'].forEach((h,i)=>{
+    const el=document.createElement('div');
+    const isNarrow=!isCal1&&(i===0||i===3||i===6);
+    el.className='cal-day-hdr'+([' sun','','','','','','sat'][i]||'')+(isNarrow?' narrow':'');
+    el.textContent=h;grid.appendChild(el);
+  });
   const firstDay=new Date(year,month,1).getDay(),daysInMonth=new Date(year,month+1,0).getDate(),daysInPrev=new Date(year,month,0).getDate();
   const todayD=today0();
   const absMap={};absences.forEach(a=>{if(!absMap[a.date])absMap[a.date]=[];absMap[a.date].push(a);});
@@ -1008,7 +1028,8 @@ function _renderCal(cal){
     else{addEv(r.opDate,'op',r);}
   });
   const w=window.innerWidth;
-  const maxShow=isCal1?(w>=900?99:w>=600?4:2):(w>=900?99:w>=600?5:3);
+  const maxShow=isCal1?(w>=900?99:w>=600?4:2):99; // cal2: show all
+  const isNarrowDay=(dow)=>!isCal1&&(dow===0||dow===3||dow===6);
   const fs=w>=1200?'11px':w>=900?'10px':'9px';
   const total=Math.ceil((firstDay+daysInMonth)/7)*7;
   for(let i=0;i<total;i++){
@@ -1018,11 +1039,23 @@ function _renderCal(cal){
     else{day=i-firstDay+1;date=new Date(year,month,day);}
     const key=ymd(date),dow=date.getDay();
     let cls='cal-cell';
+    if(!isCal1&&(dow===0||dow===3||dow===6))cls+=' narrow';
     if(!isCur)cls+=' other-month';
     if(date.getTime()===todayD.getTime())cls+=' today';
     if(dow===0)cls+=' sun';else if(dow===6)cls+=' sat';else if(isCur&&isHoliday(date))cls+=' holiday';
+    // カレンダー②：土日水は narrow、月火木金は wide
+    const isNarrowCell=!isCal1&&(dow===0||dow===3||dow===6);
+    if(!isCal1){
+      if(isNarrowCell) cls+=' narrow';
+      else cls+=' wide';
+    }
     const cell=document.createElement('div');cell.className=cls;
-    const dateRow=document.createElement('div');dateRow.style.cssText='display:flex;align-items:center;gap:2px;margin-bottom:2px;flex-wrap:wrap';
+    const dateRow=document.createElement('div');
+    if(isNarrowCell){
+      dateRow.style.cssText='display:flex;flex-direction:column;align-items:center;gap:1px';
+    }else{
+      dateRow.style.cssText='display:flex;align-items:center;gap:2px;margin-bottom:2px;flex-wrap:wrap';
+    }
     const dateDiv=document.createElement('span');dateDiv.className='cal-date';dateDiv.style.marginBottom='0';dateDiv.textContent=day;dateRow.appendChild(dateDiv);
     if(!isCal1&&isCur&&shinkanMap[key]){
       shinkanMap[key].forEach(s=>{const docs=(s.doctors||'').split(',').filter(Boolean);if(docs.length){const badge=document.createElement('span');badge.className='ev-shinkan';badge.title='新患担当: '+docs.join('、');badge.textContent='新患:'+docs.map(d=>d.slice(0,2)).join('・');dateRow.appendChild(badge);}});
@@ -1031,9 +1064,13 @@ function _renderCal(cal){
       absMap[key].forEach(a=>{const badge=document.createElement('span');badge.className='ev-abs '+(a.type==='終日'?'ev-abs-all':a.type==='午前'?'ev-abs-am':'ev-abs-pm');badge.title=a.person+' '+a.type+(a.reason?' ('+a.reason+')':'');badge.textContent=a.person.slice(0,2)+(a.type==='終日'?'終':a.type==='午前'?'前':'後');dateRow.appendChild(badge);});
     }
     cell.appendChild(dateRow);
+    // 狭いセル（土日水）はイベント非表示
+    const cellIsNarrow=!isCal1&&(dow===0||dow===3||dow===6);
+    if(cellIsNarrow){grid.appendChild(cell);continue;}
     const dayEvs=evs[key]||[];
     const sorted=[...dayEvs].sort((a,b)=>{const o={op:0,admit:1,discharge:2};if(o[a.type]!==o[b.type])return o[a.type]-o[b.type];return((a.opCol||'Z')+(a.opNum||'9'))<((b.opCol||'Z')+(b.opNum||'9'))?-1:1;});
-    sorted.slice(0,maxShow).forEach(ev=>{
+    const showMax=(!isCal1)?sorted.length:maxShow;
+    sorted.slice(0,showMax).forEach(ev=>{
       const isOp=ev.type==='op',isA=isOp&&ev.opCol==='A',isB=isOp&&ev.opCol==='B',isC=isOp&&ev.opCol==='C';
       const div=document.createElement('div');
       const isIncomplete=isOp&&(isC?!ev.surgeon:(!ev.admitDoctor||!ev.surgeon));
@@ -1044,14 +1081,14 @@ function _renderCal(cal){
       if(isOp){
         const l1=document.createElement('div');l1.style.cssText='display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;font-size:'+fs+';font-weight:700';
         if(ord){const p=document.createElement('span');p.className='order-pill '+(isA?'pill-A':isB?'pill-B':'pill-C');p.textContent=ord;l1.appendChild(p);}
-        const t1=document.createElement('span');t1.style.cssText='overflow:hidden;text-overflow:ellipsis;white-space:nowrap';t1.textContent=ev.patientId+' '+(SHORT[ev.surgery]||'')+(isIncomplete?' ⚠':'');l1.appendChild(t1);div.appendChild(l1);
+        const t1=document.createElement('span');t1.style.cssText=isCal1?'overflow:hidden;text-overflow:ellipsis;white-space:nowrap':'white-space:normal;word-break:break-all';t1.textContent=ev.patientId+' '+(SHORT[ev.surgery]||'')+(isIncomplete?' ⚠':'');l1.appendChild(t1);div.appendChild(l1);
         if(isCal1){
           const parts=[];if(ev.doctor)parts.push('外'+ev.doctor);if(ev.admitDoctor)parts.push('入'+ev.admitDoctor);
           const docStr=parts.join('/');
           if(docStr){const l2=document.createElement('div');l2.style.cssText='font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=docStr;div.appendChild(l2);}
         }else{
           const staff=[];if(ev.doctor)staff.push('外:'+ev.doctor);if(ev.admitDoctor)staff.push('入:'+ev.admitDoctor);else if(ev.opCol!=='C')staff.push('入:未入力⚠');if(ev.surgeon)staff.push('執1:'+ev.surgeon);else staff.push('執1:未入力⚠');if(ev.surgeon2)staff.push('執2:'+ev.surgeon2);if(ev.assist1)staff.push('助1:'+ev.assist1);if(ev.assist2)staff.push('助2:'+ev.assist2);if(ev.opTime)staff.push(ev.opTime+'h');if(ev.prep)(ev.prep).split(',').filter(Boolean).forEach(p=>staff.push('【'+p+'】'));
-          if(staff.length){const l2=document.createElement('div');l2.style.cssText='font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';l2.textContent=staff.join(' ');div.appendChild(l2);}
+          if(staff.length){const l2=document.createElement('div');l2.style.cssText='font-size:9px;font-weight:600;white-space:normal;overflow:visible;line-height:1.4;word-break:break-all';l2.textContent=staff.join(' ');div.appendChild(l2);}
         }
       }else{
         const l1=document.createElement('div');l1.style.cssText='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:'+fs+';font-weight:700';
@@ -1059,7 +1096,7 @@ function _renderCal(cal){
       }
       cell.appendChild(div);
     });
-    if(sorted.length>maxShow){const m=document.createElement('div');m.style.cssText='font-size:10px;color:#999;text-align:right;padding:1px 4px';m.textContent='+'+(sorted.length-maxShow)+'件';cell.appendChild(m);}
+    if(isCal1&&sorted.length>maxShow){const m=document.createElement('div');m.style.cssText='font-size:10px;color:#999;text-align:right;padding:1px 4px';m.textContent='+'+(sorted.length-maxShow)+'件';cell.appendChild(m);}
     grid.appendChild(cell);
   }
 }
