@@ -86,19 +86,31 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 @media(min-width:900px){.cal2 .cal-cell{min-height:170px}}
 /* カレンダー② カスタムグリッド：土日水は狭く、月火木金は広く */
 /* カレンダー②：土日水を1/3幅、月火木金を広く */
+/* カレンダー②グリッド：日月火水木金土 */
+/* スマホ：土日水は最小幅、月火木金で均等分 */
 .cal2-custom-grid{display:grid;grid-template-columns:28px 1fr 1fr 28px 1fr 1fr 28px;gap:3px;width:100%}
-@media(min-width:600px){.cal2-custom-grid{grid-template-columns:32px 1fr 1fr 32px 1fr 1fr 32px}}
-@media(min-width:900px){.cal2-custom-grid{grid-template-columns:36px 1fr 1fr 36px 1fr 1fr 36px}}
-@media(min-width:900px){.cal2-custom-grid{gap:5px;grid-template-columns:36px 1fr 1fr 36px 1fr 1fr 36px}}
+/* タブレット：水を倍(64px)、土日はそのまま(32px)、残りを月火木金で均等 */
+@media(min-width:600px){.cal2-custom-grid{gap:4px;grid-template-columns:32px 1fr 1fr 64px 1fr 1fr 32px}}
+/* PC：土日を倍(72px)、水を3倍(108px)、残りを月火木金で均等 */
+@media(min-width:900px){.cal2-custom-grid{gap:5px;grid-template-columns:72px 1fr 1fr 108px 1fr 1fr 72px}}
 .cal2-custom-grid .cal-day-hdr{text-align:center;font-size:11px;font-weight:700;color:#666;padding:6px 2px;background:#fff;border-radius:6px}
 .cal2-custom-grid .cal-day-hdr.sun{color:#e74c3c}.cal2-custom-grid .cal-day-hdr.sat{color:#3b7dd8}
 .cal2-custom-grid .cal-cell.narrow{min-height:80px;padding:3px 2px}
 .cal2-custom-grid .cal-cell.narrow .cal-date{font-weight:700;writing-mode:horizontal-tb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.cal2-custom-grid .cal-cell.narrow .cal-ev{white-space:normal;overflow:visible;height:auto;font-size:8px !important}
-.cal2-custom-grid .cal-cell.narrow .cal-ev div{white-space:normal;overflow:visible;text-overflow:unset;font-size:8px !important}
-/* 月火木金はイベントを折り返し表示 */
-.cal2-custom-grid .cal-cell:not(.narrow) .cal-ev{white-space:normal;overflow:visible;height:auto}
-.cal2-custom-grid .cal-cell:not(.narrow) .cal-ev div{white-space:normal;overflow:visible;text-overflow:unset}
+.cal2-custom-grid .cal-cell.narrow .cal-ev{white-space:normal;overflow:hidden;height:auto;font-size:8px !important;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.cal2-custom-grid .cal-cell.narrow .cal-ev div{white-space:normal;overflow:hidden;text-overflow:ellipsis;font-size:8px !important}
+@media(min-width:600px){
+  .cal2-custom-grid .cal-cell.narrow .cal-ev{-webkit-line-clamp:unset;overflow:visible}
+  .cal2-custom-grid .cal-cell.narrow .cal-ev div{overflow:visible;text-overflow:unset}
+}
+/* 月火木金はイベントを折り返し表示（スマホは2行で省略） */
+.cal2-custom-grid .cal-cell:not(.narrow) .cal-ev{white-space:normal;overflow:hidden;height:auto;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.cal2-custom-grid .cal-cell:not(.narrow) .cal-ev div{white-space:normal;overflow:hidden;text-overflow:ellipsis}
+/* タブレット以上では省略なし */
+@media(min-width:600px){
+  .cal2-custom-grid .cal-cell:not(.narrow) .cal-ev{-webkit-line-clamp:unset;overflow:visible}
+  .cal2-custom-grid .cal-cell:not(.narrow) .cal-ev div{overflow:visible;text-overflow:unset}
+}
 /* 土日水の狭いセルのヘッダー日付文字を横書きで5文字幅 */
 .cal2-custom-grid .cal-day-hdr.narrow{writing-mode:horizontal-tb;padding:6px 2px}
 .cal-cell.other-month{background:#f8f8f8;opacity:.55}
