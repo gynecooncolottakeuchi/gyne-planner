@@ -573,6 +573,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 <script>
 
 const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGBnAEP7d9YM-54OmGqnFNYvee8e2ji1D5wKaR2skxE_Jzg/exec';
+const API_KEY='gyne_api_2024_fukuoka';
 const PASSWORDS={'竹内':'gyne20140609','穴井':'vuitton'};
 const PASSWORD_DEFAULT='gyne2025';
 const LOG_ADMIN='竹内';
@@ -631,9 +632,9 @@ function addLog(action,pid,detail){const now=new Date();const pad=n=>String(n).p
 function toast(msg,ok){document.querySelectorAll('.toast').forEach(e=>e.remove());const el=document.createElement('div');el.className='toast';el.style.background=ok?'#1a6640':'#c0392b';el.textContent=msg;document.body.appendChild(el);setTimeout(()=>{if(el.parentNode)el.parentNode.removeChild(el);},3000);}
 function setSpin(on){document.querySelectorAll('.spinner').forEach(s=>s.style.display=on?'inline-block':'none');}
 
-async function gasGetAll(){const r=await fetch(GAS_URL+'?action=getAll&t='+Date.now());const d=await r.json();if(!d.records||!Array.isArray(d.records)) throw new Error('invalid');return d.records.map(normalizeRecord).filter(r=>r&&r.patientId&&r.opDate);}
-async function gasPut(rec){await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsert',record:rec})});}
-async function gasDelete(id){await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'delete',id})});}
+async function gasGetAll(){const r=await fetch(GAS_URL+'?action=getAll&t='+Date.now()+'&key='+API_KEY);const d=await r.json();if(!d.records||!Array.isArray(d.records)) throw new Error('invalid');return d.records.map(normalizeRecord).filter(r=>r&&r.patientId&&r.opDate);}
+async function gasPut(rec){await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsert',record:rec,key:API_KEY})});}
+async function gasDelete(id){await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'delete',id,key:API_KEY})});}
 
 async function fetchAndRender(showSpinner){
   if(isSyncing) return;isSyncing=true;
@@ -1246,12 +1247,12 @@ async function saveAbsence(){
   const pad=n=>String(n).padStart(2,'0');
   const registeredAt=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+pad(now.getHours())+':'+pad(now.getMinutes());
   const abs={id:editingAbsId||'abs_'+genId(),date,person,type,reason:reason||'',registeredBy:currentUser,registeredAt};
-  try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsertAbsence',record:abs})});await fetchAbsences();clearAbsForm();toast('✓ 不在を登録しました',true);}
+  try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsertAbsence',record:abs,key:API_KEY})});await fetchAbsences();clearAbsForm();toast('✓ 不在を登録しました',true);}
   catch(e){absences=absences.filter(s=>s.id!==abs.id);absences.push(abs);safeLS('gyn_absences',JSON.stringify(absences));renderAbsences();clearAbsForm();toast('✓ 不在を登録しました（ローカル保存）',true);}
 }
 async function fetchAbsences(){
   if(document.getElementById('absSpin'))document.getElementById('absSpin').style.display='inline-block';
-  try{const r=await fetch(GAS_URL+'?action=getAbsences&t='+Date.now());const d=await r.json();if(d.absences&&Array.isArray(d.absences))absences=d.absences.map(a=>{const nd=parseDate(a.date);return{...a,date:nd?ymd(nd):a.date};});}
+  try{const r=await fetch(GAS_URL+'?action=getAbsences&t='+Date.now()+'&key='+API_KEY);const d=await r.json();if(d.absences&&Array.isArray(d.absences))absences=d.absences.map(a=>{const nd=parseDate(a.date);return{...a,date:nd?ymd(nd):a.date};});}
   catch(e){try{const s=safeLS('gyn_absences');if(s)absences=JSON.parse(s);}catch(ex){}}
   if(document.getElementById('absSpin'))document.getElementById('absSpin').style.display='none';
   renderAbsences();
@@ -1259,7 +1260,7 @@ async function fetchAbsences(){
   if(document.getElementById('tab-cal2').style.display!=='none')renderCal('cal2');
   if(document.getElementById('tab-cal3').style.display!=='none')renderWeekCal();
 }
-async function delAbsence(id){const target=absences.find(a=>a.id===id);if(target&&!ADMINS.has(currentUser)&&target.person!==currentUser){alert('自分の名前の不在のみ削除できます。');return;}absences=absences.filter(a=>a.id!==id);try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteAbsence',id})});}catch(e){}safeLS('gyn_absences',JSON.stringify(absences));renderAbsences();}
+async function delAbsence(id){const target=absences.find(a=>a.id===id);if(target&&!ADMINS.has(currentUser)&&target.person!==currentUser){alert('自分の名前の不在のみ削除できます。');return;}absences=absences.filter(a=>a.id!==id);try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteAbsence',id,key:API_KEY})});}catch(e){}safeLS('gyn_absences',JSON.stringify(absences));renderAbsences();}
 function renderAbsences(){
   const el=document.getElementById('absenceList');if(!el)return;
   if(!absences.length){el.innerHTML='<p style="font-size:13px;color:#aaa">登録されていません</p>';return;}
@@ -1298,19 +1299,19 @@ async function saveShinkan(){
   if(!docs.length){toast('担当医師を1名以上選択してください',false);return;}
   const editingShinkanId=document.getElementById('editingShinkanId').value;
   const rec={id:editingShinkanId||'sk_'+genId(),date,doctors:docs.join(',')};
-  try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsertShinkan',record:rec})});await fetchShinkan();clearShinkanForm();toast('✓ 新患担当を登録しました',true);}
+  try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsertShinkan',record:rec,key:API_KEY})});await fetchShinkan();clearShinkanForm();toast('✓ 新患担当を登録しました',true);}
   catch(e){shinkans=shinkans.filter(s=>s.date!==date);shinkans.push(rec);safeLS('gyn_shinkans',JSON.stringify(shinkans));renderShinkans();clearShinkanForm();toast('✓ 新患担当を登録しました（ローカル保存）',true);}
 }
 async function fetchShinkan(){
   if(document.getElementById('shinkanSpin'))document.getElementById('shinkanSpin').style.display='inline-block';
-  try{const r=await fetch(GAS_URL+'?action=getShinkans&t='+Date.now());const d=await r.json();if(d.shinkans&&Array.isArray(d.shinkans))shinkans=d.shinkans.map(s=>{const nd=parseDate(s.date);return{...s,date:nd?ymd(nd):s.date};});}
+  try{const r=await fetch(GAS_URL+'?action=getShinkans&t='+Date.now()+'&key='+API_KEY);const d=await r.json();if(d.shinkans&&Array.isArray(d.shinkans))shinkans=d.shinkans.map(s=>{const nd=parseDate(s.date);return{...s,date:nd?ymd(nd):s.date};});}
   catch(e){try{const s=safeLS('gyn_shinkans');if(s)shinkans=JSON.parse(s);}catch(ex){}}
   if(document.getElementById('shinkanSpin'))document.getElementById('shinkanSpin').style.display='none';
   renderShinkans();
   if(document.getElementById('tab-cal2').style.display!=='none')renderCal('cal2');
   if(document.getElementById('tab-cal3').style.display!=='none')renderWeekCal();
 }
-async function delShinkan(id){shinkans=shinkans.filter(s=>s.id!==id);try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteShinkan',id})});}catch(e){}safeLS('gyn_shinkans',JSON.stringify(shinkans));renderShinkans();}
+async function delShinkan(id){shinkans=shinkans.filter(s=>s.id!==id);try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteShinkan',id,key:API_KEY})});}catch(e){}safeLS('gyn_shinkans',JSON.stringify(shinkans));renderShinkans();}
 function renderShinkans(){
   const el=document.getElementById('shinkanList');if(!el)return;
   if(!shinkans.length){el.innerHTML='<p style="font-size:13px;color:#aaa">登録されていません</p>';return;}
