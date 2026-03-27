@@ -227,7 +227,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <div class="card">
       <div class="section-label">患者情報</div>
       <div class="form-grid-3">
-        <div class="field"><label>患者ID</label><input type="text" id="patientId" placeholder="例：P20250001" oninput="autoLoad(this.value)"></div>
+        <div class="field"><label>患者ID</label><div style="display:flex;gap:6px;align-items:center"><input type="text" id="patientId" placeholder="例：P20250001" oninput="autoLoad(this.value)" style="flex:1"><button class="btn" onclick="newRecord()" style="padding:9px 12px;font-size:12px;white-space:nowrap;flex-shrink:0">新規</button></div></div>
         <div class="field"><label>外来主治医</label><select id="doctorName"><option value="">-- 選択 --</option></select></div>
         <div class="field"><label>入院主治医</label><select id="admitDoctor"><option value="">-- 選択 --</option></select></div>
       </div>
@@ -823,7 +823,23 @@ function editRecord(id){
 }
 function autoLoad(pid){
   if(!pid) return;
-  const r=records.find(x=>x.patientId===pid.trim());if(!r) return;
+  const matches=records.filter(x=>x.patientId===pid.trim());
+  if(!matches.length) return;
+  // 最新の手術を読み込む（新規登録は「新規」ボタンを使う）
+  const sorted=[...matches].sort((a,b)=>a.opDate<b.opDate?-1:1);
+  _loadRecord(sorted[sorted.length-1]);
+}
+
+function newRecord(){
+  const pid=document.getElementById('patientId').value.trim();
+  ['doctorName','admitDoctor','surgeon','surgeon2','assist1','assist2','surgerySelect','opCol','opNum','opTime','editingId'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('opDate').value=ymd(new Date());
+  ['prep_geka','prep_hinyoki','prep_ureter','prep_sample','prep_rapid'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
+  onColChange();
+  document.getElementById('output').innerHTML=pid?'<div class="alert alert-info">新規登録モード：患者ID「'+pid+'」の新しい手術を登録します</div>':'';
+}
+
+function _loadRecord(r){
   document.getElementById('doctorName').value=r.doctor||'';
   document.getElementById('admitDoctor').value=r.admitDoctor||'';
   document.getElementById('surgeon').value=r.surgeon||'';
@@ -832,14 +848,13 @@ function autoLoad(pid){
   document.getElementById('assist2').value=r.assist2||'';
   document.getElementById('opCol').value=r.opCol||'';
   document.getElementById('opNum').value=r.opNum||'';
-  document.getElementById('opTime').value=r.opTime||'';
   document.getElementById('opDate').value=r.opDate||'';
   document.getElementById('editingId').value=r.id;
   if(r.opCol) onColChange();
   document.getElementById('surgerySelect').value=r.surgery||'';
   document.getElementById('opTime').value=r.opTime||'';
-  ['prep_geka','prep_hinyoki','prep_ureter','prep_sample','prep_rapid'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
-  if(r.prep)(r.prep).split(',').filter(Boolean).forEach(p=>parts.push('['+p+']'));
+  const prepVals=(r.prep||'').split(',').filter(Boolean);
+  ['prep_geka','prep_hinyoki','prep_ureter','prep_sample','prep_rapid'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=prepVals.includes(el.value);});
   document.getElementById('output').innerHTML='<div class="alert alert-info">既存データを読み込みました。修正後「登録」を押してください</div>';
 }
 async function delRecord(id){
