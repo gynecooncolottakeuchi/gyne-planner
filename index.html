@@ -482,8 +482,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
   <!-- 操作ログ -->
   <div id="tab-log" class="content" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:13px;font-weight:600;color:#555">操作ログ</div>
-      <button class="btn btn-sm btn-danger" onclick="clearLogs()">ログ消去</button>
+      <div style="font-size:13px;font-weight:600;color:#555">操作ログ（全デバイス共有）</div>
+      <div style="display:flex;gap:6px"><button class="sync-btn" onclick="fetchLogs()">🔄 同期</button><button class="btn btn-sm btn-danger" onclick="clearLogs()">ログ消去</button></div>
     </div>
     <div id="logList" class="card"><p style="font-size:13px;color:#aaa">ログはありません</p></div>
   </div>
@@ -637,7 +637,24 @@ function safeLS(k,v){try{if(v===undefined)return localStorage.getItem(k);localSt
 
 function saveLogs(){safeLS('gyn_logs',JSON.stringify(logs));}
 function loadLogs(){try{const s=safeLS('gyn_logs');if(s)logs=JSON.parse(s);}catch(e){}}
-function addLog(action,pid,detail){const now=new Date();const pad=n=>String(n).padStart(2,'0');const ts=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+pad(now.getHours())+':'+pad(now.getMinutes());logs.unshift({ts,user:currentUser,action,patientId:pid,detail});if(logs.length>200)logs=logs.slice(0,200);saveLogs();}
+function addLog(action,pid,detail){
+  const now=new Date();const pad=n=>String(n).padStart(2,'0');
+  const ts=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+pad(now.getHours())+':'+pad(now.getMinutes());
+  const entry={id:'log_'+genId(),ts,user:currentUser,action,patientId:pid,detail};
+  logs.unshift(entry);if(logs.length>200)logs=logs.slice(0,200);saveLogs();
+  // GASにも保存
+  fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsertLog',record:entry,key:API_KEY})}).catch(()=>{});
+}
+
+async function fetchLogs(){
+  try{
+    const r=await fetch(GAS_URL+'?action=getLogs&t='+Date.now()+'&key='+API_KEY);
+    const d=await r.json();
+    if(d.logs&&Array.isArray(d.logs)){
+      logs=d.logs;saveLogs();renderLog();
+    }
+  }catch(e){}
+}
 
 function toast(msg,ok){document.querySelectorAll('.toast').forEach(e=>e.remove());const el=document.createElement('div');el.className='toast';el.style.background=ok?'#1a6640':'#c0392b';el.textContent=msg;document.body.appendChild(el);setTimeout(()=>{if(el.parentNode)el.parentNode.removeChild(el);},3000);}
 function setSpin(on){document.querySelectorAll('.spinner').forEach(s=>s.style.display=on?'inline-block':'none');}
@@ -730,7 +747,7 @@ function switchTab(t){
   if(t==='cal3'){fetchShinkan();renderWeekCal();}
   if(t==='list') renderList();
   if(t==='edit') renderEdit();
-  if(t==='log') renderLog();
+  if(t==='log'){fetchLogs();}
 }
 function refreshUI(){
   updateCounter();
@@ -1674,6 +1691,8 @@ function renderAbsLog(){
   });
   let rows='';
   sorted.forEach(a=>{
+    // 入力者・入力日時が不明なものは表示しない
+    if(!a.registeredBy||!a.registeredAt) return;
     const d=parseDate(a.date);
     const cls=a.type==='終日'?'abs-all':a.type==='午前'?'abs-am':'abs-pm';
     rows+='<tr>'
@@ -1725,9 +1744,11 @@ function clearLoginLog(){
 }
 
 function renderLog(){
-  const el=document.getElementById('logList');if(!logs.length){el.innerHTML='<p style="font-size:13px;color:#aaa">ログはありません</p>';return;}
+  const el=document.getElementById('logList');
+  const sorted=[...logs].sort((a,b)=>(b.ts||'')>(a.ts||'')?1:(b.ts||'')<(a.ts||'')?-1:0);
+  if(!sorted.length){el.innerHTML='<p style="font-size:13px;color:#aaa">ログはありません</p>';return;}
   const ac={登録:'badge-green',修正:'badge-blue',削除:'badge-red'};
-  let rows='';logs.forEach(l=>{rows+='<tr><td style="white-space:nowrap;font-size:12px">'+l.ts+'</td><td style="font-weight:600;font-size:12px">'+l.user+'</td><td><span class="badge '+(ac[l.action]||'badge-blue')+'" style="font-size:11px">'+l.action+'</span></td><td style="font-weight:600;font-size:12px">'+l.patientId+'</td><td style="font-size:11px;color:#555">'+l.detail+'</td></tr>';});
+  let rows='';sorted.forEach(l=>{rows+='<tr><td style="white-space:nowrap;font-size:12px">'+l.ts+'</td><td style="font-weight:600;font-size:12px">'+l.user+'</td><td><span class="badge '+(ac[l.action]||'badge-blue')+'" style="font-size:11px">'+l.action+'</span></td><td style="font-weight:600;font-size:12px">'+l.patientId+'</td><td style="font-size:11px;color:#555">'+l.detail+'</td></tr>';});
   el.innerHTML='<div style="overflow-x:auto"><table class="reg-table"><thead><tr><th>日時</th><th>操作者</th><th>操作</th><th>患者ID</th><th>術式</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 function clearLogs(){if(currentUser!==LOG_ADMIN){alert('ログの消去は'+LOG_ADMIN+'先生のみです');return;}if(!confirm('ログを全削除しますか？'))return;logs=[];saveLogs();renderLog();}
