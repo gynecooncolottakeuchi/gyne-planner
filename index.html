@@ -580,7 +580,7 @@ const LOG_ADMIN='竹内';
 const STATS_PW='20140609';
 const ADMINS=new Set(['竹内','穴井']);
 function getPassword(user){return PASSWORDS[user]||PASSWORD_DEFAULT;}
-const DOCTORS=['豊福','後藤','竹内','小山','平川','穴井','小林','内田','川野','杉山','中島','広瀬','山本','中野','小西','西田','池田','家城','田中'];
+const DOCTORS=['豊福','後藤','竹内','小山','平川','穴井','小林','内田','川野','中島','広瀬','中野','小西','池田','家城','田中'];
 const NIGHTS={op_laser_ex:0,op_scope_ex:0,op_other_ex:0,lap_other:null,open_other:null,vaginal_other:null,cs_other:null,de_dc:3,ec_open_ln:12,ec_open_noln:8,oc_open_ln:12,oc_open_noln:8,cx_radical:null,lap_radical:null,cx_semi_ln:12,cx_simple_ln:12,cx_semi_noln:8,cx_simple_noln:8,open_benign_ut:8,open_benign_ov:8,lap_malig_ln:8,lap_malig_noln:6,lap_benign:6,lap_adnexa:6,robot_malig_ln:8,robot_malig_noln:6,robot_benign:6,vaginal_hyst:8,vnotes:6,cone:3,laser:3,hyst_scope:3,ectopic:5};
 const FIXED=new Set(['cone','laser','hyst_scope','op_laser_ex','op_scope_ex','op_other_ex','de_dc']);
 const EXCLUDED=new Set(['cx_radical','lap_radical','lap_other','open_other','vaginal_other','cs_other']);
@@ -1395,7 +1395,7 @@ function renderNewsfeed(){
     html+='</div>';
   }
   if(isAdmin){
-    const recent=[...records].sort((a,b)=>a.opDate<b.opDate?-1:1).slice(0,10);
+    const recent=[...records].sort((a,b)=>a.opDate>b.opDate?-1:1).slice(0,10);
     html+='<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px">📋 直近の登録症例（手術日順）</div>';
     if(!recent.length){html+='<p style="color:#aaa;font-size:13px">登録されていません</p>';}
     else{recent.forEach(r=>{const od=parseDate(r.opDate);html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0"><div><div style="font-size:13px;font-weight:600">'+r.patientId+'</div><div style="font-size:11px;color:#888">'+(SHORT[r.surgery]||'—')+' / '+(r.doctor||'—')+'</div></div><div style="font-size:12px;font-weight:600;color:#3b7dd8">'+(od?fmt(od):'未定')+'</div></div>';});}
