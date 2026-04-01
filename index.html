@@ -588,7 +588,7 @@ const SHORT={op_laser_ex:'外来レーザー',op_scope_ex:'外来子宮鏡',op_o
 const LABELS={op_laser_ex:'外来レーザー蒸散術',op_scope_ex:'外来子宮鏡手術',op_other_ex:'外来その他',lap_other:'腹腔鏡その他',open_other:'開腹その他',vaginal_other:'経腟その他',cs_other:'帝王切開',de_dc:'D&E（D&C）',ec_open_ln:'子宮体癌 開腹（LN+）',ec_open_noln:'子宮体癌 開腹（LN-）',oc_open_ln:'卵巣癌 開腹（LN+）',oc_open_noln:'卵巣癌 開腹（LN-）',cx_radical:'頸癌 広汎子宮全摘',lap_radical:'腹腔鏡下 広汎子宮全摘',cx_semi_ln:'頸癌 準広汎（LN+）',cx_simple_ln:'頸癌 単純TH（LN+）',cx_semi_noln:'頸癌 準広汎（LN-）',cx_simple_noln:'頸癌 単純TH（LN-）',open_benign_ut:'良性子宮 開腹',open_benign_ov:'良性卵巣 開腹',lap_malig_ln:'腹腔鏡 悪性（LN+）',lap_malig_noln:'腹腔鏡 悪性（LN-）',lap_benign:'腹腔鏡 良性',lap_adnexa:'腹腔鏡 付属器',robot_malig_ln:'ロボ 悪性（LN+）',robot_malig_noln:'ロボ 悪性（LN-）',robot_benign:'ロボ 良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
 const DAYS=['日','月','火','水','木','金','土'];
 const HOLIDAYS=new Set(['2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24','2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06','2025-07-21','2025-08-11','2025-09-15','2025-09-22','2025-09-23','2025-10-13','2025-11-03','2025-11-23','2025-11-24','2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06','2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23','2026-12-23']);
-const ABS_REASONS={'終日':['直明け','有給','夏季休暇','学会','リフレッシュ休暇','忌引き'],'午前':['有給','午前C/S','午前会議'],'午後':['有給','午後C/S','午後会議','午後遺伝カウンセリング','午後胎児エコー']};
+const ABS_REASONS={'終日':['直明け','有給','夏季休暇','学会','リフレッシュ休暇','忌引き'],'午前':['有給','午前C/S','午前会議','講義'],'午後':['有給','午後C/S','午後会議','午後遺伝カウンセリング','午後胎児エコー','講義']};
 
 let records=[],logs=[],absences=[],shinkans=[],currentUser='';
 let cal1Year,cal1Month,cal2Year,cal2Month,cal3BaseMonday;
@@ -616,7 +616,7 @@ function isBad(d){const w=d.getDay();return w===5||w===6||w===0||isHoliday(d);}
 function nextWorkday(d){let r=new Date(d);while(isBad(r))r=addDays(r,1);return r;}
 function badgeClass(d){if(!d||isNaN(d.getTime())) return 'badge-blue';const w=d.getDay();return w===1?'badge-green':w>=2&&w<=4?'badge-blue':w===6?'badge-amber':'badge-red';}
 function today0(){const t=new Date();t.setHours(0,0,0,0);return t;}
-function normalizeRecord(r){if(!r) return r;['opDate','admitDate','dischargeDate'].forEach(k=>{if(r[k]){const d=parseDate(r[k]);r[k]=d?ymd(d):'';}});if(!r.id)r.id=genId();if(r.admitDoctor===undefined)r.admitDoctor='';if(r.prep===undefined)r.prep='';
+function normalizeRecord(r){if(!r) return r;['opDate','admitDate','dischargeDate'].forEach(k=>{if(r[k]){const d=parseDate(r[k]);r[k]=d?ymd(d):'';}});if(!r.id)r.id=genId();if(r.admitDoctor===undefined)r.admitDoctor='';if(r.confirmedBy===undefined)r.confirmedBy='';if(r.prep===undefined)r.prep='';
   // opTimeを選択肢に合わせて正規化（"6" -> "6.0", "2.5" -> "2.5"）
   if(r.opTime){
     const n=parseFloat(r.opTime);
@@ -999,7 +999,12 @@ async function calculate(){
     else adjustNote='<div class="alert alert-ok" style="margin-top:10px">最短日数で月〜木退院が可能です</div>';
   }
 
-  const record={id,patientId:pid,doctor:doc,admitDoctor:admitDoc||'',surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',prep:prep||'',surgery,opCol:opCol||'',opNum:opCol==='C'?'':opNum||'',opTime:opTime||'',opDate:opDate?ymd(opDate):'',admitDate:admitDate?ymd(admitDate):'',dischargeDate:dischargeDate?ymd(dischargeDate):''};
+  // 手術日変更チェック：既存レコードと手術日を比較
+  const existingRec=records.find(r=>r.id===id);
+  const opDateChanged=existingRec&&opDate&&existingRec.opDate&&ymd(opDate)!==existingRec.opDate;
+  // 手術日が変わった場合はconfirmedByをリセット、変更フラグを設定
+  const confirmedBy=opDateChanged?'changed':((existingRec&&existingRec.confirmedBy)||'');
+  const record={id,patientId:pid,doctor:doc,admitDoctor:admitDoc||'',surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',prep:prep||'',surgery,opCol:opCol||'',opNum:opCol==='C'?'':opNum||'',opTime:opTime||'',opDate:opDate?ymd(opDate):'',admitDate:admitDate?ymd(admitDate):'',dischargeDate:dischargeDate?ymd(dischargeDate):'',confirmedBy};
 
   setSpin(true);
   try{
@@ -1329,19 +1334,53 @@ function renderShinkans(){
 }
 function loadShinkans(){try{const s=safeLS('gyn_shinkans');if(s)shinkans=JSON.parse(s);}catch(e){}}
 
-function getConfirmed(){try{const s=safeLS('gyn_confirmed_'+currentUser);return s?JSON.parse(s):{};} catch(e){return {};}}
-function setConfirmed(id){const c=getConfirmed();c[id]=true;safeLS('gyn_confirmed_'+currentUser,JSON.stringify(c));}
+async function confirmRecordGAS(id){
+  // confirmedByにcurrentUserを追加してGASに保存
+  const r=records.find(x=>x.id===id);if(!r) return;
+  // 'changed'フラグをクリアして確認者を記録
+  const base=r.confirmedBy==='changed'?'':r.confirmedBy||'';
+  const confirmed=base.split(',').filter(Boolean);
+  if(!confirmed.includes(currentUser)) confirmed.push(currentUser);
+  const updated={...r,confirmedBy:confirmed.join(',')};
+  try{await gasPut(updated);}catch(e){}
+  // ローカルにも記録
+  const local=JSON.parse(safeLS('gyn_confirmed_'+currentUser)||'{}');
+  local[id]=true;
+  safeLS('gyn_confirmed_'+currentUser,JSON.stringify(local));
+  // recordsを更新
+  const idx=records.findIndex(x=>x.id===id);
+  if(idx>=0) records[idx]=updated;
+}
+
+function isConfirmed(r){
+  // 'changed'は未確認扱い
+  if(r.confirmedBy==='changed') return false;
+  // GASのconfirmedByを優先、なければローカルを参照
+  if(r.confirmedBy){
+    const confirmed=r.confirmedBy.split(',').filter(Boolean);
+    if(confirmed.includes(currentUser)) return true;
+  }
+  // ローカルのフォールバック
+  try{const s=safeLS('gyn_confirmed_'+currentUser);const local=s?JSON.parse(s):{};return !!local[r.id];}catch(e){return false;}
+}
 function renderNewsfeed(){
   const el=document.getElementById('newsfeedContent');
   if(!records.length){el.innerHTML='<div class="card" style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:12px">📋</div><div style="color:#888;font-size:14px">データを読み込み中...</div></div>';return;}
-  const confirmed=getConfirmed(),isAdmin=ADMINS.has(currentUser);
-  const myRecords=records.filter(r=>r.doctor===currentUser&&!confirmed[r.id]);
+  const isAdmin=ADMINS.has(currentUser);
+  // 未確認：confirmedByにcurrentUserが含まれていない症例
+  const myRecords=records.filter(r=>r.doctor===currentUser&&!isConfirmed(r));
   let html='';
   if(myRecords.length>0){
     html+='<div style="margin-bottom:16px"><div style="font-size:15px;font-weight:700;color:#c0392b;margin-bottom:10px">🔔 手術日が決まりました！（'+myRecords.length+'件）</div>';
     myRecords.sort((a,b)=>a.opDate<b.opDate?-1:1).forEach(r=>{
       const od=parseDate(r.opDate),ad=parseDate(r.admitDate),dd=parseDate(r.dischargeDate);
-      html+='<div class="card" style="border:2px solid #e74c3c;margin-bottom:12px"><div style="background:#fdecea;border-radius:8px 8px 0 0;padding:10px 14px;margin:-14px -14px 12px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:700;color:#c0392b">🏥 手術日が決まりました!</div><span class="badge badge-purple" style="font-size:11px">'+(SHORT[r.surgery]||r.surgery||'—')+'</span></div>'
+      const isDateChanged=r.confirmedBy==='changed';
+      const notifTitle=isDateChanged?'📅 手術日が変更になりました':'🏥 手術日が決まりました!';
+      const btnLabel=isDateChanged?'✓ 変更を確認しました':'✓ 確認しました';
+      const borderColor=isDateChanged?'#e67e22':'#e74c3c';
+      const bgColor=isDateChanged?'#fef3e2':'#fdecea';
+      const textColor=isDateChanged?'#d35400':'#c0392b';
+      html+='<div class="card" style="border:2px solid '+borderColor+';margin-bottom:12px"><div style="background:'+bgColor+';border-radius:8px 8px 0 0;padding:10px 14px;margin:-14px -14px 12px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:700;color:'+textColor+'">'+notifTitle+'</div><span class="badge badge-purple" style="font-size:11px">'+(SHORT[r.surgery]||r.surgery||'—')+'</span></div>'
         +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
         +'<div><div class="result-label">患者ID</div><div style="font-size:16px;font-weight:700">'+r.patientId+'</div></div>'
         +'<div><div class="result-label">外来主治医</div><div style="font-size:14px;font-weight:600">'+(r.doctor||'—')+'</div></div>'
@@ -1351,7 +1390,7 @@ function renderNewsfeed(){
         +'<div><div class="result-label">退院推奨日</div><div style="font-size:13px;font-weight:600;color:#1a6640">'+(dd?fmt(dd):'未定')+'</div></div>'
         +(r.opCol&&r.opNum?'<div><div class="result-label">手術順番</div><span class="badge '+(r.opCol==='A'?'badge-blue':r.opCol==='B'?'badge-purple':'badge-amber')+'">'+r.opCol+r.opNum+'</span></div>':'')
         +(r.opTime?'<div><div class="result-label">予定手術時間</div><div style="font-size:13px;font-weight:600">'+r.opTime+'h</div></div>':'')
-        +'</div><button class="btn btn-primary" style="width:100%;padding:12px" data-id="'+r.id+'" onclick="confirmRecord(this.dataset.id)">✓ 確認しました</button></div>';
+        +'</div><button class="btn btn-primary" style="width:100%;padding:12px" data-id="'+r.id+'" onclick="confirmRecord(this.dataset.id)">'+btnLabel+'</button></div>';
     });
     html+='</div>';
   }
@@ -1373,7 +1412,7 @@ function renderNewsfeed(){
   }
   el.innerHTML=html||'<div class="card" style="text-align:center;padding:30px;color:#888">表示する情報がありません</div>';
 }
-function confirmRecord(id){setConfirmed(id);renderNewsfeed();toast('✓ 確認しました',true);}
+function confirmRecord(id){confirmRecordGAS(id).then(()=>{renderNewsfeed();toast('✓ 確認しました',true);});}
 
 function unlockStats(){const pw=prompt('パスワードを入力してください');if(pw===STATS_PW&&currentUser===LOG_ADMIN){statsUnlocked=true;document.getElementById('statsLock').style.display='none';document.getElementById('statsContent').style.display='block';buildStatsTargets();renderStats();}else alert('竹内先生のアカウントでログインし、正しいパスワードを入力してください');}
 function initStats(){if(currentUser===LOG_ADMIN){statsUnlocked=true;document.getElementById('statsLock').style.display='none';document.getElementById('statsContent').style.display='block';}else{document.getElementById('statsLock').style.display='block';document.getElementById('statsContent').style.display='none';return;}if(!records.length){fetchAndRender(false).then(()=>{buildStatsTargets();renderStats();});}else{buildStatsTargets();renderStats();}}
