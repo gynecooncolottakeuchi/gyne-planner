@@ -214,6 +214,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <button class="tab-btn" onclick="switchTab('stats')" data-tab="stats">📊 統計</button>
     <button class="tab-btn" onclick="switchTab('absstats')" data-tab="absstats">📊 不在統計</button>
     <button class="tab-btn" onclick="switchTab('abslog')" data-tab="abslog">不在ログ</button>
+    <button class="tab-btn" onclick="switchTab('loginlog')" data-tab="loginlog">ログインログ</button>
   </div>
 
   <!-- NEW!タブ -->
@@ -533,6 +534,15 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <div id="absLogList" class="card"><p style="font-size:13px;color:#aaa">登録されていません</p></div>
   </div>
 
+  <!-- ログインログ -->
+  <div id="tab-loginlog" class="content" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:#555">ログイン履歴</div>
+      <button class="btn btn-sm btn-danger" onclick="clearLoginLog()">ログ消去</button>
+    </div>
+    <div id="loginLogList" class="card"><p style="font-size:13px;color:#aaa">ログインログはありません</p></div>
+  </div>
+
   <!-- 不在統計 -->
   <div id="tab-absstats" class="content" style="display:none">
     <div id="absStatsLock" style="text-align:center;padding:40px">
@@ -696,17 +706,17 @@ function checkPw(){
     document.getElementById('shinkanDate').value=ymd(t);
     cal1Year=cal2Year=t.getFullYear();cal1Month=cal2Month=t.getMonth();
     cal3BaseMonday=getMonday(t);
-    fillSelects();loadLogs();loadAbsences();loadShinkans();
+    fillSelects();loadLogs();loadAbsences();loadShinkans();addLoginLog(doc);
     fetchAndRender(false);fetchAbsences();fetchShinkan();
     ['calc','shinkan','edit'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=ADMINS.has(currentUser)?'':'none';});
-    ['log','stats','absstats','abslog'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=currentUser===LOG_ADMIN?'':'none';});
+    ['log','stats','absstats','abslog','loginlog'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=currentUser===LOG_ADMIN?'':'none';});
     try{sessionStorage.setItem('gyn_session',JSON.stringify({user:doc,pw,ts:Date.now()}));}catch(e){}
   }else{document.getElementById('pwError').style.display='block';document.getElementById('pwInput').value='';}
 }
 function logout(){currentUser='';document.getElementById('lockScreen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('pwInput').value='';document.getElementById('loginDoctor').value='';document.getElementById('pwError').style.display='none';try{sessionStorage.removeItem('gyn_session');}catch(e){}}
 
 function switchTab(t){
-  ['newsfeed','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats','absstats','abslog'].forEach(name=>{document.getElementById('tab-'+name).style.display=t===name?'block':'none';});
+  ['newsfeed','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats','absstats','abslog','loginlog'].forEach(name=>{document.getElementById('tab-'+name).style.display=t===name?'block':'none';});
   document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.toggle('active',btn.getAttribute('data-tab')===t));
   if(t==='newsfeed') renderNewsfeed();
   if(t==='absence') fetchAbsences();
@@ -714,6 +724,7 @@ function switchTab(t){
   if(t==='stats') initStats();
   if(t==='absstats') initAbsStats();
   if(t==='abslog'){fetchAbsences();renderAbsLog();}
+  if(t==='loginlog') renderLoginLog();
   if(t==='cal1') renderCal('cal1');
   if(t==='cal2'){fetchShinkan();renderCal('cal2');}
   if(t==='cal3'){fetchShinkan();renderWeekCal();}
@@ -723,7 +734,7 @@ function switchTab(t){
 }
 function refreshUI(){
   updateCounter();
-  const tabs=['newsfeed','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats','absstats','abslog'];
+  const tabs=['newsfeed','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats','absstats','abslog','loginlog'];
   const active=tabs.find(t=>{const el=document.getElementById('tab-'+t);return el&&el.style.display!=='none';});
   if(active==='newsfeed') renderNewsfeed();
   if(active==='cal1') renderCal('cal1');
@@ -1656,7 +1667,11 @@ function renderAbsLog(){
   const el=document.getElementById('absLogList');
   if(!el) return;
   if(!absences.length){el.innerHTML='<p style="font-size:13px;color:#aaa">登録されていません</p>';return;}
-  const sorted=[...absences].sort((a,b)=>b.date<a.date?-1:1);
+  const sorted=[...absences].sort((a,b)=>{
+    const ta=a.registeredAt||a.date||'';
+    const tb=b.registeredAt||b.date||'';
+    return tb<ta?-1:tb>ta?1:0;
+  });
   let rows='';
   sorted.forEach(a=>{
     const d=parseDate(a.date);
@@ -1674,6 +1689,39 @@ function renderAbsLog(){
   el.innerHTML='<div style="overflow-x:auto"><table class="reg-table">'
     +'<thead><tr><th>日付</th><th>不在者</th><th>区分</th><th>理由</th><th>入力者</th><th>入力時間</th><th></th></tr></thead>'
     +'<tbody>'+rows+'</tbody></table></div>';
+}
+
+// ===== ログインログ =====
+function addLoginLog(user){
+  try{
+    const logs=JSON.parse(safeLS('gyn_loginlog')||'[]');
+    const now=new Date();
+    const pad=n=>String(n).padStart(2,'0');
+    const ts=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+pad(now.getHours())+':'+pad(now.getMinutes());
+    logs.unshift({ts,user});
+    if(logs.length>500) logs.length=500;
+    safeLS('gyn_loginlog',JSON.stringify(logs));
+  }catch(e){}
+}
+
+function renderLoginLog(){
+  const el=document.getElementById('loginLogList');
+  if(!el) return;
+  try{
+    const logs=JSON.parse(safeLS('gyn_loginlog')||'[]');
+    if(!logs.length){el.innerHTML='<p style="font-size:13px;color:#aaa">ログインログはありません</p>';return;}
+    let rows='';
+    logs.forEach(l=>{
+      rows+='<tr><td style="white-space:nowrap;font-size:12px">'+l.ts+'</td><td style="font-weight:600;font-size:12px">'+l.user+'</td></tr>';
+    });
+    el.innerHTML='<div style="overflow-x:auto"><table class="reg-table"><thead><tr><th>日時</th><th>ログインユーザー</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }catch(e){el.innerHTML='<p style="font-size:13px;color:#aaa">読み込みエラー</p>';}
+}
+
+function clearLoginLog(){
+  if(!confirm('ログイン履歴を全削除しますか？')) return;
+  safeLS('gyn_loginlog','[]');
+  renderLoginLog();
 }
 
 function renderLog(){
