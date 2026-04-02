@@ -626,7 +626,7 @@ function isBad(d){const w=d.getDay();return w===5||w===6||w===0||isHoliday(d);}
 function nextWorkday(d){let r=new Date(d);while(isBad(r))r=addDays(r,1);return r;}
 function badgeClass(d){if(!d||isNaN(d.getTime())) return 'badge-blue';const w=d.getDay();return w===1?'badge-green':w>=2&&w<=4?'badge-blue':w===6?'badge-amber':'badge-red';}
 function today0(){const t=new Date();t.setHours(0,0,0,0);return t;}
-function normalizeRecord(r){if(!r) return r;['opDate','admitDate','dischargeDate'].forEach(k=>{if(r[k]){const d=parseDate(r[k]);r[k]=d?ymd(d):'';}});if(!r.id)r.id=genId();if(r.admitDoctor===undefined)r.admitDoctor='';if(r.confirmedBy===undefined)r.confirmedBy='';if(r.prep===undefined)r.prep='';
+function normalizeRecord(r){if(!r) return r;['opDate','admitDate','dischargeDate'].forEach(k=>{if(r[k]){const d=parseDate(r[k]);r[k]=d?ymd(d):'';}});if(!r.id)r.id=genId();if(r.admitDoctor===undefined)r.admitDoctor='';if(r.confirmedBy===undefined)r.confirmedBy='';if(r.surgeonConfirmedBy===undefined)r.surgeonConfirmedBy='';if(r.prep===undefined)r.prep='';
   // opTimeを選択肢に合わせて正規化（"6" -> "6.0", "2.5" -> "2.5"）
   if(r.opTime){
     const n=parseFloat(r.opTime);
@@ -1032,7 +1032,10 @@ async function calculate(){
   const opDateChanged=existingRec&&opDate&&existingRec.opDate&&ymd(opDate)!==existingRec.opDate;
   // 手術日が変わった場合はconfirmedByをリセット、変更フラグを設定
   const confirmedBy=opDateChanged?'changed':((existingRec&&existingRec.confirmedBy)||'');
-  const record={id,patientId:pid,doctor:doc,admitDoctor:admitDoc||'',surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',prep:prep||'',surgery,opCol:opCol||'',opNum:opCol==='C'?'':opNum||'',opTime:opTime||'',opDate:opDate?ymd(opDate):'',admitDate:admitDate?ymd(admitDate):'',dischargeDate:dischargeDate?ymd(dischargeDate):'',confirmedBy};
+  // C列で執刀医が変わった場合はsurgeonConfirmedByをリセット
+  const surgeonChanged=existingRec&&opCol==='C'&&(surgeon!==existingRec.surgeon||surgeon2!==existingRec.surgeon2);
+  const surgeonConfirmedBy=surgeonChanged?'':((existingRec&&existingRec.surgeonConfirmedBy)||'');
+  const record={id,patientId:pid,doctor:doc,admitDoctor:admitDoc||'',surgeon:surgeon||'',surgeon2:surgeon2||'',assist1:assist1||'',assist2:assist2||'',prep:prep||'',surgery,opCol:opCol||'',opNum:opCol==='C'?'':opNum||'',opTime:opTime||'',opDate:opDate?ymd(opDate):'',admitDate:admitDate?ymd(admitDate):'',dischargeDate:dischargeDate?ymd(dischargeDate):'',confirmedBy,surgeonConfirmedBy};
 
   setSpin(true);
   try{
@@ -1362,6 +1365,19 @@ function renderShinkans(){
 }
 function loadShinkans(){try{const s=safeLS('gyn_shinkans');if(s)shinkans=JSON.parse(s);}catch(e){}}
 
+async function confirmSurgeonRecordGAS(id){
+  const r=records.find(x=>x.id===id);if(!r) return;
+  const confirmed=(r.surgeonConfirmedBy==='changed'?'':r.surgeonConfirmedBy||'').split(',').filter(Boolean);
+  if(!confirmed.includes(currentUser)) confirmed.push(currentUser);
+  const updated={...r,surgeonConfirmedBy:confirmed.join(',')};
+  try{await gasPut(updated);}catch(e){}
+  const local=JSON.parse(safeLS('gyn_surgeon_confirmed_'+currentUser)||'{}');
+  local[id]=true;
+  safeLS('gyn_surgeon_confirmed_'+currentUser,JSON.stringify(local));
+  const idx=records.findIndex(x=>x.id===id);
+  if(idx>=0) records[idx]=updated;
+}
+
 async function confirmRecordGAS(id){
   // confirmedByにcurrentUserを追加してGASに保存
   const r=records.find(x=>x.id===id);if(!r) return;
@@ -1380,6 +1396,16 @@ async function confirmRecordGAS(id){
   if(idx>=0) records[idx]=updated;
 }
 
+function isSurgeonConfirmed(r){
+  // C列執刀医確認：surgeonConfirmedByフィールドを使用
+  if(r.surgeonConfirmedBy==='changed') return false;
+  if(r.surgeonConfirmedBy){
+    const confirmed=r.surgeonConfirmedBy.split(',').filter(Boolean);
+    if(confirmed.includes(currentUser)) return true;
+  }
+  try{const s=safeLS('gyn_surgeon_confirmed_'+currentUser);const local=s?JSON.parse(s):{};return !!local[r.id];}catch(e){return false;}
+}
+
 function isConfirmed(r){
   // 'changed'は未確認扱い
   if(r.confirmedBy==='changed') return false;
@@ -1395,9 +1421,38 @@ function renderNewsfeed(){
   const el=document.getElementById('newsfeedContent');
   if(!records.length){el.innerHTML='<div class="card" style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:12px">📋</div><div style="color:#888;font-size:14px">データを読み込み中...</div></div>';return;}
   const isAdmin=ADMINS.has(currentUser);
-  // 未確認：confirmedByにcurrentUserが含まれていない症例
+  // 未確認：confirmedByにcurrentUserが含まれていない症例（外来主治医）
   const myRecords=records.filter(r=>r.doctor===currentUser&&!isConfirmed(r));
+  // C列執刀医通知：自分が執刀医として登録されているC列症例で未確認のもの
+  const mySurgeonRecords=records.filter(r=>
+    r.opCol==='C'&&
+    (r.surgeon===currentUser||r.surgeon2===currentUser)&&
+    !isSurgeonConfirmed(r)
+  );
   let html='';
+  // C列執刀医通知
+  if(mySurgeonRecords.length>0){
+    html+='<div style="margin-bottom:16px"><div style="font-size:15px;font-weight:700;color:#e67e22;margin-bottom:10px">🔔 外来手術執刀医に決定しました！（'+mySurgeonRecords.length+'件）</div>';
+    mySurgeonRecords.sort((a,b)=>a.opDate<b.opDate?-1:1).forEach(r=>{
+      const od=parseDate(r.opDate);
+      const surgRole=r.surgeon===currentUser?'執刀医１':'執刀医２';
+      html+='<div class="card" style="border:2px solid #e67e22;margin-bottom:12px">'
+        +'<div style="background:#fef3e2;border-radius:8px 8px 0 0;padding:10px 14px;margin:-14px -14px 12px;display:flex;justify-content:space-between;align-items:center">'
+        +'<div style="font-size:15px;font-weight:700;color:#d35400">🏥 外来手術執刀医に決定しました!</div>'
+        +'<span class="badge badge-amber" style="font-size:11px">'+(SHORT[r.surgery]||r.surgery||'—')+'</span>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+        +'<div><div class="result-label">患者ID</div><div style="font-size:16px;font-weight:700">'+r.patientId+'</div></div>'
+        +'<div><div class="result-label">外来主治医</div><div style="font-size:14px;font-weight:600">'+(r.doctor||'—')+'</div></div>'
+        +'<div><div class="result-label">手術日</div><div style="font-size:14px;font-weight:700;color:#e67e22">'+(od?fmt(od):'未定')+'</div></div>'
+        +'<div><div class="result-label">あなたの役割</div><div style="font-size:13px;font-weight:600;color:#d35400">'+surgRole+'</div></div>'
+        +(r.opTime?'<div><div class="result-label">予定手術時間</div><div style="font-size:13px;font-weight:600">'+r.opTime+'h</div></div>':'')
+        +'</div>'
+        +'<button class="btn" style="width:100%;padding:12px;background:#e67e22;color:#fff;border:none;font-weight:600" data-id="'+r.id+'" onclick="confirmSurgeonRecord(this.dataset.id)">✓ 確認しました</button>'
+        +'</div>';
+    });
+    html+='</div>';
+  }
   if(myRecords.length>0){
     html+='<div style="margin-bottom:16px"><div style="font-size:15px;font-weight:700;color:#c0392b;margin-bottom:10px">🔔 手術日が決まりました！（'+myRecords.length+'件）</div>';
     myRecords.sort((a,b)=>a.opDate<b.opDate?-1:1).forEach(r=>{
@@ -1440,6 +1495,10 @@ function renderNewsfeed(){
   }
   el.innerHTML=html||'<div class="card" style="text-align:center;padding:30px;color:#888">表示する情報がありません</div>';
 }
+function confirmSurgeonRecord(id){
+  confirmSurgeonRecordGAS(id).then(()=>{renderNewsfeed();toast('✓ 確認しました',true);});
+}
+
 function confirmRecord(id){confirmRecordGAS(id).then(()=>{renderNewsfeed();toast('✓ 確認しました',true);});}
 
 function unlockStats(){const pw=prompt('パスワードを入力してください');if(pw===STATS_PW&&currentUser===LOG_ADMIN){statsUnlocked=true;document.getElementById('statsLock').style.display='none';document.getElementById('statsContent').style.display='block';buildStatsTargets();renderStats();}else alert('竹内先生のアカウントでログインし、正しいパスワードを入力してください');}
