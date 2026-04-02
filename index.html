@@ -651,7 +651,9 @@ async function fetchLogs(){
     const r=await fetch(GAS_URL+'?action=getLogs&t='+Date.now()+'&key='+API_KEY);
     const d=await r.json();
     if(d.logs&&Array.isArray(d.logs)){
-      logs=d.logs;saveLogs();renderLog();
+      // ログイン記録を除いた操作ログのみ表示
+      logs=d.logs.filter(l=>l.detail!=='ログイン'&&l.action!=='ログイン');
+      saveLogs();renderLog();
     }
   }catch(e){}
 }
@@ -741,7 +743,7 @@ function switchTab(t){
   if(t==='stats') initStats();
   if(t==='absstats') initAbsStats();
   if(t==='abslog'){fetchAbsences();renderAbsLog();}
-  if(t==='loginlog') renderLoginLog();
+  if(t==='loginlog'){renderLoginLog();}
   if(t==='cal1') renderCal('cal1');
   if(t==='cal2'){fetchShinkan();renderCal('cal2');}
   if(t==='cal3'){fetchShinkan();renderWeekCal();}
@@ -1772,24 +1774,32 @@ function renderAbsLog(){
 // ===== ログインログ =====
 function addLoginLog(user){
   try{
-    const logs=JSON.parse(safeLS('gyn_loginlog')||'[]');
+    const localLogs=JSON.parse(safeLS('gyn_loginlog')||'[]');
     const now=new Date();
     const pad=n=>String(n).padStart(2,'0');
     const ts=now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate()+' '+pad(now.getHours())+':'+pad(now.getMinutes());
-    logs.unshift({ts,user});
-    if(logs.length>500) logs.length=500;
-    safeLS('gyn_loginlog',JSON.stringify(logs));
+    const entry={id:'lgn_'+genId(),ts,user,action:'ログイン',patientId:'',detail:'ログイン'};
+    localLogs.unshift({ts,user});
+    if(localLogs.length>500) localLogs.length=500;
+    safeLS('gyn_loginlog',JSON.stringify(localLogs));
+    // GASにも保存（操作ログシートに記録）
+    fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsertLog',record:entry,key:API_KEY})}).catch(()=>{});
   }catch(e){}
 }
 
-function renderLoginLog(){
+async function renderLoginLog(){
   const el=document.getElementById('loginLogList');
   if(!el) return;
+  el.innerHTML='<p style="font-size:13px;color:#aaa">読み込み中...</p>';
   try{
-    const logs=JSON.parse(safeLS('gyn_loginlog')||'[]');
-    if(!logs.length){el.innerHTML='<p style="font-size:13px;color:#aaa">ログインログはありません</p>';return;}
+    const r=await fetch(GAS_URL+'?action=getLogs&t='+Date.now()+'&key='+API_KEY);
+    const d=await r.json();
+    if(!d.logs||!d.logs.length){el.innerHTML='<p style="font-size:13px;color:#aaa">ログインログはありません</p>';return;}
+    // ログイン記録のみ抽出
+    const loginLogs=d.logs.filter(l=>l.detail==='ログイン'||l.action==='ログイン');
+    if(!loginLogs.length){el.innerHTML='<p style="font-size:13px;color:#aaa">ログインログはありません</p>';return;}
     let rows='';
-    logs.forEach(l=>{
+    loginLogs.forEach(l=>{
       rows+='<tr><td style="white-space:nowrap;font-size:12px">'+l.ts+'</td><td style="font-weight:600;font-size:12px">'+l.user+'</td></tr>';
     });
     el.innerHTML='<div style="overflow-x:auto"><table class="reg-table"><thead><tr><th>日時</th><th>ログインユーザー</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
@@ -1797,9 +1807,9 @@ function renderLoginLog(){
 }
 
 function clearLoginLog(){
-  if(!confirm('ログイン履歴を全削除しますか？')) return;
+  if(!confirm('ログイン履歴を全削除しますか？（ローカル記録のみ削除）')) return;
   safeLS('gyn_loginlog','[]');
-  renderLoginLog();
+  toast('ローカルのログイン履歴を削除しました',true);
 }
 
 function renderLog(){
