@@ -1422,14 +1422,20 @@ function renderNewsfeed(){
   const el=document.getElementById('newsfeedContent');
   if(!el) return;
 
-  const isAdmin=ADMINS.has(currentUser);
+  const today=ymd(today0());
 
-  // 未確認の自分あての通知
-  const myRecords=records.filter(r=>r.doctor===currentUser&&!isConfirmed(r));
-  // C列執刀医通知
-  const mySurgeonRecords=records.filter(r=>
-    r.opCol==='C'&&(r.surgeon===currentUser||r.surgeon2===currentUser)&&!isSurgeonConfirmed(r)
+  // 今日以降の手術のみ対象（過去は表示しない）
+  const futureRecords=records.filter(r=>!r.opDate||r.opDate>=today);
+
+  // C列執刀医通知：未確認 & 今日以降
+  const mySurgeonRecords=futureRecords.filter(r=>
+    r.opCol==='C'&&
+    (r.surgeon===currentUser||r.surgeon2===currentUser)&&
+    !isSurgeonConfirmed(r)
   );
+
+  // 手術日通知：自分が外来主治医 & 未確認 & 今日以降
+  const myRecords=futureRecords.filter(r=>r.doctor===currentUser&&!isConfirmed(r));
 
   let html='';
 
@@ -1489,35 +1495,15 @@ function renderNewsfeed(){
     html+='</div>';
   }
 
-  // 通知なし
-  if(myRecords.length===0&&mySurgeonRecords.length===0){
-    if(isAdmin){
-      // 管理者：直近10件（手術日が近い順）
-      const today=ymd(today0());
-      const upcoming=[...records]
-        .filter(r=>r.opDate&&r.opDate>=today)
-        .sort((a,b)=>a.opDate<b.opDate?-1:1)
-        .slice(0,10);
-      const past=[...records]
-        .filter(r=>r.opDate&&r.opDate<today)
-        .sort((a,b)=>a.opDate>b.opDate?-1:1)
-        .slice(0,5);
-      const recent=[...upcoming,...past].slice(0,10);
-      html+='<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px">📋 直近の登録症例</div>';
-      if(!recent.length){html+='<p style="color:#aaa;font-size:13px">登録されていません</p>';}
-      else{recent.forEach(r=>{const od=parseDate(r.opDate);html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0"><div><div style="font-size:13px;font-weight:600">'+r.patientId+'</div><div style="font-size:11px;color:#888">'+(SHORT[r.surgery]||'—')+' / '+(r.doctor||'—')+'</div></div><div style="font-size:12px;font-weight:600;color:#3b7dd8">'+(od?fmt(od):'未定')+'</div></div>';});}
-      html+='</div>';
-    }else{
-      const myAll=records.filter(r=>r.doctor===currentUser);
-      if(myAll.length===0){
-        html='<div class="card" style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:12px">📭</div><div style="color:#888;font-size:14px">あなたの症例はまだ登録されていません</div></div>';
-      }else{
-        html='<div class="card" style="text-align:center;padding:20px;background:#e6f7ee;border:none"><div style="font-size:24px;margin-bottom:8px">✅</div><div style="color:#1a6640;font-size:14px;font-weight:600">すべて確認済みです</div></div>';
-      }
-    }
+  // 何もない場合
+  if(!html){
+    html='<div class="card" style="text-align:center;padding:30px;background:#e6f7ee;border:none">'
+      +'<div style="font-size:28px;margin-bottom:8px">✅</div>'
+      +'<div style="color:#1a6640;font-size:14px;font-weight:600">新しい通知はありません</div>'
+      +'</div>';
   }
 
-  el.innerHTML=html||'<div class="card" style="text-align:center;padding:30px;color:#888">表示する情報がありません</div>';
+  el.innerHTML=html;
 }
 
 function confirmSurgeonRecord(id){
