@@ -219,7 +219,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 
   <!-- NEW!タブ -->
   <div id="tab-newsfeed" class="content">
-    <div id="newsfeedContent"></div>
+    <div id="newsfeedContent"><div style="text-align:center;padding:30px;color:#888"><span class="spinner" style="display:inline-block"></span> 同期中...</div></div>
   </div>
 
   <!-- 退院日計算 -->
@@ -582,6 +582,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 
 <script>
 
+const APP_VERSION='2025.04.10';
 const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGBnAEP7d9YM-54OmGqnFNYvee8e2ji1D5wKaR2skxE_Jzg/exec';
 const API_KEY='gyne_api_2024_fukuoka';
 const PASSWORDS={'竹内':'gyne20140609','穴井':'vuitton'};
@@ -709,7 +710,7 @@ function fillAbsPersonSelect(){
 }
 document.addEventListener('DOMContentLoaded',()=>{
   fillSelects();
-  try{const s=JSON.parse(sessionStorage.getItem('gyn_session')||'null');if(s&&(Date.now()-s.ts)/60000<30&&s.user&&s.pw===getPassword(s.user)){document.getElementById('loginDoctor').value=s.user;document.getElementById('pwInput').value=s.pw;checkPw();}}catch(e){}
+  try{const s=JSON.parse(sessionStorage.getItem('gyn_session')||'null');if(s&&(Date.now()-s.ts)/60000<360&&s.user&&s.pw===getPassword(s.user)&&s.ver===APP_VERSION){document.getElementById('loginDoctor').value=s.user;document.getElementById('pwInput').value=s.pw;checkPw();}}catch(e){}
 });
 function checkPw(){
   const doc=document.getElementById('loginDoctor').value;
@@ -729,15 +730,37 @@ function checkPw(){
     fetchAndRender(false);fetchAbsences();fetchShinkan();
     ['calc','shinkan','edit'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=ADMINS.has(currentUser)?'':'none';});
     ['log','stats','absstats','abslog','loginlog'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=currentUser===LOG_ADMIN?'':'none';});
-    try{sessionStorage.setItem('gyn_session',JSON.stringify({user:doc,pw,ts:Date.now()}));}catch(e){}
+    try{sessionStorage.setItem('gyn_session',JSON.stringify({user:doc,pw,ts:Date.now(),ver:APP_VERSION}));}catch(e){}
   }else{document.getElementById('pwError').style.display='block';document.getElementById('pwInput').value='';}
 }
 function logout(){currentUser='';document.getElementById('lockScreen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('pwInput').value='';document.getElementById('loginDoctor').value='';document.getElementById('pwError').style.display='none';try{sessionStorage.removeItem('gyn_session');}catch(e){}}
 
+function checkSessionExpiry(){
+  try{
+    const s=JSON.parse(sessionStorage.getItem('gyn_session')||'null');
+    if(!s||(Date.now()-s.ts)/60000>=360||s.ver!==APP_VERSION){
+      // 6時間経過 → 強制ログアウト
+      sessionStorage.removeItem('gyn_session');
+      currentUser='';
+      document.getElementById('loginScreen').style.display='flex';
+      document.getElementById('appScreen').style.display='none';
+      const reason=(!s||(Date.now()-s.ts)/60000>=360)?'セッションが切れました。':'システムが更新されました。';
+      alert(reason+'再度ログインしてください。');
+      return false;
+    }
+  }catch(e){}
+  return true;
+}
+
 function switchTab(t){
+  if(!checkSessionExpiry()) return;
   ['newsfeed','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats','absstats','abslog','loginlog'].forEach(name=>{document.getElementById('tab-'+name).style.display=t===name?'block':'none';});
   document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.toggle('active',btn.getAttribute('data-tab')===t));
-  if(t==='newsfeed') renderNewsfeed();
+  if(t==='newsfeed'){
+    const nf=document.getElementById('newsfeedContent');
+    if(nf) nf.innerHTML='<div style="text-align:center;padding:30px;color:#888"><span class="spinner" style="display:inline-block"></span> 同期中...</div>';
+    setTimeout(renderNewsfeed,50);
+  }
   if(t==='absence') fetchAbsences();
   if(t==='shinkan') fetchShinkan();
   if(t==='stats') initStats();
@@ -776,7 +799,8 @@ function updateCounter(){
 
 function renderList(){
   updateCounter();
-  const wr=records.filter(r=>{const d=parseDate(r.admitDate);return d&&(d.getDay()===6||d.getDay()===0);});
+  const today=ymd(today0());
+  const wr=records.filter(r=>{const d=parseDate(r.admitDate);return d&&(d.getDay()===6||d.getDay()===0)&&r.admitDate>=today;});
   const el=document.getElementById('regList');
   if(!wr.length){el.innerHTML='<p style="font-size:13px;color:#aaa">土日入院の登録はありません</p>';return;}
   const grp={};wr.forEach(r=>{if(!grp[r.admitDate])grp[r.admitDate]=[];grp[r.admitDate].push(r);});
@@ -1300,8 +1324,11 @@ async function fetchAbsences(){
 async function delAbsence(id){const target=absences.find(a=>a.id===id);if(target&&!ADMINS.has(currentUser)&&target.person!==currentUser){alert('自分の名前の不在のみ削除できます。');return;}absences=absences.filter(a=>a.id!==id);try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteAbsence',id,key:API_KEY})});}catch(e){}safeLS('gyn_absences',JSON.stringify(absences));renderAbsences();}
 function renderAbsences(){
   const el=document.getElementById('absenceList');if(!el)return;
-  if(!absences.length){el.innerHTML='<p style="font-size:13px;color:#aaa">登録されていません</p>';return;}
-  const grp={};[...absences].sort((a,b)=>a.date<b.date?-1:1).forEach(a=>{if(!grp[a.date])grp[a.date]=[];grp[a.date].push(a);});
+  const today=ymd(today0());
+  // 今日以降のみ表示
+  const future=absences.filter(a=>a.date>=today);
+  if(!future.length){el.innerHTML='<p style="font-size:13px;color:#aaa">登録されていません</p>';return;}
+  const grp={};[...future].sort((a,b)=>a.date<b.date?-1:1).forEach(a=>{if(!grp[a.date])grp[a.date]=[];grp[a.date].push(a);});
   let html='';
   Object.keys(grp).sort().forEach(date=>{
     const d=parseDate(date);
@@ -1351,8 +1378,11 @@ async function fetchShinkan(){
 async function delShinkan(id){shinkans=shinkans.filter(s=>s.id!==id);try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteShinkan',id,key:API_KEY})});}catch(e){}safeLS('gyn_shinkans',JSON.stringify(shinkans));renderShinkans();}
 function renderShinkans(){
   const el=document.getElementById('shinkanList');if(!el)return;
-  if(!shinkans.length){el.innerHTML='<p style="font-size:13px;color:#aaa">登録されていません</p>';return;}
-  const sorted=[...shinkans].sort((a,b)=>a.date<b.date?-1:1);
+  const today=ymd(today0());
+  // 今日以降のみ表示
+  const future=shinkans.filter(s=>s.date>=today);
+  if(!future.length){el.innerHTML='<p style="font-size:13px;color:#aaa">登録されていません</p>';return;}
+  const sorted=[...future].sort((a,b)=>a.date<b.date?-1:1);
   const grp={};sorted.forEach(s=>{if(!grp[s.date])grp[s.date]=[];grp[s.date].push(s);});
   let html='';
   Object.keys(grp).sort().forEach(date=>{
