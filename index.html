@@ -1423,87 +1423,98 @@ function renderNewsfeed(){
   if(!el) return;
 
   const today=ymd(today0());
-
-  // 今日以降の手術のみ対象（過去は表示しない）
   const futureRecords=records.filter(r=>!r.opDate||r.opDate>=today);
 
-  // C列執刀医通知：未確認 & 今日以降
   const mySurgeonRecords=futureRecords.filter(r=>
-    r.opCol==='C'&&
-    (r.surgeon===currentUser||r.surgeon2===currentUser)&&
-    !isSurgeonConfirmed(r)
-  );
+    r.opCol==='C'&&(r.surgeon===currentUser||r.surgeon2===currentUser)&&!isSurgeonConfirmed(r)
+  ).sort((a,b)=>a.opDate<b.opDate?-1:1);
 
-  // 手術日通知：自分が外来主治医 & 未確認 & 今日以降
-  const myRecords=futureRecords.filter(r=>r.doctor===currentUser&&!isConfirmed(r));
+  const myRecords=futureRecords.filter(r=>r.doctor===currentUser&&!isConfirmed(r))
+    .sort((a,b)=>a.opDate<b.opDate?-1:1);
 
-  let html='';
+  const allItems=[
+    ...mySurgeonRecords.map(r=>({type:'surgeon',r})),
+    ...myRecords.map(r=>({type:'doctor',r}))
+  ];
 
-  // C列執刀医通知
-  if(mySurgeonRecords.length>0){
-    html+='<div style="margin-bottom:16px"><div style="font-size:15px;font-weight:700;color:#e67e22;margin-bottom:10px">🔔 外来手術執刀医に決定しました！（'+mySurgeonRecords.length+'件）</div>';
-    mySurgeonRecords.sort((a,b)=>a.opDate<b.opDate?-1:1).forEach(r=>{
-      const od=parseDate(r.opDate);
-      const surgRole=r.surgeon===currentUser?'執刀医１':'執刀医２';
-      html+='<div class="card" style="border:2px solid #e67e22;margin-bottom:12px">'
-        +'<div style="background:#fef3e2;border-radius:8px 8px 0 0;padding:10px 14px;margin:-14px -14px 12px;display:flex;justify-content:space-between;align-items:center">'
-        +'<div style="font-size:15px;font-weight:700;color:#d35400">🏥 外来手術執刀医に決定しました!</div>'
-        +'<span class="badge badge-amber" style="font-size:11px">'+(SHORT[r.surgery]||r.surgery||'—')+'</span>'
-        +'</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
-        +'<div><div class="result-label">患者ID</div><div style="font-size:16px;font-weight:700">'+r.patientId+'</div></div>'
-        +'<div><div class="result-label">外来主治医</div><div style="font-size:14px;font-weight:600">'+(r.doctor||'—')+'</div></div>'
-        +'<div><div class="result-label">手術日</div><div style="font-size:14px;font-weight:700;color:#e67e22">'+(od?fmt(od):'未定')+'</div></div>'
-        +'<div><div class="result-label">あなたの役割</div><div style="font-size:13px;font-weight:600;color:#d35400">'+surgRole+'</div></div>'
-        +(r.opTime?'<div><div class="result-label">予定手術時間</div><div style="font-size:13px;font-weight:600">'+r.opTime+'h</div></div>':'')
-        +'</div>'
-        +'<button class="btn" style="width:100%;padding:12px;background:#e67e22;color:#fff;border:none;font-weight:600" data-id="'+r.id+'" onclick="confirmSurgeonRecord(this.dataset.id)">✓ 確認しました</button>'
-        +'</div>';
-    });
-    html+='</div>';
-  }
-
-  // 手術日通知
-  if(myRecords.length>0){
-    html+='<div style="margin-bottom:16px"><div style="font-size:15px;font-weight:700;color:#c0392b;margin-bottom:10px">🔔 手術日が決まりました！（'+myRecords.length+'件）</div>';
-    myRecords.sort((a,b)=>a.opDate<b.opDate?-1:1).forEach(r=>{
-      const od=parseDate(r.opDate),ad=parseDate(r.admitDate),dd=parseDate(r.dischargeDate);
-      const isDateChanged=r.confirmedBy==='changed';
-      const notifTitle=isDateChanged?'📅 手術日が変更になりました':'🏥 手術日が決まりました!';
-      const btnLabel=isDateChanged?'✓ 変更を確認しました':'✓ 確認しました';
-      const borderColor=isDateChanged?'#e67e22':'#e74c3c';
-      const bgColor=isDateChanged?'#fef3e2':'#fdecea';
-      const textColor=isDateChanged?'#d35400':'#c0392b';
-      html+='<div class="card" style="border:2px solid '+borderColor+';margin-bottom:12px">'
-        +'<div style="background:'+bgColor+';border-radius:8px 8px 0 0;padding:10px 14px;margin:-14px -14px 12px;display:flex;justify-content:space-between;align-items:center">'
-        +'<div style="font-size:15px;font-weight:700;color:'+textColor+'">'+notifTitle+'</div>'
-        +'<span class="badge badge-purple" style="font-size:11px">'+(SHORT[r.surgery]||r.surgery||'—')+'</span>'
-        +'</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
-        +'<div><div class="result-label">患者ID</div><div style="font-size:16px;font-weight:700">'+r.patientId+'</div></div>'
-        +'<div><div class="result-label">外来主治医</div><div style="font-size:14px;font-weight:600">'+(r.doctor||'—')+'</div></div>'
-        +(r.admitDoctor?'<div><div class="result-label">入院主治医</div><div style="font-size:14px;font-weight:600">'+r.admitDoctor+'</div></div>':'')
-        +'<div><div class="result-label">入院日</div><div style="font-size:13px;font-weight:600">'+(ad?fmt(ad):'未定')+'</div></div>'
-        +'<div><div class="result-label">手術日</div><div style="font-size:14px;font-weight:700;color:#3b7dd8">'+(od?fmt(od):'未定')+'</div></div>'
-        +'<div><div class="result-label">退院推奨日</div><div style="font-size:13px;font-weight:600;color:#1a6640">'+(dd?fmt(dd):'未定')+'</div></div>'
-        +(r.opCol&&r.opNum?'<div><div class="result-label">手術順番</div><span class="badge '+(r.opCol==='A'?'badge-blue':r.opCol==='B'?'badge-purple':'badge-amber')+'">'+r.opCol+r.opNum+'</span></div>':'')
-        +(r.opTime?'<div><div class="result-label">予定手術時間</div><div style="font-size:13px;font-weight:600">'+r.opTime+'h</div></div>':'')
-        +'</div>'
-        +'<button class="btn btn-primary" style="width:100%;padding:12px" data-id="'+r.id+'" onclick="confirmRecord(this.dataset.id)">'+btnLabel+'</button>'
-        +'</div>';
-    });
-    html+='</div>';
-  }
-
-  // 何もない場合
-  if(!html){
-    html='<div class="card" style="text-align:center;padding:30px;background:#e6f7ee;border:none">'
+  if(!allItems.length){
+    el.innerHTML='<div class="card" style="text-align:center;padding:30px;background:#e6f7ee;border:none">'
       +'<div style="font-size:28px;margin-bottom:8px">✅</div>'
       +'<div style="color:#1a6640;font-size:14px;font-weight:600">新しい通知はありません</div>'
       +'</div>';
+    return;
   }
 
-  el.innerHTML=html;
+  // 件数表示 + 最初の5件をすぐ描画
+  el.innerHTML='<div style="font-size:13px;color:#888;margin-bottom:10px">未確認 '+allItems.length+'件</div>'
+    +'<div id="newsfeedItems"></div>'
+    +'<div id="newsfeedMore"></div>';
+
+  const PAGE=5;
+  let rendered=0;
+
+  function renderItem(item){
+    const {type,r}=item;
+    if(type==='surgeon'){
+      const od=parseDate(r.opDate);
+      const surgRole=r.surgeon===currentUser?'執刀医１':'執刀医２';
+      return '<div class="card" style="border:2px solid #e67e22;margin-bottom:12px">'
+        +'<div style="background:#fef3e2;border-radius:8px 8px 0 0;padding:10px 14px;margin:-14px -14px 12px">'
+        +'<div style="font-size:14px;font-weight:700;color:#d35400">🏥 外来手術執刀医に決定しました！</div></div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
+        +'<div><div class="result-label">患者ID</div><div style="font-size:15px;font-weight:700">'+r.patientId+'</div></div>'
+        +'<div><div class="result-label">手術日</div><div style="font-size:13px;font-weight:700;color:#e67e22">'+(od?fmt(od):'未定')+'</div></div>'
+        +'<div><div class="result-label">役割</div><div style="font-size:13px;font-weight:600;color:#d35400">'+surgRole+'</div></div>'
+        +(r.opTime?'<div><div class="result-label">予定時間</div><div style="font-size:13px">'+r.opTime+'h</div></div>':'')
+        +'</div>'
+        +'<button class="btn" style="width:100%;padding:10px;background:#e67e22;color:#fff;border:none;font-weight:600" data-id="'+r.id+'" onclick="confirmSurgeonRecord(this.dataset.id)">✓ 確認しました</button>'
+        +'</div>';
+    }else{
+      const od=parseDate(r.opDate),ad=parseDate(r.admitDate),dd=parseDate(r.dischargeDate);
+      const isChanged=r.confirmedBy==='changed';
+      const bc=isChanged?'#e67e22':'#e74c3c',bg=isChanged?'#fef3e2':'#fdecea',tc=isChanged?'#d35400':'#c0392b';
+      return '<div class="card" style="border:2px solid '+bc+';margin-bottom:12px">'
+        +'<div style="background:'+bg+';border-radius:8px 8px 0 0;padding:10px 14px;margin:-14px -14px 12px">'
+        +'<div style="font-size:14px;font-weight:700;color:'+tc+'">'+(isChanged?'📅 手術日が変更になりました':'🏥 手術日が決まりました！')+'</div></div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
+        +'<div><div class="result-label">患者ID</div><div style="font-size:15px;font-weight:700">'+r.patientId+'</div></div>'
+        +'<div><div class="result-label">手術日</div><div style="font-size:13px;font-weight:700;color:#3b7dd8">'+(od?fmt(od):'未定')+'</div></div>'
+        +(r.admitDoctor?'<div><div class="result-label">入院主治医</div><div style="font-size:13px">'+r.admitDoctor+'</div></div>':'')
+        +'<div><div class="result-label">入院日</div><div style="font-size:13px">'+(ad?fmt(ad):'未定')+'</div></div>'
+        +'<div><div class="result-label">退院推奨日</div><div style="font-size:13px;color:#1a6640">'+(dd?fmt(dd):'未定')+'</div></div>'
+        +(r.opCol&&r.opNum?'<div><div class="result-label">順番</div><span class="badge '+(r.opCol==='A'?'badge-blue':r.opCol==='B'?'badge-purple':'badge-amber')+'">'+r.opCol+r.opNum+'</span></div>':'')
+        +'</div>'
+        +'<button class="btn btn-primary" style="width:100%;padding:10px" data-id="'+r.id+'" onclick="confirmRecord(this.dataset.id)">'+(isChanged?'✓ 変更を確認しました':'✓ 確認しました')+'</button>'
+        +'</div>';
+    }
+  }
+
+  function loadMore(count){
+    const container=document.getElementById('newsfeedItems');
+    const moreBtn=document.getElementById('newsfeedMore');
+    if(!container) return;
+    const slice=allItems.slice(rendered,rendered+count);
+    container.insertAdjacentHTML('beforeend',slice.map(renderItem).join(''));
+    rendered+=slice.length;
+    if(rendered>=allItems.length){
+      if(moreBtn) moreBtn.innerHTML='';
+    }else{
+      if(moreBtn) moreBtn.innerHTML='<button class="btn" style="width:100%;padding:12px;background:#f0f0f0;color:#333;border:none;font-size:13px" onclick="newsfeedLoadMore()">さらに表示（残り'+(allItems.length-rendered)+'件）</button>';
+    }
+  }
+
+  // グローバルに保存してボタンから呼び出せるように
+  window._newsfeedAllItems=allItems;
+  window._newsfeedRendered=0;
+  window.newsfeedLoadMore=function(){
+    rendered=window._newsfeedRendered;
+    loadMore(PAGE);
+    window._newsfeedRendered=rendered;
+  };
+
+  // 最初の5件を即描画
+  loadMore(PAGE);
+  window._newsfeedRendered=rendered;
 }
 
 function confirmSurgeonRecord(id){
