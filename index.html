@@ -669,8 +669,22 @@ async function gasDelete(id){await fetch(GAS_URL,{method:'POST',body:JSON.string
 async function fetchAndRender(showSpinner){
   if(isSyncing) return;isSyncing=true;
   if(showSpinner) setSpin(true);
-  try{records=await gasGetAll();refreshUI();if(statsUnlocked&&document.getElementById('tab-stats').style.display!=='none')renderStats();if(showSpinner){setSpin(false);toast('✓ 最新データを取得（'+records.length+'件）',true);}}
-  catch(e){if(showSpinner){setSpin(false);toast('⚠ 取得失敗',false);}}
+  try{
+    records=await gasGetAll();
+    refreshUI();
+    if(statsUnlocked&&document.getElementById('tab-stats').style.display!=='none') renderStats();
+    if(showSpinner){setSpin(false);toast('✓ 最新データを取得（'+records.length+'件）',true);}
+    // NEWタブが表示中なら更新
+    if(document.getElementById('tab-newsfeed')&&document.getElementById('tab-newsfeed').style.display!=='none') renderNewsfeed();
+  }
+  catch(e){
+    if(showSpinner){setSpin(false);toast('⚠ 取得失敗',false);}
+    // エラー時もNEWタブのスピナーを消す
+    if(document.getElementById('tab-newsfeed')&&document.getElementById('tab-newsfeed').style.display!=='none'){
+      const nf=document.getElementById('newsfeedContent');
+      if(nf&&nf.innerHTML.includes('同期中')) nf.innerHTML='<div class="card" style="text-align:center;padding:20px;color:#c0392b">⚠ データ取得に失敗しました</div>';
+    }
+  }
   isSyncing=false;
 }
 async function syncNow(){await fetchAndRender(true);}
@@ -731,6 +745,7 @@ function checkPw(){
     ['calc','shinkan','edit'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=ADMINS.has(currentUser)?'':'none';});
     ['log','stats','absstats','abslog','loginlog'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=currentUser===LOG_ADMIN?'':'none';});
     try{sessionStorage.setItem('gyn_session',JSON.stringify({user:doc,pw,ts:Date.now(),ver:APP_VERSION}));}catch(e){}
+    switchTab('newsfeed');
   }else{document.getElementById('pwError').style.display='block';document.getElementById('pwInput').value='';}
 }
 function logout(){currentUser='';document.getElementById('lockScreen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('pwInput').value='';document.getElementById('loginDoctor').value='';document.getElementById('pwError').style.display='none';try{sessionStorage.removeItem('gyn_session');}catch(e){}}
@@ -759,7 +774,9 @@ function switchTab(t){
   if(t==='newsfeed'){
     const nf=document.getElementById('newsfeedContent');
     if(nf) nf.innerHTML='<div style="text-align:center;padding:30px;color:#888"><span class="spinner" style="display:inline-block"></span> 同期中...</div>';
-    setTimeout(renderNewsfeed,50);
+    if(records.length) setTimeout(renderNewsfeed,50);
+    // データ未取得でも一定時間後に再描画
+    else setTimeout(()=>{if(records.length) renderNewsfeed();},2000);
   }
   if(t==='absence') fetchAbsences();
   if(t==='shinkan') fetchShinkan();
