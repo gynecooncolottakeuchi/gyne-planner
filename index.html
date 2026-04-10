@@ -755,7 +755,6 @@ function refreshUI(){
   updateCounter();
   const tabs=['newsfeed','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats','absstats','abslog','loginlog'];
   const active=tabs.find(t=>{const el=document.getElementById('tab-'+t);return el&&el.style.display!=='none';});
-  if(active==='newsfeed') renderNewsfeed();
   if(active==='cal1') renderCal('cal1');
   if(active==='cal2') renderCal('cal2');
   if(active==='cal3') renderWeekCal();
@@ -1421,17 +1420,19 @@ function isConfirmed(r){
 }
 function renderNewsfeed(){
   const el=document.getElementById('newsfeedContent');
-  if(!records.length){el.innerHTML='<div class="card" style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:12px">📋</div><div style="color:#888;font-size:14px">データを読み込み中...</div></div>';return;}
+  if(!el) return;
+
   const isAdmin=ADMINS.has(currentUser);
-  // 未確認：confirmedByにcurrentUserが含まれていない症例（外来主治医）
+
+  // 未確認の自分あての通知
   const myRecords=records.filter(r=>r.doctor===currentUser&&!isConfirmed(r));
-  // C列執刀医通知：自分が執刀医として登録されているC列症例で未確認のもの
+  // C列執刀医通知
   const mySurgeonRecords=records.filter(r=>
-    r.opCol==='C'&&
-    (r.surgeon===currentUser||r.surgeon2===currentUser)&&
-    !isSurgeonConfirmed(r)
+    r.opCol==='C'&&(r.surgeon===currentUser||r.surgeon2===currentUser)&&!isSurgeonConfirmed(r)
   );
+
   let html='';
+
   // C列執刀医通知
   if(mySurgeonRecords.length>0){
     html+='<div style="margin-bottom:16px"><div style="font-size:15px;font-weight:700;color:#e67e22;margin-bottom:10px">🔔 外来手術執刀医に決定しました！（'+mySurgeonRecords.length+'件）</div>';
@@ -1455,6 +1456,8 @@ function renderNewsfeed(){
     });
     html+='</div>';
   }
+
+  // 手術日通知
   if(myRecords.length>0){
     html+='<div style="margin-bottom:16px"><div style="font-size:15px;font-weight:700;color:#c0392b;margin-bottom:10px">🔔 手術日が決まりました！（'+myRecords.length+'件）</div>';
     myRecords.sort((a,b)=>a.opDate<b.opDate?-1:1).forEach(r=>{
@@ -1465,7 +1468,11 @@ function renderNewsfeed(){
       const borderColor=isDateChanged?'#e67e22':'#e74c3c';
       const bgColor=isDateChanged?'#fef3e2':'#fdecea';
       const textColor=isDateChanged?'#d35400':'#c0392b';
-      html+='<div class="card" style="border:2px solid '+borderColor+';margin-bottom:12px"><div style="background:'+bgColor+';border-radius:8px 8px 0 0;padding:10px 14px;margin:-14px -14px 12px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:700;color:'+textColor+'">'+notifTitle+'</div><span class="badge badge-purple" style="font-size:11px">'+(SHORT[r.surgery]||r.surgery||'—')+'</span></div>'
+      html+='<div class="card" style="border:2px solid '+borderColor+';margin-bottom:12px">'
+        +'<div style="background:'+bgColor+';border-radius:8px 8px 0 0;padding:10px 14px;margin:-14px -14px 12px;display:flex;justify-content:space-between;align-items:center">'
+        +'<div style="font-size:15px;font-weight:700;color:'+textColor+'">'+notifTitle+'</div>'
+        +'<span class="badge badge-purple" style="font-size:11px">'+(SHORT[r.surgery]||r.surgery||'—')+'</span>'
+        +'</div>'
         +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
         +'<div><div class="result-label">患者ID</div><div style="font-size:16px;font-weight:700">'+r.patientId+'</div></div>'
         +'<div><div class="result-label">外来主治医</div><div style="font-size:14px;font-weight:600">'+(r.doctor||'—')+'</div></div>'
@@ -1475,33 +1482,58 @@ function renderNewsfeed(){
         +'<div><div class="result-label">退院推奨日</div><div style="font-size:13px;font-weight:600;color:#1a6640">'+(dd?fmt(dd):'未定')+'</div></div>'
         +(r.opCol&&r.opNum?'<div><div class="result-label">手術順番</div><span class="badge '+(r.opCol==='A'?'badge-blue':r.opCol==='B'?'badge-purple':'badge-amber')+'">'+r.opCol+r.opNum+'</span></div>':'')
         +(r.opTime?'<div><div class="result-label">予定手術時間</div><div style="font-size:13px;font-weight:600">'+r.opTime+'h</div></div>':'')
-        +'</div><button class="btn btn-primary" style="width:100%;padding:12px" data-id="'+r.id+'" onclick="confirmRecord(this.dataset.id)">'+btnLabel+'</button></div>';
+        +'</div>'
+        +'<button class="btn btn-primary" style="width:100%;padding:12px" data-id="'+r.id+'" onclick="confirmRecord(this.dataset.id)">'+btnLabel+'</button>'
+        +'</div>';
     });
     html+='</div>';
   }
-  if(isAdmin){
-    const recent=[...records].sort((a,b)=>a.opDate>b.opDate?-1:1).slice(0,10);
-    html+='<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px">📋 直近の登録症例（手術日順）</div>';
-    if(!recent.length){html+='<p style="color:#aaa;font-size:13px">登録されていません</p>';}
-    else{recent.forEach(r=>{const od=parseDate(r.opDate);html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0"><div><div style="font-size:13px;font-weight:600">'+r.patientId+'</div><div style="font-size:11px;color:#888">'+(SHORT[r.surgery]||'—')+' / '+(r.doctor||'—')+'</div></div><div style="font-size:12px;font-weight:600;color:#3b7dd8">'+(od?fmt(od):'未定')+'</div></div>';});}
-    html+='</div>';
-    if(myRecords.length===0){const myAll=records.filter(r=>r.doctor===currentUser);if(myAll.length>0)html+='<div class="card" style="text-align:center;padding:12px;background:#e6f7ee;border:none;margin-bottom:12px"><div style="color:#1a6640;font-size:13px;font-weight:600">✅ 自分の症例はすべて確認済みです</div></div>';}
-  }else{
-    const myAll=records.filter(r=>r.doctor===currentUser);
-    const myConfirmed=myAll.filter(r=>confirmed[r.id]);
-    if(myAll.length===0){html+='<div class="card" style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:12px">📭</div><div style="color:#888;font-size:14px">あなたの症例はまだ登録されていません</div></div>';}
-    else if(myRecords.length===0){
-      html+='<div class="card" style="text-align:center;padding:20px;background:#e6f7ee;border:none"><div style="font-size:24px;margin-bottom:8px">✅</div><div style="color:#1a6640;font-size:14px;font-weight:600">すべて確認済みです</div></div>';
-      if(myConfirmed.length>0){html+='<div class="card"><div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px">確認済み症例</div>';[...myConfirmed].sort((a,b)=>a.opDate<b.opDate?-1:1).forEach(r=>{const od=parseDate(r.opDate);html+='<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:12px"><span style="font-weight:600">'+r.patientId+'</span><span style="color:#888">'+(SHORT[r.surgery]||'—')+'</span><span style="color:#3b7dd8">'+(od?fmt(od):'未定')+'</span></div>';});html+='</div>';}
+
+  // 通知なし
+  if(myRecords.length===0&&mySurgeonRecords.length===0){
+    if(isAdmin){
+      // 管理者：直近10件（手術日が近い順）
+      const today=ymd(today0());
+      const upcoming=[...records]
+        .filter(r=>r.opDate&&r.opDate>=today)
+        .sort((a,b)=>a.opDate<b.opDate?-1:1)
+        .slice(0,10);
+      const past=[...records]
+        .filter(r=>r.opDate&&r.opDate<today)
+        .sort((a,b)=>a.opDate>b.opDate?-1:1)
+        .slice(0,5);
+      const recent=[...upcoming,...past].slice(0,10);
+      html+='<div class="card" style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;color:#555;margin-bottom:10px">📋 直近の登録症例</div>';
+      if(!recent.length){html+='<p style="color:#aaa;font-size:13px">登録されていません</p>';}
+      else{recent.forEach(r=>{const od=parseDate(r.opDate);html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0"><div><div style="font-size:13px;font-weight:600">'+r.patientId+'</div><div style="font-size:11px;color:#888">'+(SHORT[r.surgery]||'—')+' / '+(r.doctor||'—')+'</div></div><div style="font-size:12px;font-weight:600;color:#3b7dd8">'+(od?fmt(od):'未定')+'</div></div>';});}
+      html+='</div>';
+    }else{
+      const myAll=records.filter(r=>r.doctor===currentUser);
+      if(myAll.length===0){
+        html='<div class="card" style="text-align:center;padding:30px"><div style="font-size:32px;margin-bottom:12px">📭</div><div style="color:#888;font-size:14px">あなたの症例はまだ登録されていません</div></div>';
+      }else{
+        html='<div class="card" style="text-align:center;padding:20px;background:#e6f7ee;border:none"><div style="font-size:24px;margin-bottom:8px">✅</div><div style="color:#1a6640;font-size:14px;font-weight:600">すべて確認済みです</div></div>';
+      }
     }
   }
+
   el.innerHTML=html||'<div class="card" style="text-align:center;padding:30px;color:#888">表示する情報がありません</div>';
 }
+
 function confirmSurgeonRecord(id){
-  confirmSurgeonRecordGAS(id).then(()=>{renderNewsfeed();toast('✓ 確認しました',true);});
+  confirmSurgeonRecordGAS(id).then(()=>{
+    // DOMから直接削除（全再描画を避ける）
+    const card=document.querySelector('[data-id="'+id+'"]:not([onclick*="confirmRecord"])');
+    if(card) card.closest('.card')?.remove();
+    // 念のためnewsfeedを軽量更新
+    renderNewsfeed();
+    toast('✓ 確認しました',true);
+  });
 }
 
-function confirmRecord(id){confirmRecordGAS(id).then(()=>{renderNewsfeed();toast('✓ 確認しました',true);});}
+function confirmRecord(id){
+  confirmRecordGAS(id).then(()=>{renderNewsfeed();toast('✓ 確認しました',true);});
+}
 
 function unlockStats(){const pw=prompt('パスワードを入力してください');if(pw===STATS_PW&&currentUser===LOG_ADMIN){statsUnlocked=true;document.getElementById('statsLock').style.display='none';document.getElementById('statsContent').style.display='block';buildStatsTargets();renderStats();}else alert('竹内先生のアカウントでログインし、正しいパスワードを入力してください');}
 function initStats(){if(currentUser===LOG_ADMIN){statsUnlocked=true;document.getElementById('statsLock').style.display='none';document.getElementById('statsContent').style.display='block';}else{document.getElementById('statsLock').style.display='block';document.getElementById('statsContent').style.display='none';return;}if(!records.length){fetchAndRender(false).then(()=>{buildStatsTargets();renderStats();});}else{buildStatsTargets();renderStats();}}
