@@ -586,7 +586,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 
 <script>
 
-const APP_VERSION='2026.08.12';
+const APP_VERSION='2026.08.12b';
 const DATA_MONTHS=2;  // 通常取得する過去データの範囲（か月）
 const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGBnAEP7d9YM-54OmGqnFNYvee8e2ji1D5wKaR2skxE_Jzg/exec';
 const API_KEY='gyne_api_2024_fukuoka';
@@ -1407,6 +1407,7 @@ async function saveAbsence(){
   const date=document.getElementById('absDate').value,person=document.getElementById('absPerson').value;
   const type=document.getElementById('absType').value,reason=document.getElementById('absReason').value;
   if(!date||!person||!type){toast('日付・不在者・区分を入力してください',false);return;}
+  await fetchShinkan();
   // 権限チェック：一般医師は自分の不在のみ入力可能
   if(!ADMINS.has(currentUser)&&person!==currentUser){
     alert('自分以外の不在は入力できません。');return;
@@ -1422,6 +1423,17 @@ async function saveAbsence(){
   if(absConflicts.length>0){
     alert('⚠ '+person+'先生は以下の症例に登録されているため不在入力できません。\n\n'+absConflicts.join('\n')+'\n\n竹内に連絡してください。');
     return;
+  }
+  // 新患担当チェック：終日・午前不在はブロック、午後不在は警告
+  const skHit=shinkans.filter(function(sk){
+    return sk.date===date&&(sk.doctors||'').split(',').filter(Boolean).indexOf(person)>=0;
+  });
+  if(skHit.length){
+    if(type==='終日'||type==='午前'){
+      alert('⚠ '+person+'先生は '+date+' の新患担当に登録されているため、'+type+'不在は入力できません。\n\n新患担当を変更するか、竹内に連絡してください。');
+      return;
+    }
+    if(!confirm('⚠ '+person+'先生は '+date+' の新患担当に登録されています。\n\nこのまま午後不在を登録しますか？')) return;
   }
 
   const editingAbsId=document.getElementById('editingAbsId').value;
@@ -1477,11 +1489,38 @@ function clearShinkanForm(){document.getElementById('shinkanDate').value=ymd(new
 function editShinkan(id){const s=shinkans.find(x=>x.id===id);if(!s)return;document.getElementById('shinkanDate').value=s.date||'';const docs=(s.doctors||'').split(',').filter(Boolean);document.getElementById('shinkanDoc1').value=docs[0]||'';document.getElementById('shinkanDoc2').value=docs[1]||'';document.getElementById('shinkanDoc3').value=docs[2]||'';document.getElementById('editingShinkanId').value=s.id;window.scrollTo(0,0);toast('修正モード：変更後「登録」を押してください',true);}
 async function saveShinkan(){
   if(!ADMINS.has(currentUser)){toast('新患担当の登録は竹内先生・穴井先生のみです',false);return;}
+  await fetchAbsences();
   const date=document.getElementById('shinkanDate').value;if(!date){toast('日付を入力してください',false);return;}
   const d=parseDate(date);if(!d){toast('日付が正しくありません',false);return;}
   const dow=d.getDay();if(dow!==1&&dow!==3&&dow!==5){toast('新患は月・水・金曜日のみです',false);return;}
   const docs=[document.getElementById('shinkanDoc1').value,document.getElementById('shinkanDoc2').value,document.getElementById('shinkanDoc3').value].filter(Boolean);
   if(!docs.length){toast('担当医師を1名以上選択してください',false);return;}
+  // 不在チェック：終日・午前不在はブロック、午後不在は警告
+  const blockList=[],warnList=[];
+  docs.forEach(function(person){
+    absences.forEach(function(a){
+      if(a.date!==date||a.person!==person) return;
+      const label=person+'先生（'+a.type+'不在'+(a.reason?'：'+a.reason:'')+'）';
+      if(a.type==='終日'||a.type==='午前') blockList.push(label);
+      else warnList.push(label);
+    });
+  });
+  if(blockList.length){
+    alert('⚠ 以下の先生は不在のため新患担当に登録できません。\n\n'+blockList.join('\n')+'\n\n不在入力を修正するか、別の先生を選択してください。');
+    return;
+  }
+  // 手術重複チェック：警告のみ
+  docs.forEach(function(person){
+    records.forEach(function(r){
+      if(r.opDate!==date) return;
+      [{label:'入院主治医',val:r.admitDoctor},{label:'執刀医１',val:r.surgeon},{label:'執刀医２',val:r.surgeon2},{label:'助手１',val:r.assist1},{label:'助手２',val:r.assist2}]
+        .filter(function(f){return f.val===person;})
+        .forEach(function(f){warnList.push(person+'先生（患者ID '+r.patientId+' の'+f.label+'）');});
+    });
+  });
+  if(warnList.length){
+    if(!confirm('⚠ 以下の重複があります。\n\n'+warnList.join('\n')+'\n\nこのまま新患担当に登録しますか？')) return;
+  }
   const editingShinkanId=document.getElementById('editingShinkanId').value;
   const rec={id:editingShinkanId||'sk_'+genId(),date,doctors:docs.join(',')};
   try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsertShinkan',record:rec,key:API_KEY})});await fetchShinkan();clearShinkanForm();toast('✓ 新患担当を登録しました',true);}
