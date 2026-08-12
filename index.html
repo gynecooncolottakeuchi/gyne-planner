@@ -339,6 +339,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
       <div class="btn-row" style="margin-top:12px">
         <button class="btn btn-primary" onclick="calculate()">登録</button>
         <button class="btn" onclick="clearForm()">クリア</button>
+        <button class="btn btn-danger" id="calcDelBtn" onclick="delCurrentRecord()" style="display:none">この症例を削除</button>
       </div>
     </div>
     <div id="output"></div>
@@ -473,8 +474,11 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
   <!-- 一覧・修正 -->
   <div id="tab-edit" class="content" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:13px;font-weight:600;color:#555">登録済み患者一覧</div>
-      <button class="btn btn-sm btn-danger" onclick="clearAll()">全件削除</button>
+      <div style="font-size:13px;font-weight:600;color:#555">登録済み患者一覧<span style="font-weight:400;color:#999;font-size:11px">（本日以降）</span></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label style="font-size:12px;color:#555;display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="editShowPast" onchange="renderEdit()">過去も表示</label>
+        <button class="btn btn-sm btn-danger" onclick="clearAll()">全件削除</button>
+      </div>
     </div>
     <div id="editList" class="card"><p style="font-size:13px;color:#aaa">登録されていません</p></div>
   </div>
@@ -582,7 +586,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 
 <script>
 
-const APP_VERSION='2025.04.10';
+const APP_VERSION='2026.08.12';
+const DATA_MONTHS=2;  // 通常取得する過去データの範囲（か月）
 const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGBnAEP7d9YM-54OmGqnFNYvee8e2ji1D5wKaR2skxE_Jzg/exec';
 const API_KEY='gyne_api_2024_fukuoka';
 const PASSWORDS={'竹内':'gyne20140609','穴井':'vuitton'};
@@ -599,7 +604,7 @@ const SHORT={op_laser_ex:'外来レーザー',op_scope_ex:'外来子宮鏡',op_o
 const LABELS={op_laser_ex:'外来レーザー蒸散術',op_scope_ex:'外来子宮鏡手術',op_other_ex:'外来その他',lap_other:'腹腔鏡その他',open_other:'開腹その他',vaginal_other:'経腟その他',cs_other:'帝王切開',de_dc:'D&E（D&C）',ec_open_ln:'子宮体癌 開腹（LN+）',ec_open_noln:'子宮体癌 開腹（LN-）',oc_open_ln:'卵巣癌 開腹（LN+）',oc_open_noln:'卵巣癌 開腹（LN-）',cx_radical:'頸癌 広汎子宮全摘',lap_radical:'腹腔鏡下 広汎子宮全摘',cx_semi_ln:'頸癌 準広汎（LN+）',cx_simple_ln:'頸癌 単純TH（LN+）',cx_semi_noln:'頸癌 準広汎（LN-）',cx_simple_noln:'頸癌 単純TH（LN-）',open_benign_ut:'良性子宮 開腹',open_benign_ov:'良性卵巣 開腹',lap_malig_ln:'腹腔鏡 悪性（LN+）',lap_malig_noln:'腹腔鏡 悪性（LN-）',lap_benign:'腹腔鏡 良性',lap_adnexa:'腹腔鏡 付属器',robot_malig_ln:'ロボ 悪性（LN+）',robot_malig_noln:'ロボ 悪性（LN-）',robot_benign:'ロボ 良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
 const DAYS=['日','月','火','水','木','金','土'];
 const HOLIDAYS=new Set(['2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24','2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06','2025-07-21','2025-08-11','2025-09-15','2025-09-22','2025-09-23','2025-10-13','2025-11-03','2025-11-23','2025-11-24','2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06','2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23','2026-12-23']);
-const ABS_REASONS={'終日':['直明け','有給','夏季休暇','学会','リフレッシュ休暇','忌引き'],'午前':['有給','午前C/S','午前会議','講義'],'午後':['有給','午後C/S','午後会議','午後遺伝カウンセリング','午後胎児エコー','講義']};
+const ABS_REASONS={'終日':['直明け','有給','夏季休暇','学会','リフレッシュ休暇','忌引き','あいさつ回り'],'午前':['有給','午前C/S','午前会議','講義','あいさつ回り'],'午後':['有給','午後C/S','午後会議','午後遺伝カウンセリング','午後胎児エコー','講義','あいさつ回り']};
 
 let records=[],logs=[],absences=[],shinkans=[],currentUser='';
 let cal1Year,cal1Month,cal2Year,cal2Month,cal3BaseMonday;
@@ -662,7 +667,63 @@ async function fetchLogs(){
 function toast(msg,ok){document.querySelectorAll('.toast').forEach(e=>e.remove());const el=document.createElement('div');el.className='toast';el.style.background=ok?'#1a6640':'#c0392b';el.textContent=msg;document.body.appendChild(el);setTimeout(()=>{if(el.parentNode)el.parentNode.removeChild(el);},3000);}
 function setSpin(on){document.querySelectorAll('.spinner').forEach(s=>s.style.display=on?'inline-block':'none');}
 
-async function gasGetAll(){const r=await fetch(GAS_URL+'?action=getAll&t='+Date.now()+'&key='+API_KEY);const d=await r.json();if(!d.records||!Array.isArray(d.records)) throw new Error('invalid');return d.records.map(normalizeRecord).filter(r=>r&&r.patientId&&r.opDate);}
+// ===== 通信の堅牢化：タイムアウト付き＋自動リトライ =====
+const RETRY_WAIT=[1000,3000,6000];
+async function fetchJSON(url,opts){
+  opts=opts||{};
+  const tries=opts.retries===undefined?3:opts.retries;
+  const timeout=opts.timeout||20000;
+  let lastErr;
+  for(let i=0;i<tries;i++){
+    let timer=null;
+    try{
+      const ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+      if(ctrl) timer=setTimeout(()=>{try{ctrl.abort();}catch(e){}},timeout);
+      const r=await fetch(url,ctrl?{signal:ctrl.signal}:{});
+      if(timer) clearTimeout(timer);
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return await r.json();
+    }catch(e){
+      if(timer) clearTimeout(timer);
+      lastErr=e;
+      if(i<tries-1) await new Promise(res=>setTimeout(res,RETRY_WAIT[i]||6000));
+    }
+  }
+  throw lastErr||new Error('fetch failed');
+}
+// ===== 取得範囲（通常は過去DATA_MONTHSか月以降のみ／統計・検索時は全期間） =====
+let fullLoaded=false;
+function sinceParam(){const d=today0();d.setMonth(d.getMonth()-DATA_MONTHS);return ymd(d);}
+async function gasGetAll(full){
+  const q=full?'':'&since='+sinceParam();
+  const d=await fetchJSON(GAS_URL+'?action=getAll&t='+Date.now()+'&key='+API_KEY+q,{timeout:20000,retries:3});
+  if(!d.records||!Array.isArray(d.records)) throw new Error('invalid');
+  return d.records.map(normalizeRecord).filter(r=>r&&r.patientId&&r.opDate);
+}
+// ===== オフライン用キャッシュ =====
+function saveRecordsCache(){try{safeLS('gyn_records_cache',JSON.stringify({ts:Date.now(),full:fullLoaded,records}));}catch(e){}}
+function loadRecordsCache(){try{const s=safeLS('gyn_records_cache');if(!s)return null;const o=JSON.parse(s);if(o&&Array.isArray(o.records))return o;}catch(e){}return null;}
+function setStale(on,ts){
+  let bar=document.getElementById('staleBar');
+  if(!on){if(bar)bar.remove();return;}
+  if(!bar){
+    bar=document.createElement('div');bar.id='staleBar';
+    bar.style.cssText='background:#fff4e5;color:#8a5a00;border:1px solid #f0c26b;border-radius:8px;padding:8px 12px;margin:8px 0;font-size:12px;font-weight:600;text-align:center;cursor:pointer';
+    bar.onclick=function(){syncNow();};
+    const app=document.getElementById('app');
+    if(app) app.insertBefore(bar,app.firstChild); else document.body.insertBefore(bar,document.body.firstChild);
+  }
+  let when='';
+  if(ts){const d=new Date(ts);const pad=n=>String(n).padStart(2,'0');when=(d.getMonth()+1)+'/'+d.getDate()+' '+pad(d.getHours())+':'+pad(d.getMinutes());}
+  bar.textContent='⚠ サーバーに接続できません。'+(when?when+' 時点の':'')+'保存済みデータを表示しています（タップで再取得）';
+}
+async function ensureFullRecords(){
+  if(fullLoaded) return;
+  setSpin(true);
+  try{records=await gasGetAll(true);fullLoaded=true;saveRecordsCache();setStale(false);refreshUI();}
+  catch(e){toast('⚠ 全期間データの取得に失敗しました',false);}
+  setSpin(false);
+}
 async function gasPut(rec){await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'upsert',record:rec,key:API_KEY})});}
 async function gasDelete(id){await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'delete',id,key:API_KEY})});}
 
@@ -670,7 +731,8 @@ async function fetchAndRender(showSpinner){
   if(isSyncing) return;isSyncing=true;
   if(showSpinner) setSpin(true);
   try{
-    records=await gasGetAll();
+    records=await gasGetAll(fullLoaded);
+    saveRecordsCache();setStale(false);
     refreshUI();
     if(statsUnlocked&&document.getElementById('tab-stats').style.display!=='none') renderStats();
     if(showSpinner){setSpin(false);toast('✓ 最新データを取得（'+records.length+'件）',true);}
@@ -678,11 +740,21 @@ async function fetchAndRender(showSpinner){
     if(document.getElementById('tab-newsfeed')&&document.getElementById('tab-newsfeed').style.display!=='none') renderNewsfeed();
   }
   catch(e){
-    if(showSpinner){setSpin(false);toast('⚠ 取得失敗',false);}
-    // エラー時もNEWタブのスピナーを消す
-    if(document.getElementById('tab-newsfeed')&&document.getElementById('tab-newsfeed').style.display!=='none'){
-      const nf=document.getElementById('newsfeedContent');
-      if(nf&&nf.innerHTML.includes('同期中')) nf.innerHTML='<div class="card" style="text-align:center;padding:20px;color:#c0392b">⚠ データ取得に失敗しました</div>';
+    // 取得失敗時：保存済みキャッシュで業務を止めない
+    const c=loadRecordsCache();
+    if(c&&c.records.length){
+      records=c.records.map(normalizeRecord).filter(r=>r&&r.patientId&&r.opDate);
+      setStale(true,c.ts);
+      refreshUI();
+      if(showSpinner){setSpin(false);toast('⚠ 接続できず、保存済みデータを表示中',false);}
+      if(document.getElementById('tab-newsfeed')&&document.getElementById('tab-newsfeed').style.display!=='none') renderNewsfeed();
+    }else{
+      setStale(true,null);
+      if(showSpinner){setSpin(false);toast('⚠ 取得失敗',false);}
+      if(document.getElementById('tab-newsfeed')&&document.getElementById('tab-newsfeed').style.display!=='none'){
+        const nf=document.getElementById('newsfeedContent');
+        if(nf&&nf.innerHTML.includes('同期中')) nf.innerHTML='<div class="card" style="text-align:center;padding:20px;color:#c0392b">⚠ データ取得に失敗しました<br><button class="btn btn-sm btn-primary" style="margin-top:10px" onclick="syncNow()">再取得</button></div>';
+      }
     }
   }
   isSyncing=false;
@@ -744,6 +816,7 @@ function checkPw(){
     fetchAndRender(false);fetchAbsences();fetchShinkan();
     ['calc','shinkan','edit'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=ADMINS.has(currentUser)?'':'none';});
     ['log','stats','absstats','abslog','loginlog'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=currentUser===LOG_ADMIN?'':'none';});
+    updateCalcDelBtn();
     try{sessionStorage.setItem('gyn_session',JSON.stringify({user:doc,pw,ts:Date.now(),ver:APP_VERSION}));}catch(e){}
     switchTab('newsfeed');
   }else{document.getElementById('pwError').style.display='block';document.getElementById('pwInput').value='';}
@@ -780,8 +853,9 @@ function switchTab(t){
   }
   if(t==='absence') fetchAbsences();
   if(t==='shinkan') fetchShinkan();
-  if(t==='stats') initStats();
+  if(t==='stats'){ensureFullRecords().then(initStats);}
   if(t==='absstats') initAbsStats();
+  if(t==='search') ensureFullRecords();
   if(t==='abslog'){fetchAbsences();renderAbsLog();}
   if(t==='loginlog'){renderLoginLog();}
   if(t==='cal1') renderCal('cal1');
@@ -834,8 +908,14 @@ function renderList(){
 
 function renderEdit(){
   const el=document.getElementById('editList');
-  if(!records.length){el.innerHTML='<p style="font-size:13px;color:#aaa">登録されていません</p>';return;}
-  const sorted=[...records].sort((a,b)=>{
+  const cb=document.getElementById('editShowPast');
+  const showPast=!!(cb&&cb.checked);
+  if(showPast) ensureFullRecords();
+  const today=ymd(today0());
+  // 本日以降のみ表示（退院日、無ければ手術日で判定）
+  const base=showPast?records:records.filter(r=>{const k=r.dischargeDate||r.opDate;return k&&k>=today;});
+  if(!base.length){el.innerHTML='<p style="font-size:13px;color:#aaa">'+(showPast?'登録されていません':'本日以降の症例はありません')+'</p>';return;}
+  const sorted=[...base].sort((a,b)=>{
     if(a.opDate!==b.opDate) return a.opDate<b.opDate?-1:1;
     const colOrder={'A':0,'B':1,'C':2};
     const ca=colOrder[a.opCol]??3,cb=colOrder[b.opCol]??3;
@@ -927,6 +1007,30 @@ function _loadRecord(r){
   const prepVals=(r.prep||'').split(',').filter(Boolean);
   ['prep_geka','prep_hinyoki','prep_ureter','prep_sample','prep_rapid'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=prepVals.includes(el.value);});
   document.getElementById('output').innerHTML='<div class="alert alert-info">既存データを読み込みました。修正後「登録」を押してください</div>';
+}
+function updateCalcDelBtn(){
+  const b=document.getElementById('calcDelBtn');
+  if(!b) return;
+  b.style.display=(currentUser===LOG_ADMIN)?'':'none';
+}
+async function delCurrentRecord(){
+  if(currentUser!==LOG_ADMIN){toast('症例の削除は'+LOG_ADMIN+'先生のみです',false);return;}
+  const id=document.getElementById('editingId').value;
+  if(!id){toast('患者IDを入力して症例を読み込んでから削除してください',false);return;}
+  const r=records.find(x=>x.id===id);
+  if(!r){toast('対象の症例が見つかりません',false);return;}
+  const msg='患者ID：'+r.patientId+'\n手術日：'+fmt(parseDate(r.opDate))+'\n術式：'+(LABELS[r.surgery]||r.surgery||'—')+'\n\nこの症例を削除します。よろしいですか？';
+  if(!confirm(msg)) return;
+  addLog('削除',r.patientId,SHORT[r.surgery]||r.surgery||'');
+  setSpin(true);
+  try{
+    await gasDelete(id);
+    await fetchAndRender(false);
+    setSpin(false);
+    clearForm();
+    document.getElementById('output').innerHTML='<div class="alert alert-info">患者ID「'+r.patientId+'」の症例を削除しました</div>';
+    toast('✓ 削除しました',true);
+  }catch(e){setSpin(false);toast('⚠ 削除に失敗しました',false);}
 }
 async function delRecord(id){
   if(!ADMINS.has(currentUser)){toast('削除は竹内先生・穴井先生のみです',false);return;}
@@ -1330,7 +1434,7 @@ async function saveAbsence(){
 }
 async function fetchAbsences(){
   if(document.getElementById('absSpin'))document.getElementById('absSpin').style.display='inline-block';
-  try{const r=await fetch(GAS_URL+'?action=getAbsences&t='+Date.now()+'&key='+API_KEY);const d=await r.json();if(d.absences&&Array.isArray(d.absences))absences=d.absences.map(a=>{const nd=parseDate(a.date);return{...a,date:nd?ymd(nd):a.date};});}
+  try{const d=await fetchJSON(GAS_URL+'?action=getAbsences&t='+Date.now()+'&key='+API_KEY,{timeout:15000,retries:3});if(d.absences&&Array.isArray(d.absences))absences=d.absences.map(a=>{const nd=parseDate(a.date);return{...a,date:nd?ymd(nd):a.date};});}
   catch(e){try{const s=safeLS('gyn_absences');if(s)absences=JSON.parse(s);}catch(ex){}}
   if(document.getElementById('absSpin'))document.getElementById('absSpin').style.display='none';
   renderAbsences();
@@ -1385,7 +1489,7 @@ async function saveShinkan(){
 }
 async function fetchShinkan(){
   if(document.getElementById('shinkanSpin'))document.getElementById('shinkanSpin').style.display='inline-block';
-  try{const r=await fetch(GAS_URL+'?action=getShinkans&t='+Date.now()+'&key='+API_KEY);const d=await r.json();if(d.shinkans&&Array.isArray(d.shinkans))shinkans=d.shinkans.map(s=>{const nd=parseDate(s.date);return{...s,date:nd?ymd(nd):s.date};});}
+  try{const d=await fetchJSON(GAS_URL+'?action=getShinkans&t='+Date.now()+'&key='+API_KEY,{timeout:15000,retries:3});if(d.shinkans&&Array.isArray(d.shinkans))shinkans=d.shinkans.map(s=>{const nd=parseDate(s.date);return{...s,date:nd?ymd(nd):s.date};});}
   catch(e){try{const s=safeLS('gyn_shinkans');if(s)shinkans=JSON.parse(s);}catch(ex){}}
   if(document.getElementById('shinkanSpin'))document.getElementById('shinkanSpin').style.display='none';
   renderShinkans();
