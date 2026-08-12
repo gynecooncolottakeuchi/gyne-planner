@@ -587,7 +587,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 
 <script>
 
-const APP_VERSION='2026.08.12e';
+const APP_VERSION='2026.08.12g';
 // 通常表示は「前月1日以降」。それより前を見ようとしたときだけ全期間を読み込む
 const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGBnAEP7d9YM-54OmGqnFNYvee8e2ji1D5wKaR2skxE_Jzg/exec';
 const API_KEY='gyne_api_2024_fukuoka';
@@ -681,7 +681,7 @@ function noteNet(kind,ms,err){
 }
 function describeError(e){
   if(!e) return '不明';
-  if(e.name==='AbortError') return 'タイムアウト（20秒以内に応答なし）';
+  if(e.name==='AbortError') return 'タイムアウト（45秒以内に応答なし）';
   if(e.message&&e.message.indexOf('HTTP')===0) return 'サーバー応答エラー '+e.message;
   if(e.message==='invalid') return '応答の形式が不正（GASのデプロイ設定を確認）';
   if(e.name==='TypeError') return '接続失敗（ネットワーク遮断・CORS・回線切替）';
@@ -690,7 +690,7 @@ function describeError(e){
 async function fetchJSON(url,opts){
   opts=opts||{};
   const tries=opts.retries===undefined?3:opts.retries;
-  const timeout=opts.timeout||20000;
+  const timeout=opts.timeout||45000;
   let lastErr;
   for(let i=0;i<tries;i++){
     let timer=null;
@@ -721,17 +721,29 @@ function sinceParam(){const d=today0();d.setDate(1);d.setMonth(d.getMonth()-1);r
 // 表示しようとした月が取得範囲より前なら、全期間を読み込んでから描画
 function maybeLoadPast(y,m,cb){
   const first=ymd(new Date(y,m,1));
-  if(!fullLoaded&&first<sinceParam()){ensureFullRecords().then(cb);}else{cb();}
+  if(!fullLoaded&&first<sinceParam()){
+    ensureFullRecords().then(function(){return fetchAbsences(true);}).then(cb);
+  }else{cb();}
 }
 async function gasGetAll(full){
   const q=full?'':'&since='+sinceParam();
-  const d=await fetchJSON(GAS_URL+'?action=getAll&t='+Date.now()+'&key='+API_KEY+q,{timeout:20000,retries:3});
+  const d=await fetchJSON(GAS_URL+'?action=getAll&t='+Date.now()+'&key='+API_KEY+q,{timeout:45000,retries:3});
   if(!d.records||!Array.isArray(d.records)) throw new Error('invalid');
   return d.records.map(normalizeRecord).filter(r=>r&&r.patientId&&r.opDate);
 }
 // ===== オフライン用キャッシュ =====
 function saveRecordsCache(){try{safeLS('gyn_records_cache',JSON.stringify({ts:Date.now(),full:fullLoaded,records}));}catch(e){}}
 function loadRecordsCache(){try{const s=safeLS('gyn_records_cache');if(!s)return null;const o=JSON.parse(s);if(o&&Array.isArray(o.records))return o;}catch(e){}return null;}
+function setUpdating(on){
+  let b=document.getElementById('updBar');
+  if(!on){if(b)b.remove();return;}
+  if(b) return;
+  b=document.createElement('div');b.id='updBar';
+  b.style.cssText='background:#eef4fd;color:#2b5aa0;border:1px solid #c3d7f2;border-radius:8px;padding:6px 12px;margin:8px 0;font-size:12px;font-weight:600;text-align:center';
+  b.textContent='保存済みデータを表示中… 最新データを取得しています';
+  const app=document.getElementById('app');
+  if(app) app.insertBefore(b,app.firstChild);
+}
 function setStale(on,ts){
   let bar=document.getElementById('staleBar');
   if(!on){if(bar)bar.remove();return;}
@@ -756,7 +768,7 @@ async function bootstrapLoad(showSpinner){
   if(showSpinner) setSpin(true);
   try{
     const q=fullLoaded?'':'&since='+sinceParam();
-    const d=await fetchJSON(GAS_URL+'?action=bootstrap&t='+Date.now()+'&key='+API_KEY+q,{timeout:25000,retries:3});
+    const d=await fetchJSON(GAS_URL+'?action=bootstrap&t='+Date.now()+'&key='+API_KEY+q,{timeout:45000,retries:3});
     if(!d.records||!Array.isArray(d.records)) throw new Error('invalid');
     records=d.records.map(normalizeRecord).filter(r=>r&&r.patientId&&r.opDate);
     if(d.absences&&Array.isArray(d.absences)){
@@ -768,12 +780,12 @@ async function bootstrapLoad(showSpinner){
       safeLS('gyn_shinkans',JSON.stringify(shinkans));
     }
     const now=Date.now();lastFetchTs={abs:now,shin:now};
-    saveRecordsCache();setStale(false);
+    saveRecordsCache();setStale(false);setUpdating(false);
     refreshUI();renderAbsences();renderShinkans();
     if(document.getElementById('tab-newsfeed')&&document.getElementById('tab-newsfeed').style.display!=='none') renderNewsfeed();
     if(showSpinner){setSpin(false);toast('✓ 最新データを取得（'+records.length+'件）',true);}
   }catch(e){
-    isSyncing=false;
+    isSyncing=false;setUpdating(false);
     await fetchAndRender(showSpinner);
     return;
   }
@@ -843,7 +855,7 @@ async function runDiagnostics(){
     const t0=Date.now();
     try{
       const ctrl=new AbortController();
-      const timer=setTimeout(()=>ctrl.abort(),25000);
+      const timer=setTimeout(()=>ctrl.abort(),60000);
       const r=await fetch(t.url,{signal:ctrl.signal});
       clearTimeout(timer);
       const txt=await r.text();
@@ -915,6 +927,12 @@ function checkPw(){
     cal1Year=cal2Year=t.getFullYear();cal1Month=cal2Month=t.getMonth();
     cal3BaseMonday=getMonday(t);
     fillSelects();loadLogs();loadAbsences();loadShinkans();
+    // 保存済みデータで即座に画面を作り、通信は裏で走らせる
+    const _c=loadRecordsCache();
+    if(_c&&_c.records&&_c.records.length){
+      records=_c.records.map(normalizeRecord).filter(r=>r&&r.patientId&&r.opDate);
+      setUpdating(true);
+    }
     bootstrapLoad(false);
     setTimeout(function(){addLoginLog(doc);},5000);
     ['calc','shinkan','edit'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=ADMINS.has(currentUser)?'':'none';});
@@ -959,7 +977,7 @@ function switchTab(t){
   if(t==='stats'){ensureFullRecords().then(initStats);}
   if(t==='absstats') initAbsStats();
   if(t==='search') ensureFullRecords();
-  if(t==='abslog'){fetchAbsences();renderAbsLog();}
+  if(t==='abslog'){fetchAbsences(true).then(renderAbsLog);}
   if(t==='loginlog'){renderLoginLog();}
   if(t==='cal1') renderCal('cal1');
   if(t==='cal2'){fetchShinkan();renderCal('cal2');}
@@ -1559,7 +1577,7 @@ async function fetchAbsences(force){
   if(!force&&Date.now()-lastFetchTs.abs<FETCH_TTL){renderAbsences();return;}
   lastFetchTs.abs=Date.now();
   if(document.getElementById('absSpin'))document.getElementById('absSpin').style.display='inline-block';
-  try{const d=await fetchJSON(GAS_URL+'?action=getAbsences&t='+Date.now()+'&key='+API_KEY,{timeout:15000,retries:3});if(d.absences&&Array.isArray(d.absences))absences=d.absences.map(a=>{const nd=parseDate(a.date);return{...a,date:nd?ymd(nd):a.date};});}
+  try{const d=await fetchJSON(GAS_URL+'?action=getAbsences&t='+Date.now()+'&key='+API_KEY,{timeout:45000,retries:3});if(d.absences&&Array.isArray(d.absences))absences=d.absences.map(a=>{const nd=parseDate(a.date);return{...a,date:nd?ymd(nd):a.date};});}
   catch(e){try{const s=safeLS('gyn_absences');if(s)absences=JSON.parse(s);}catch(ex){}}
   if(document.getElementById('absSpin'))document.getElementById('absSpin').style.display='none';
   renderAbsences();
@@ -1643,7 +1661,7 @@ async function fetchShinkan(force){
   if(!force&&Date.now()-lastFetchTs.shin<FETCH_TTL){renderShinkans();return;}
   lastFetchTs.shin=Date.now();
   if(document.getElementById('shinkanSpin'))document.getElementById('shinkanSpin').style.display='inline-block';
-  try{const d=await fetchJSON(GAS_URL+'?action=getShinkans&t='+Date.now()+'&key='+API_KEY,{timeout:15000,retries:3});if(d.shinkans&&Array.isArray(d.shinkans))shinkans=d.shinkans.map(s=>{const nd=parseDate(s.date);return{...s,date:nd?ymd(nd):s.date};});}
+  try{const d=await fetchJSON(GAS_URL+'?action=getShinkans&t='+Date.now()+'&key='+API_KEY,{timeout:45000,retries:3});if(d.shinkans&&Array.isArray(d.shinkans))shinkans=d.shinkans.map(s=>{const nd=parseDate(s.date);return{...s,date:nd?ymd(nd):s.date};});}
   catch(e){try{const s=safeLS('gyn_shinkans');if(s)shinkans=JSON.parse(s);}catch(ex){}}
   if(document.getElementById('shinkanSpin'))document.getElementById('shinkanSpin').style.display='none';
   renderShinkans();
