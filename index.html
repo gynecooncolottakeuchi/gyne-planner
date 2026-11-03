@@ -231,9 +231,16 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
   <div class="lock-card">
     <h1>🏥 外来入院手術業務管理</h1>
     <p>お名前とパスワードを入力してください</p>
-    <select id="loginDoctor"><option value="">-- 医師名を選択 --</option></select>
-    <input type="password" id="pwInput" placeholder="パスワード" onkeydown="if(event.key==='Enter')checkPw()">
-    <button onclick="checkPw()">ログイン</button>
+    <div id="faceIdBox" style="display:none;margin-bottom:18px">
+      <button type="button" id="faceIdBtn" onclick="loginWithFaceId()" style="background:#1a1a1a;padding:13px;font-size:15px">🔐 Face IDでログイン</button>
+      <div style="font-size:11px;color:#999;margin-top:8px">別の名前でログインするときは下に入力 ・ <a href="#" onclick="clearFaceId();return false" style="color:#999">Face IDを解除</a></div>
+    </div>
+    <form id="loginForm" onsubmit="event.preventDefault();checkPw();" autocomplete="on">
+      <select id="loginDoctor" onchange="document.getElementById('loginUser').value=this.value"><option value="">-- 医師名を選択 --</option></select>
+      <input type="text" id="loginUser" name="username" autocomplete="username" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+      <input type="password" id="pwInput" name="password" autocomplete="current-password" placeholder="パスワード">
+      <button type="submit">ログイン</button>
+    </form>
     <p class="lock-error" id="pwError">名前またはパスワードが違います</p>
   </div>
 </div>
@@ -671,7 +678,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 
 <script>
 
-const APP_VERSION='2026.11.03i';
+const APP_VERSION='2026.11.03j';
 // 通常表示は「前月1日以降」。それより前を見ようとしたときだけ全期間を読み込む
 const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGBnAEP7d9YM-54OmGqnFNYvee8e2ji1D5wKaR2skxE_Jzg/exec';
 const API_KEY='gyne_api_2024_fukuoka';
@@ -1030,7 +1037,7 @@ function fillAbsPersonSelect(){
   if(cur)sel.value=cur;
 }
 document.addEventListener('DOMContentLoaded',()=>{
-  fillSelects();
+  fillSelects();renderFaceIdBtn();
   try{const s=JSON.parse(sessionStorage.getItem('gyn_session')||'null');if(s&&(Date.now()-s.ts)/60000<360&&s.user&&s.pw===getPassword(s.user)&&s.ver===APP_VERSION){_restoreTs=s.ts;document.getElementById('loginDoctor').value=s.user;document.getElementById('pwInput').value=s.pw;checkPw();}}catch(e){}
 });
 function checkPw(){
@@ -1038,6 +1045,7 @@ function checkPw(){
   const pw=document.getElementById('pwInput').value;
   if(pw===getPassword(doc)&&doc){
     currentUser=doc;
+    const _manual=!_restoreTs&&!_faceIdLogin;_faceIdLogin=false;
     sessionTs=_restoreTs||Date.now();_restoreTs=0;
     document.getElementById('lockScreen').style.display='none';
     document.getElementById('app').style.display='block';
@@ -1064,9 +1072,75 @@ function checkPw(){
     switchTab('newsfeed');
     setTimeout(checkHolidayReminder,1200);
     setTimeout(checkNewVersion,4000);
+    if(_manual) setTimeout(offerFaceId,2500);
   }else{document.getElementById('pwError').style.display='block';document.getElementById('pwInput').value='';}
 }
-function logout(){currentUser='';document.getElementById('lockScreen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('pwInput').value='';document.getElementById('loginDoctor').value='';document.getElementById('pwError').style.display='none';try{sessionStorage.removeItem('gyn_session');}catch(e){}}
+// ===== Face IDでログイン（パスキー。端末ごとに設定） =====
+let _faceIdLogin=false;
+function b64u(buf){return btoa(String.fromCharCode.apply(null,new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function unb64u(str){str=str.replace(/-/g,'+').replace(/_/g,'/');while(str.length%4)str+='=';const b=atob(str);const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u.buffer;}
+function faceIdSaved(){try{const o=JSON.parse(safeLS('gyn_faceid')||'null');return o&&o.user&&o.id&&DOCTORS.includes(o.user)?o:null;}catch(e){return null;}}
+function faceIdSupported(){return !!(window.PublicKeyCredential&&navigator.credentials&&window.isSecureContext);}
+function renderFaceIdBtn(){
+  const box=document.getElementById('faceIdBox');if(!box) return;
+  const o=faceIdSaved();
+  if(o&&faceIdSupported()){box.style.display='';document.getElementById('faceIdBtn').textContent='🔐 Face IDでログイン（'+o.user+'）';}
+  else box.style.display='none';
+}
+async function loginWithFaceId(){
+  const o=faceIdSaved();if(!o) return;
+  try{
+    const ch=crypto.getRandomValues(new Uint8Array(32));
+    await navigator.credentials.get({publicKey:{challenge:ch,allowCredentials:[{type:'public-key',id:unb64u(o.id)}],userVerification:'required',timeout:60000}});
+  }catch(e){
+    if(e&&e.name==='NotAllowedError'){toast('Face IDがキャンセルされました',false);return;}
+    toast('Face IDでログインできませんでした。パスワードでログインしてください',false);return;
+  }
+  _faceIdLogin=true;
+  document.getElementById('loginDoctor').value=o.user;
+  document.getElementById('pwInput').value=getPassword(o.user);
+  checkPw();
+}
+function clearFaceId(){
+  if(!confirm('この端末のFace IDログインを解除しますか？\n（iPhoneの「パスワード」アプリに残ったパスキーは、不要なら手動で削除できます）')) return;
+  try{localStorage.removeItem('gyn_faceid');}catch(e){}
+  renderFaceIdBtn();toast('Face IDログインを解除しました',true);
+}
+async function offerFaceId(){
+  if(!currentUser||!faceIdSupported()) return;
+  const o=faceIdSaved();if(o&&o.user===currentUser) return;
+  if(safeLS('gyn_faceid_skip_'+currentUser)==='1') return;
+  try{if(!(await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())) return;}catch(e){return;}
+  if(document.getElementById('faceIdOffer')) return;
+  const b=document.createElement('div');b.id='faceIdOffer';
+  b.style.cssText='background:#1a1a1a;color:#fff;border-radius:10px;padding:12px;margin:8px;font-size:13px;line-height:1.6';
+  b.innerHTML='<div style="font-weight:700;margin-bottom:8px">🔐 次回から、この端末でFace IDだけでログインしますか？</div>'
+    +'<div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:2" id="faceIdYes">有効にする</button>'
+    +'<button class="btn" style="flex:1" id="faceIdNo">今はしない</button></div>';
+  const app=document.getElementById('app');if(app) app.insertBefore(b,app.firstChild);
+  document.getElementById('faceIdNo').onclick=function(){safeLS('gyn_faceid_skip_'+currentUser,'1');b.remove();toast('あとで有効にする場合は、ログアウトしてパスワードでログインし直してください',true);};
+  document.getElementById('faceIdYes').onclick=registerFaceId;
+}
+async function registerFaceId(){
+  const user=currentUser;
+  try{
+    const cred=await navigator.credentials.create({publicKey:{
+      rp:{name:'婦人科手術管理'},
+      user:{id:crypto.getRandomValues(new Uint8Array(16)),name:user+'（婦人科手術管理）',displayName:user},
+      challenge:crypto.getRandomValues(new Uint8Array(32)),
+      pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
+      authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required',residentKey:'preferred'},
+      timeout:60000,attestation:'none'}});
+    safeLS('gyn_faceid',JSON.stringify({user,id:b64u(cred.rawId),at:Date.now()}));
+    try{localStorage.removeItem('gyn_faceid_skip_'+user);}catch(e){}
+    const b=document.getElementById('faceIdOffer');if(b) b.remove();
+    toast('✓ Face IDログインを有効にしました',true);
+  }catch(e){
+    toast(e&&e.name==='NotAllowedError'?'キャンセルしました':'Face IDを設定できませんでした（'+(e&&e.name||'')+'）',false);
+  }
+}
+
+function logout(){currentUser='';document.getElementById('lockScreen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('pwInput').value='';document.getElementById('loginDoctor').value='';document.getElementById('pwError').style.display='none';try{sessionStorage.removeItem('gyn_session');}catch(e){}const fo=document.getElementById('faceIdOffer');if(fo)fo.remove();renderFaceIdBtn();}
 
 function checkSessionExpiry(){
   // ログインから6時間たったら強制的に再ログイン
