@@ -199,6 +199,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 .ev-memo{background:#ecfdf5;color:#065f46;border-left:3px solid #10b981;font-size:9px;padding:1px 4px;border-radius:3px;margin-bottom:1px;font-weight:600}
 .memo-cnt{font-size:11px;color:#888;margin-top:3px;text-align:right}
 .memo-cnt.over{color:#c0392b;font-weight:700}
+.lp-date{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.lp-flash{outline:3px solid #3b7dd8 !important;outline-offset:-3px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:24px;font-size:13px;font-weight:600;color:#fff;z-index:9999;pointer-events:none;white-space:nowrap;box-shadow:0 2px 12px rgba(0,0,0,0.2)}
 </style>
 </head>
@@ -629,7 +631,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 
 <script>
 
-const APP_VERSION='2026.11.03c';
+const APP_VERSION='2026.11.03e';
 // 通常表示は「前月1日以降」。それより前を見ようとしたときだけ全期間を読み込む
 const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGBnAEP7d9YM-54OmGqnFNYvee8e2ji1D5wKaR2skxE_Jzg/exec';
 const API_KEY='gyne_api_2024_fukuoka';
@@ -1434,6 +1436,7 @@ function _renderCal(cal){
       else cls+=' wide';
     }
     const cell=document.createElement('div');cell.className=cls;
+    addDateMenu(cell,key);
     const dateRow=document.createElement('div');
     if(isNarrowCell){
       dateRow.style.cssText='display:flex;flex-direction:column;align-items:center;gap:1px';
@@ -1517,6 +1520,7 @@ function renderWeekCal(){
     const dayAbs=absMap[key]||[];
     const daySk=shinkanMap[key]||[];
     const card=document.createElement('div');card.className='week-day-card';
+    addDateMenu(card,key);
     const hdr=document.createElement('div');
     let hdrCls='week-day-header ';if(isToday)hdrCls+='today-hdr';else if(dow===0)hdrCls+='sun';else if(dow===6)hdrCls+='sat';else if(isHoliday(date))hdrCls+='hol';else hdrCls+='normal';
     hdr.className=hdrCls;
@@ -1646,6 +1650,51 @@ async function saveDateMemo(key,del){
   toast(isDel?'✓ 日付メモを削除しました':'✓ 日付メモを保存しました',true);
 }
 
+// ===== 日付を右クリック → その日の症例登録へ（竹内・穴井のみ） =====
+// PCは右クリック、iPhone・iPadは長押し（約0.6秒）
+const LONGPRESS_MS=600;
+let _lastDateMenuTs=0;
+function addDateMenu(el,key){
+  if(!ADMINS.has(currentUser)) return;
+  el._lpKey=key;
+  el.oncontextmenu=function(e){e.preventDefault();openCalcForDate(el._lpKey);};
+  if(el._lpReady) return;   // 同じ要素に何度もつけない
+  el._lpReady=true;el.classList.add('lp-date');
+  let timer=null,sx=0,sy=0;
+  const cancel=function(){if(timer){clearTimeout(timer);timer=null;}el.classList.remove('lp-flash');};
+  el.addEventListener('touchstart',function(e){
+    if(e.touches.length!==1){cancel();return;}
+    e.stopPropagation();   // 外側（週間カード内など）の長押しと二重にならないように
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;el._lpFired=false;
+    cancel();
+    timer=setTimeout(function(){
+      timer=null;el._lpFired=true;el.classList.add('lp-flash');
+      try{if(navigator.vibrate)navigator.vibrate(30);}catch(x){}
+      setTimeout(function(){el.classList.remove('lp-flash');openCalcForDate(el._lpKey);},120);
+    },LONGPRESS_MS);
+  },{passive:true});
+  el.addEventListener('touchmove',function(e){
+    const t=e.touches[0];if(Math.abs(t.clientX-sx)>10||Math.abs(t.clientY-sy)>10) cancel();
+  },{passive:true});
+  el.addEventListener('touchend',function(e){cancel();if(el._lpFired&&e.cancelable)e.preventDefault();});
+  el.addEventListener('touchcancel',cancel);
+  // 長押しの直後に「タップ」扱いで詳細画面が開かないようにする
+  el.addEventListener('click',function(e){if(el._lpFired){e.preventDefault();e.stopPropagation();el._lpFired=false;}},true);
+}
+function openCalcForDate(key){
+  if(!ADMINS.has(currentUser)) return;
+  if(Date.now()-_lastDateMenuTs<1000) return;   // 長押しと右クリックが同時に来たとき用
+  _lastDateMenuTs=Date.now();
+  const d=parseDate(key);if(!d) return;
+  const pid=document.getElementById('patientId').value.trim();
+  if(pid&&!confirm('症例登録画面に入力中の内容（患者ID '+pid+'）があります。\n消して、'+fmt(d)+' の新規登録を始めますか？')) return;
+  clearForm();
+  document.getElementById('opDate').value=key;
+  switchTab('calc');window.scrollTo(0,0);
+  document.getElementById('output').innerHTML='<div class="alert alert-info">'+fmt(d)+' の手術として新規登録します。患者IDから入力してください</div>';
+  setTimeout(function(){try{document.getElementById('patientId').focus();}catch(e){}},100);
+}
+
 // ===== 一日の予定 =====
 function moveDay(n){
   dayDate=addDays(dayDate||today0(),n);
@@ -1715,6 +1764,7 @@ function renderDayView(){
   // ⑥ 当日の産直・⑦ 当日のMFICU（段階④で追加予定）
   h+='</div>';
   box.innerHTML=h;
+  addDateMenu(tEl,key);addDateMenu(box,key);
 }
 // 一日の予定：手術をタップで詳細、左右スワイプで日送り
 (function(){
