@@ -247,7 +247,10 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 <div id="app">
   <div class="header">
     <div><div class="header-title">外来入院手術業務管理システム</div><div class="header-sub" id="header-user"></div></div>
-    <button class="logout-btn" onclick="logout()">ログアウト</button>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="logout-btn" id="faceIdHdrBtn" style="display:none" onclick="registerFaceId()">🔐 Face ID設定</button>
+      <button class="logout-btn" onclick="logout()">ログアウト</button>
+    </div>
   </div>
   <div class="tabs">
     <button class="tab-btn" onclick="switchTab('newsfeed')" data-tab="newsfeed">🆕 NEW!</button>
@@ -678,7 +681,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 
 <script>
 
-const APP_VERSION='2026.11.03j';
+const APP_VERSION='2026.11.03k';
 // 通常表示は「前月1日以降」。それより前を見ようとしたときだけ全期間を読み込む
 const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGBnAEP7d9YM-54OmGqnFNYvee8e2ji1D5wKaR2skxE_Jzg/exec';
 const API_KEY='gyne_api_2024_fukuoka';
@@ -1073,6 +1076,7 @@ function checkPw(){
     setTimeout(checkHolidayReminder,1200);
     setTimeout(checkNewVersion,4000);
     if(_manual) setTimeout(offerFaceId,2500);
+    updateFaceIdHdrBtn();
   }else{document.getElementById('pwError').style.display='block';document.getElementById('pwInput').value='';}
 }
 // ===== Face IDでログイン（パスキー。端末ごとに設定） =====
@@ -1106,6 +1110,16 @@ function clearFaceId(){
   try{localStorage.removeItem('gyn_faceid');}catch(e){}
   renderFaceIdBtn();toast('Face IDログインを解除しました',true);
 }
+// 右上の「Face ID設定」：この端末でまだ自分のFace IDを設定していないときだけ表示
+async function updateFaceIdHdrBtn(){
+  const btn=document.getElementById('faceIdHdrBtn');if(!btn) return;
+  let ok=false;
+  if(currentUser&&faceIdSupported()){
+    const o=faceIdSaved();
+    if(!(o&&o.user===currentUser)){try{ok=await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();}catch(e){}}
+  }
+  btn.style.display=ok?'':'none';
+}
 async function offerFaceId(){
   if(!currentUser||!faceIdSupported()) return;
   const o=faceIdSaved();if(o&&o.user===currentUser) return;
@@ -1118,7 +1132,7 @@ async function offerFaceId(){
     +'<div style="display:flex;gap:8px"><button class="btn btn-primary" style="flex:2" id="faceIdYes">有効にする</button>'
     +'<button class="btn" style="flex:1" id="faceIdNo">今はしない</button></div>';
   const app=document.getElementById('app');if(app) app.insertBefore(b,app.firstChild);
-  document.getElementById('faceIdNo').onclick=function(){safeLS('gyn_faceid_skip_'+currentUser,'1');b.remove();toast('あとで有効にする場合は、ログアウトしてパスワードでログインし直してください',true);};
+  document.getElementById('faceIdNo').onclick=function(){safeLS('gyn_faceid_skip_'+currentUser,'1');b.remove();toast('あとで有効にする場合は、右上の「🔐 Face ID設定」を押してください',true);};
   document.getElementById('faceIdYes').onclick=registerFaceId;
 }
 async function registerFaceId(){
@@ -1134,6 +1148,7 @@ async function registerFaceId(){
     safeLS('gyn_faceid',JSON.stringify({user,id:b64u(cred.rawId),at:Date.now()}));
     try{localStorage.removeItem('gyn_faceid_skip_'+user);}catch(e){}
     const b=document.getElementById('faceIdOffer');if(b) b.remove();
+    updateFaceIdHdrBtn();
     toast('✓ Face IDログインを有効にしました',true);
   }catch(e){
     toast(e&&e.name==='NotAllowedError'?'キャンセルしました':'Face IDを設定できませんでした（'+(e&&e.name||'')+'）',false);
