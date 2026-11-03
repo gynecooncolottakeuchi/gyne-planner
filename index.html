@@ -239,13 +239,13 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
   <div class="tabs">
     <button class="tab-btn" onclick="switchTab('newsfeed')" data-tab="newsfeed">🆕 NEW!</button>
     <button class="tab-btn" onclick="switchTab('day')" data-tab="day">一日の予定</button>
+    <button class="tab-btn" onclick="switchTab('cal3')" data-tab="cal3">週間予定</button>
+    <button class="tab-btn" onclick="switchTab('cal2')" data-tab="cal2">月間予定</button>
     <button class="tab-btn" onclick="switchTab('calc')" data-tab="calc">症例登録</button>
     <button class="tab-btn" onclick="switchTab('absence')" data-tab="absence">不在入力</button>
     <button class="tab-btn" onclick="switchTab('shinkan')" data-tab="shinkan">婦人科新患担当</button>
     <button class="tab-btn" onclick="switchTab('duty')" data-tab="duty">当直取込</button>
     <button class="tab-btn" onclick="switchTab('cal1')" data-tab="cal1">カレンダー①入退院日の提案</button>
-    <button class="tab-btn" onclick="switchTab('cal2')" data-tab="cal2">月間予定</button>
-    <button class="tab-btn" onclick="switchTab('cal3')" data-tab="cal3">週間予定</button>
     <button class="tab-btn" onclick="switchTab('list')" data-tab="list">土日入院</button>
     <button class="tab-btn" onclick="switchTab('edit')" data-tab="edit">一覧・修正</button>
     <button class="tab-btn" onclick="switchTab('log')" data-tab="log">操作ログ</button>
@@ -665,7 +665,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 
 <script>
 
-const APP_VERSION='2026.11.03g';
+const APP_VERSION='2026.11.03h';
 // 通常表示は「前月1日以降」。それより前を見ようとしたときだけ全期間を読み込む
 const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGBnAEP7d9YM-54OmGqnFNYvee8e2ji1D5wKaR2skxE_Jzg/exec';
 const API_KEY='gyne_api_2024_fukuoka';
