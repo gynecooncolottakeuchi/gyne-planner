@@ -180,6 +180,18 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 .stats-bar{height:8px;border-radius:4px;background:#3b7dd8;display:inline-block;vertical-align:middle;min-width:2px}
 .shinkan-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin:1px}
 .ev-shinkan{background:#fef9c3;color:#713f12;border-left:3px solid #f59e0b;font-size:9px;padding:1px 4px;border-radius:3px;margin-bottom:1px;font-weight:600}
+.week-info{display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px;border-bottom:1px solid #f0f0f0;background:#fff}
+.day-card{background:#fff;border-radius:12px;padding:10px 12px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.day-sec{font-size:11px;font-weight:700;color:#888;margin:10px 0 5px;letter-spacing:.5px}
+.day-sec:first-child{margin-top:0}
+.day-chips{display:flex;flex-wrap:wrap;gap:4px}
+.day-chips .abs-badge,.day-chips .shinkan-badge{font-size:12px;padding:3px 9px}
+.day-picker{font-size:14px;padding:2px 6px;border:1px solid #ddd;border-radius:6px;margin-top:3px;background:#fff;color:#444}
+.day-title-sun{color:#e74c3c}.day-title-sat{color:#3b7dd8}.day-title-hol{color:#8b2fa8}
+#tab-day .week-ev-row2{font-size:13px}
+.day-prep{display:inline-block;background:#fff;border:1px solid #c7d2fe;color:#1e3a5f;border-radius:6px;padding:0 6px;font-size:11px;font-weight:600;margin:4px 4px 0 0}
+.day-empty{font-size:13px;color:#bbb;text-align:center;padding:10px 0}
+.hol-remind-card{background:#fff;border-radius:16px;padding:22px 20px;width:92%;max-width:400px;text-align:center}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:24px;font-size:13px;font-weight:600;color:#fff;z-index:9999;pointer-events:none;white-space:nowrap;box-shadow:0 2px 12px rgba(0,0,0,0.2)}
 </style>
 </head>
@@ -201,12 +213,13 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
   </div>
   <div class="tabs">
     <button class="tab-btn" onclick="switchTab('newsfeed')" data-tab="newsfeed">🆕 NEW!</button>
+    <button class="tab-btn" onclick="switchTab('day')" data-tab="day">一日の予定</button>
     <button class="tab-btn" onclick="switchTab('calc')" data-tab="calc">症例登録</button>
     <button class="tab-btn" onclick="switchTab('absence')" data-tab="absence">不在入力</button>
     <button class="tab-btn" onclick="switchTab('shinkan')" data-tab="shinkan">婦人科新患担当</button>
     <button class="tab-btn" onclick="switchTab('cal1')" data-tab="cal1">カレンダー①入退院日の提案</button>
-    <button class="tab-btn" onclick="switchTab('cal2')" data-tab="cal2">カレンダー②手術</button>
-    <button class="tab-btn" onclick="switchTab('cal3')" data-tab="cal3">カレンダー③週間手術</button>
+    <button class="tab-btn" onclick="switchTab('cal2')" data-tab="cal2">月間予定</button>
+    <button class="tab-btn" onclick="switchTab('cal3')" data-tab="cal3">週間予定</button>
     <button class="tab-btn" onclick="switchTab('list')" data-tab="list">土日入院</button>
     <button class="tab-btn" onclick="switchTab('edit')" data-tab="edit">一覧・修正</button>
     <button class="tab-btn" onclick="switchTab('log')" data-tab="log">操作ログ</button>
@@ -220,6 +233,23 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
   <!-- NEW!タブ -->
   <div id="tab-newsfeed" class="content">
     <div id="newsfeedContent"><div style="text-align:center;padding:30px;color:#888"><span class="spinner" style="display:inline-block"></span> 同期中...</div></div>
+  </div>
+
+  <!-- 一日の予定 -->
+  <div id="tab-day" class="content" style="display:none">
+    <div class="cal-controls">
+      <button class="cal-nav-btn" onclick="moveDay(-1)" aria-label="前日">◀</button>
+      <div style="text-align:center">
+        <div class="cal-title" id="dayTitle"></div>
+        <input type="date" id="dayPicker" class="day-picker" onchange="jumpDay(this.value)">
+      </div>
+      <button class="cal-nav-btn" onclick="moveDay(1)" aria-label="翌日">▶</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <button class="btn btn-sm" onclick="goTodayDay()">今日に戻る</button>
+      <button class="sync-btn" onclick="syncNow()">🔄 同期</button>
+    </div>
+    <div id="dayView"></div>
   </div>
 
   <!-- 退院日計算 -->
@@ -587,7 +617,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 
 <script>
 
-const APP_VERSION='2026.08.12g';
+const APP_VERSION='2026.11.03b';
 // 通常表示は「前月1日以降」。それより前を見ようとしたときだけ全期間を読み込む
 const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGBnAEP7d9YM-54OmGqnFNYvee8e2ji1D5wKaR2skxE_Jzg/exec';
 const API_KEY='gyne_api_2024_fukuoka';
@@ -604,12 +634,16 @@ const EXCLUDED=new Set(['cx_radical','lap_radical','lap_other','open_other','vag
 const SHORT={op_laser_ex:'外来レーザー',op_scope_ex:'外来子宮鏡',op_other_ex:'外来その他',lap_other:'腹腔鏡その他',open_other:'開腹その他',vaginal_other:'経腟その他',cs_other:'帝王切開',de_dc:'D&E(D&C)',ec_open_ln:'体癌開腹LN+',ec_open_noln:'体癌開腹LN-',oc_open_ln:'卵巣開腹LN+',oc_open_noln:'卵巣開腹LN-',cx_radical:'頸癌広汎',lap_radical:'腹腔鏡広汎',cx_semi_ln:'頸癌準広汎LN+',cx_simple_ln:'頸癌単純LN+',cx_semi_noln:'頸癌準広汎LN-',cx_simple_noln:'頸癌単純LN-',open_benign_ut:'良性子宮開腹',open_benign_ov:'良性卵巣開腹',lap_malig_ln:'腹腔鏡悪LN+',lap_malig_noln:'腹腔鏡悪LN-',lap_benign:'腹腔鏡良性',lap_adnexa:'腹腔鏡付属器',robot_malig_ln:'ロボ悪LN+',robot_malig_noln:'ロボ悪LN-',robot_benign:'ロボ良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
 const LABELS={op_laser_ex:'外来レーザー蒸散術',op_scope_ex:'外来子宮鏡手術',op_other_ex:'外来その他',lap_other:'腹腔鏡その他',open_other:'開腹その他',vaginal_other:'経腟その他',cs_other:'帝王切開',de_dc:'D&E（D&C）',ec_open_ln:'子宮体癌 開腹（LN+）',ec_open_noln:'子宮体癌 開腹（LN-）',oc_open_ln:'卵巣癌 開腹（LN+）',oc_open_noln:'卵巣癌 開腹（LN-）',cx_radical:'頸癌 広汎子宮全摘',lap_radical:'腹腔鏡下 広汎子宮全摘',cx_semi_ln:'頸癌 準広汎（LN+）',cx_simple_ln:'頸癌 単純TH（LN+）',cx_semi_noln:'頸癌 準広汎（LN-）',cx_simple_noln:'頸癌 単純TH（LN-）',open_benign_ut:'良性子宮 開腹',open_benign_ov:'良性卵巣 開腹',lap_malig_ln:'腹腔鏡 悪性（LN+）',lap_malig_noln:'腹腔鏡 悪性（LN-）',lap_benign:'腹腔鏡 良性',lap_adnexa:'腹腔鏡 付属器',robot_malig_ln:'ロボ 悪性（LN+）',robot_malig_noln:'ロボ 悪性（LN-）',robot_benign:'ロボ 良性',vaginal_hyst:'膣式TH',vnotes:'vNOTEs',cone:'円錐切除',laser:'レーザー',hyst_scope:'子宮鏡',ectopic:'異所性妊娠'};
 const DAYS=['日','月','火','水','木','金','土'];
-const HOLIDAYS=new Set(['2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24','2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06','2025-07-21','2025-08-11','2025-09-15','2025-09-22','2025-09-23','2025-10-13','2025-11-03','2025-11-23','2025-11-24','2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06','2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23','2026-12-23']);
+const HOLIDAYS=new Set(['2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24','2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06','2025-07-21','2025-08-11','2025-09-15','2025-09-22','2025-09-23','2025-10-13','2025-11-03','2025-11-23','2025-11-24','2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06','2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23',
+  // 2027年（令和9年）内閣府発表
+  '2027-01-01','2027-01-11','2027-02-11','2027-02-23','2027-03-21','2027-03-22','2027-04-29','2027-05-03','2027-05-04','2027-05-05','2027-07-19','2027-08-11','2027-09-20','2027-09-23','2027-10-11','2027-11-03','2027-11-23']);
 const ABS_REASONS={'終日':['直明け','有給','夏季休暇','学会','リフレッシュ休暇','忌引き','あいさつ回り'],'午前':['有給','午前C/S','午前会議','講義','あいさつ回り'],'午後':['有給','午後C/S','午後会議','午後遺伝カウンセリング','午後胎児エコー','講義','あいさつ回り']};
 
 let records=[],logs=[],absences=[],shinkans=[],currentUser='';
 let cal1Year,cal1Month,cal2Year,cal2Month,cal3BaseMonday;
 let isSyncing=false,statsUnlocked=false;
+let sessionTs=0,_restoreTs=0;   // ログイン時刻（6時間で強制再ログイン）
+let dayDate=null;               // 一日の予定で表示中の日
 
 function genId(){return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function parseDate(s){
@@ -628,7 +662,9 @@ function parseDate(s){
 function ymd(d){if(!d||isNaN(d.getTime())) return '';return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function fmt(d){if(!d||isNaN(d.getTime())) return '—';return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+'（'+DAYS[d.getDay()]+'）';}
 function addDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
-function isHoliday(d){return HOLIDAYS.has(ymd(d));}
+// 年末年始（12/29〜1/3）は毎年休日扱い
+function isNenmatsu(d){const m=d.getMonth()+1,dd=d.getDate();return (m===12&&dd>=29)||(m===1&&dd<=3);}
+function isHoliday(d){return isNenmatsu(d)||HOLIDAYS.has(ymd(d));}
 function isBad(d){const w=d.getDay();return w===5||w===6||w===0||isHoliday(d);}
 function nextWorkday(d){let r=new Date(d);while(isBad(r))r=addDays(r,1);return r;}
 function badgeClass(d){if(!d||isNaN(d.getTime())) return 'badge-blue';const w=d.getDay();return w===1?'badge-green':w>=2&&w<=4?'badge-blue':w===6?'badge-amber':'badge-red';}
@@ -838,6 +874,7 @@ async function syncNow(){await bootstrapLoad(true);}
 // 画面に戻ったとき、失敗したままなら自動で取り直す
 document.addEventListener('visibilitychange',function(){
   if(document.hidden||!currentUser) return;
+  if(!checkSessionExpiry()) return;
   if(document.getElementById('staleBar')) setTimeout(function(){bootstrapLoad(false);},300);
 });
 
@@ -910,13 +947,14 @@ function fillAbsPersonSelect(){
 }
 document.addEventListener('DOMContentLoaded',()=>{
   fillSelects();
-  try{const s=JSON.parse(sessionStorage.getItem('gyn_session')||'null');if(s&&(Date.now()-s.ts)/60000<360&&s.user&&s.pw===getPassword(s.user)&&s.ver===APP_VERSION){document.getElementById('loginDoctor').value=s.user;document.getElementById('pwInput').value=s.pw;checkPw();}}catch(e){}
+  try{const s=JSON.parse(sessionStorage.getItem('gyn_session')||'null');if(s&&(Date.now()-s.ts)/60000<360&&s.user&&s.pw===getPassword(s.user)&&s.ver===APP_VERSION){_restoreTs=s.ts;document.getElementById('loginDoctor').value=s.user;document.getElementById('pwInput').value=s.pw;checkPw();}}catch(e){}
 });
 function checkPw(){
   const doc=document.getElementById('loginDoctor').value;
   const pw=document.getElementById('pwInput').value;
   if(pw===getPassword(doc)&&doc){
     currentUser=doc;
+    sessionTs=_restoreTs||Date.now();_restoreTs=0;
     document.getElementById('lockScreen').style.display='none';
     document.getElementById('app').style.display='block';
     document.getElementById('header-user').textContent=doc+' 先生';
@@ -938,33 +976,56 @@ function checkPw(){
     ['calc','shinkan','edit'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=ADMINS.has(currentUser)?'':'none';});
     ['log','stats','absstats','abslog','loginlog'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=currentUser===LOG_ADMIN?'':'none';});
     updateCalcDelBtn();
-    try{sessionStorage.setItem('gyn_session',JSON.stringify({user:doc,pw,ts:Date.now(),ver:APP_VERSION}));}catch(e){}
+    try{sessionStorage.setItem('gyn_session',JSON.stringify({user:doc,pw,ts:sessionTs,ver:APP_VERSION}));}catch(e){}
     switchTab('newsfeed');
+    setTimeout(checkHolidayReminder,1200);
   }else{document.getElementById('pwError').style.display='block';document.getElementById('pwInput').value='';}
 }
 function logout(){currentUser='';document.getElementById('lockScreen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('pwInput').value='';document.getElementById('loginDoctor').value='';document.getElementById('pwError').style.display='none';try{sessionStorage.removeItem('gyn_session');}catch(e){}}
 
 function checkSessionExpiry(){
-  try{
-    const s=JSON.parse(sessionStorage.getItem('gyn_session')||'null');
-    if(!s||(Date.now()-s.ts)/60000>=360||s.ver!==APP_VERSION){
-      // 6時間経過 → 強制ログアウト
-      sessionStorage.removeItem('gyn_session');
-      currentUser='';
-      document.getElementById('loginScreen').style.display='flex';
-      document.getElementById('appScreen').style.display='none';
-      const reason=(!s||(Date.now()-s.ts)/60000>=360)?'セッションが切れました。':'システムが更新されました。';
-      alert(reason+'再度ログインしてください。');
-      return false;
-    }
-  }catch(e){}
+  // ログインから6時間たったら強制的に再ログイン
+  if(!currentUser) return true;
+  if(sessionTs&&(Date.now()-sessionTs)/60000>=360){
+    logout();
+    alert('セッションが切れました（ログインから6時間）。再度ログインしてください。');
+    return false;
+  }
   return true;
+}
+
+// ===== 祝日リスト更新のお知らせ（11月・12月、竹内先生のみ、「完了」を押すまで毎回） =====
+function checkHolidayReminder(){
+  if(currentUser!==LOG_ADMIN) return;
+  const now=new Date();
+  if(now.getMonth()<10) return;
+  const ny=now.getFullYear()+1;
+  if(safeLS('gyn_holiday_done_'+ny)==='1') return;
+  if(document.getElementById('holRemind')) return;
+  const n=[...HOLIDAYS].filter(d=>d.indexOf(ny+'-')===0).length;
+  const ov=document.createElement('div');ov.id='holRemind';ov.className='modal-overlay';ov.style.alignItems='center';
+  ov.innerHTML='<div class="hol-remind-card">'
+    +'<div style="font-size:32px;margin-bottom:6px">📅</div>'
+    +'<div style="font-size:16px;font-weight:700;margin-bottom:10px">祝日リストの入力を！</div>'
+    +'<div style="font-size:13px;color:#555;line-height:1.7;margin-bottom:6px">'+ny+'年の祝日をシステムに追加してください。<br>（祝日は退院日の計算とカレンダーの色分けに使われます）</div>'
+    +'<div style="font-size:12px;color:'+(n?'#1a6640':'#c0392b')+';font-weight:600;margin-bottom:16px">現在の登録：'+ny+'年 '+n+'日分</div>'
+    +'<div style="display:flex;gap:8px"><button class="btn" style="flex:1;padding:12px" id="holCancel">キャンセル</button>'
+    +'<button class="btn btn-primary" style="flex:1;padding:12px" id="holDone">完了</button></div></div>';
+  document.body.appendChild(ov);
+  document.getElementById('holCancel').onclick=function(){ov.remove();};
+  document.getElementById('holDone').onclick=function(){
+    if(!confirm(ny+'年の祝日の追加は完了しましたか？\n「OK」を押すと、この端末では今年は表示されなくなります。')) return;
+    safeLS('gyn_holiday_done_'+ny,'1');ov.remove();toast('✓ 完了にしました',true);
+  };
 }
 
 function switchTab(t){
   if(!checkSessionExpiry()) return;
-  ['newsfeed','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats','absstats','abslog','loginlog'].forEach(name=>{document.getElementById('tab-'+name).style.display=t===name?'block':'none';});
+  ['newsfeed','day','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats','absstats','abslog','loginlog'].forEach(name=>{document.getElementById('tab-'+name).style.display=t===name?'block':'none';});
   document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.toggle('active',btn.getAttribute('data-tab')===t));
+  // スマホで選んだタブが見える位置までタブ列を寄せる
+  try{const ab=document.querySelector('.tab-btn.active');if(ab)ab.scrollIntoView({inline:'center',block:'nearest'});}catch(e){}
+  if(t==='day'){if(!dayDate)dayDate=today0();renderDayView();}
   if(t==='newsfeed'){
     const nf=document.getElementById('newsfeedContent');
     if(nf) nf.innerHTML='<div style="text-align:center;padding:30px;color:#888"><span class="spinner" style="display:inline-block"></span> 同期中...</div>';
@@ -988,11 +1049,12 @@ function switchTab(t){
 }
 function refreshUI(){
   updateCounter();
-  const tabs=['newsfeed','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats','absstats','abslog','loginlog'];
+  const tabs=['newsfeed','day','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats','absstats','abslog','loginlog'];
   const active=tabs.find(t=>{const el=document.getElementById('tab-'+t);return el&&el.style.display!=='none';});
   if(active==='cal1') renderCal('cal1');
   if(active==='cal2') renderCal('cal2');
   if(active==='cal3') renderWeekCal();
+  if(active==='day') renderDayView();
   if(active==='list') renderList();
   if(active==='edit') renderEdit();
   if(active==='stats'&&statsUnlocked) renderStats();
@@ -1207,59 +1269,23 @@ async function calculate(){
   const opDate=opStr?parseDate(opStr):null;
   if(opCol==='C'&&opDate&&opDate.getDay()!==4){out.innerHTML='<div class="alert alert-warn">C列（外来手術）は木曜日のみ登録できます</div>';return;}
 
-  // 不在チェック：手術日に不在の医師が担当医に入っていないか
-  if(opDate){
-    const opDateStr=ymd(opDate);
-    const absOnDay=absences.filter(a=>a.date===opDateStr);
-    if(absOnDay.length>0){
-      // 担当医フィールドに入力された医師
-      const staffFields=[
-        {label:'入院主治医',val:admitDoc},
-        {label:'執刀医１',val:surgeon},
-        {label:'執刀医２',val:surgeon2},
-        {label:'助手１',val:assist1},
-        {label:'助手２',val:assist2}
-      ].filter(f=>f.val);
-      const conflicts=[];
-      staffFields.forEach(f=>{
-        const absMatch=absOnDay.find(a=>a.person===f.val);
-        if(absMatch){
-          const typeLabel=absMatch.type==='終日'?'終日不在':absMatch.type==='午前'?'午前不在':'午後不在';
-          conflicts.push(f.label+'：'+f.val+'（'+typeLabel+(absMatch.reason?'・'+absMatch.reason:'')+'）');
-        }
-      });
-      if(conflicts.length>0){
-        alert('⚠ 不在の医師が担当に含まれています。\n\n'+conflicts.join('\n')+'\n\n入力内容を確認してください。');
-        return;
-      }
-    }
-  }
   if((surgery==='op_laser_ex'||surgery==='op_scope_ex'||surgery==='op_other_ex')&&opCol!=='C'){out.innerHTML='<div class="alert alert-warn">外来手術はC列を選択してください</div>';return;}
 
-  // 既存登録済み症例の不在チェック（同じ手術日の他の症例）
+  // 不在チェック：手術日に不在（終日・午前・午後）の医師は担当にできない
+  // 対象：入院主治医・執刀医１・執刀医２・助手１・助手２（外来主治医は対象外）
+  // 竹内先生のみ、確認のうえ強制保存できる
   if(opDate){
-    const opDateStr=ymd(opDate);
-    const absOnDay=absences.filter(a=>a.date===opDateStr);
-    if(absOnDay.length>0){
-      const staffFields2=[
-        {label:'入院主治医',val:admitDoc},
-        {label:'執刀医１',val:surgeon},
-        {label:'執刀医２',val:surgeon2},
-        {label:'助手１',val:assist1},
-        {label:'助手２',val:assist2}
-      ].filter(f=>f.val);
-      const warnings=[];
-      staffFields2.forEach(f=>{
-        const absMatch=absOnDay.find(a=>a.person===f.val);
-        if(absMatch){
-          const typeLabel=absMatch.type==='終日'?'終日不在':absMatch.type==='午前'?'午前不在':'午後不在';
-          warnings.push(f.label+'：'+f.val+'（'+typeLabel+(absMatch.reason?'・'+absMatch.reason:'')+'）');
-        }
-      });
-      if(warnings.length>0){
-        if(!confirm('⚠ 不在の医師が担当に含まれています：\n'+warnings.join('\n')+'\n\nそれでも登録しますか？')){
+    const conflicts=staffConflicts(ymd(opDate),[
+      {label:'入院主治医',val:admitDoc},{label:'執刀医１',val:surgeon},{label:'執刀医２',val:surgeon2},
+      {label:'助手１',val:assist1},{label:'助手２',val:assist2}]);
+    if(conflicts.length){
+      if(currentUser===LOG_ADMIN){
+        if(!confirm('⚠ 不在の医師が担当に含まれています。\n\n'+conflicts.join('\n')+'\n\n通常は保存できません（竹内先生のみ強制保存できます）。\nこのまま保存しますか？')){
           out.innerHTML='<div class="alert alert-info">登録をキャンセルしました</div>';return;
         }
+      }else{
+        alert('⚠ 不在の医師が担当に含まれているため保存できません。\n\n'+conflicts.join('\n')+'\n\n担当を変更してください。');
+        out.innerHTML='<div class="alert alert-red">⚠ 不在の医師が担当に含まれているため保存できません</div>';return;
       }
     }
   }
@@ -1334,7 +1360,7 @@ async function calculate(){
     +(!isExcluded&&dischargeDate?'<div class="detail-row"><span class="detail-key">退院曜日</span><span class="badge '+badgeClass(dischargeDate)+'">'+DAYS[dischargeDate.getDay()]+'曜日</span></div>':'')
     +(adjustNote||'')
     +'</div>';
-  if(isExcluded) out.innerHTML+='<div class="alert alert-info">カレンダー②③に表示されます（退院日計算は除外対象）</div>';
+  if(isExcluded) out.innerHTML+='<div class="alert alert-info">月間予定・週間予定・一日の予定に表示されます（退院日計算は除外対象）</div>';
 }
 
 function renderCal(cal){try{_renderCal(cal);}catch(e){console.error('renderCal:',e);}}
@@ -1471,10 +1497,16 @@ function renderWeekCal(){
     const hdrLeft=document.createElement('div');hdrLeft.style.cssText='display:flex;align-items:center;gap:4px;flex-wrap:wrap';
     const hdrDate=document.createElement('span');hdrDate.textContent=(date.getMonth()+1)+'月'+date.getDate()+'日（'+dayNames[dow]+'）'+(isHoliday(date)?' 🎌':'');hdrLeft.appendChild(hdrDate);
     daySk.forEach(s=>{const docs=(s.doctors||'').split(',').filter(Boolean);if(docs.length){const badge=document.createElement('span');badge.className='shinkan-badge';badge.title='新患担当';badge.textContent='新患:'+docs.join('・');hdrLeft.appendChild(badge);}});
-    dayAbs.forEach(a=>{const badge=document.createElement('span');badge.className='abs-badge '+(a.type==='終日'?'abs-all':a.type==='午前'?'abs-am':'abs-pm');badge.title=a.person+' '+a.type+(a.reason?' ('+a.reason+')':'');badge.textContent=a.person+(a.type==='終日'?' 終日':a.type==='午前'?' 午前':' 午後');hdrLeft.appendChild(badge);});
     hdr.appendChild(hdrLeft);
     if(dayEvs.length){const cnt=document.createElement('span');cnt.className='week-count';cnt.textContent=dayEvs.length+'件';hdr.appendChild(cnt);}
     card.appendChild(hdr);
+    // 見出しの直下：不在（終日→午前→午後）
+    const sAbs=sortAbs(dayAbs);
+    if(sAbs.length){
+      const info=document.createElement('div');info.className='week-info';
+      info.innerHTML=sAbs.map(absChipHTML).join('');
+      card.appendChild(info);
+    }
     const body=document.createElement('div');body.className='week-day-body';
     if(!dayEvs.length){const empty=document.createElement('div');empty.className='week-empty';empty.textContent='手術なし';body.appendChild(empty);}
     dayEvs.forEach(r=>{
@@ -1495,6 +1527,111 @@ function renderWeekCal(){
     card.appendChild(body);grid.appendChild(card);
   }
 }
+
+// ===== 共通の小道具 =====
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+const ABS_ORDER={'終日':0,'午前':1,'午後':2};
+function sortAbs(list){
+  return [...list].sort(function(a,b){
+    const t=(ABS_ORDER[a.type]??9)-(ABS_ORDER[b.type]??9);if(t) return t;
+    const ia=DOCTORS.indexOf(a.person),ib=DOCTORS.indexOf(b.person);
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+}
+function absChipHTML(a){
+  const cls=a.type==='終日'?'abs-all':a.type==='午前'?'abs-am':'abs-pm';
+  return '<span class="abs-badge '+cls+'" title="'+esc(a.person+' '+a.type+(a.reason?' ('+a.reason+')':''))+'">'+esc(a.person)+' '+esc(a.type)+(a.reason?'<span style="font-weight:400;opacity:.8">・'+esc(a.reason)+'</span>':'')+'</span>';
+}
+// 指定日に不在の医師が担当欄に入っていないか（入っていればメッセージの配列を返す）
+function staffConflicts(dateStr,fields){
+  const dayAbs=absences.filter(a=>a.date===dateStr);
+  const out=[];
+  fields.filter(f=>f.val).forEach(function(f){
+    const m=dayAbs.find(a=>a.person===f.val);
+    if(m) out.push(f.label+'：'+f.val+'（'+m.type+'不在'+(m.reason?'・'+m.reason:'')+'）');
+  });
+  return out;
+}
+
+// ===== 一日の予定 =====
+function moveDay(n){
+  dayDate=addDays(dayDate||today0(),n);
+  maybeLoadPast(dayDate.getFullYear(),dayDate.getMonth(),renderDayView);
+}
+function jumpDay(v){
+  const d=parseDate(v);if(!d) return;
+  dayDate=d;maybeLoadPast(d.getFullYear(),d.getMonth(),renderDayView);
+}
+function goTodayDay(){dayDate=today0();renderDayView();}
+function renderDayView(){
+  const box=document.getElementById('dayView');if(!box) return;
+  if(!dayDate) dayDate=today0();
+  const key=ymd(dayDate),dow=dayDate.getDay(),hol=isHoliday(dayDate);
+  const isToday=key===ymd(today0());
+  const tEl=document.getElementById('dayTitle');
+  tEl.textContent=(dayDate.getMonth()+1)+'月'+dayDate.getDate()+'日（'+DAYS[dow]+'）'+(hol?(HOLIDAYS.has(key)?' 祝':' 年末年始'):'')+(isToday?' 今日':'');
+  tEl.className='cal-title'+(dow===0?' day-title-sun':dow===6?' day-title-sat':hol?' day-title-hol':'');
+  const pk=document.getElementById('dayPicker');if(pk&&pk.value!==key) pk.value=key;
+
+  let h='<div class="day-card">';
+  // ① 日付メモ（段階②で追加予定）
+  // ② 新患担当
+  const skDocs=[];shinkans.filter(x=>x.date===key).forEach(x=>(x.doctors||'').split(',').filter(Boolean).forEach(d=>skDocs.push(d)));
+  if(skDocs.length) h+='<div class="day-sec">新患担当</div><div class="day-chips"><span class="shinkan-badge">'+skDocs.map(esc).join('・')+'</span></div>';
+  // ③ 当直明け（段階④で追加予定）
+  // ④ 不在（終日→午前→午後）
+  const dAbs=sortAbs(absences.filter(a=>a.date===key));
+  if(dAbs.length) h+='<div class="day-sec">不在</div><div class="day-chips">'+dAbs.map(absChipHTML).join('')+'</div>';
+  // ⑤ 手術（A→B→C、順番順）
+  const colOrder={A:0,B:1,C:2};
+  const ops=records.filter(r=>r.opDate===key).sort(function(a,b){
+    const c=(colOrder[a.opCol]??3)-(colOrder[b.opCol]??3);if(c) return c;
+    return (parseInt(a.opNum)||99)-(parseInt(b.opNum)||99);
+  });
+  h+='<div class="day-sec">手術（'+ops.length+'件）</div>';
+  if(!ops.length) h+='<div class="day-empty">手術なし</div>';
+  ops.forEach(function(r){
+    const isA=r.opCol==='A',isB=r.opCol==='B',isC=r.opCol==='C';
+    const inc=isC?!r.surgeon:(!r.admitDoctor||!r.surgeon);
+    const ord=r.opCol&&r.opNum?r.opCol+r.opNum:(isC?'C':'');
+    const staff=[];
+    if(r.doctor) staff.push('外:'+r.doctor);
+    if(r.admitDoctor) staff.push('入:'+r.admitDoctor);else if(!isC) staff.push('入:未入力⚠');
+    staff.push(r.surgeon?'執1:'+r.surgeon:'執1:未入力⚠');
+    if(r.surgeon2) staff.push('執2:'+r.surgeon2);
+    if(r.assist1) staff.push('助1:'+r.assist1);
+    if(r.assist2) staff.push('助2:'+r.assist2);
+    const preps=(r.prep||'').split(',').filter(Boolean);
+    h+='<div class="week-ev '+(isB?'ev-B':isC?'ev-C':'ev-A')+(inc?' ev-incomplete':'')+'" data-rid="'+esc(r.id)+'">'
+      +'<div class="week-ev-row1">'+(ord?'<span class="order-pill '+(isA?'pill-A':isB?'pill-B':'pill-C')+'" style="font-size:11px">'+esc(ord)+'</span>':'')
+      +'<span'+(inc?' style="color:#e74c3c"':'')+'>'+esc(r.patientId)+(inc?' ⚠':'')+'</span>'
+      +(r.opTime?'<span style="font-size:12px;font-weight:400;color:#555;margin-left:auto">'+esc(r.opTime)+'h</span>':'')+'</div>'
+      +'<div class="week-ev-row2">'+esc(LABELS[r.surgery]||r.surgery||'')+'</div>'
+      +'<div class="week-ev-row2" style="font-weight:500">'+staff.map(esc).join('　')+'</div>'
+      +(preps.length?'<div>'+preps.map(p=>'<span class="day-prep">'+esc(p)+'</span>').join('')+'</div>':'')
+      +'</div>';
+  });
+  // ⑥ 当日の産直・⑦ 当日のMFICU（段階④で追加予定）
+  h+='</div>';
+  box.innerHTML=h;
+}
+// 一日の予定：手術をタップで詳細、左右スワイプで日送り
+(function(){
+  function setup(){
+    const box=document.getElementById('dayView');if(!box||box._ready) return;box._ready=true;
+    box.addEventListener('click',function(e){
+      const el=e.target.closest('[data-rid]');if(!el) return;
+      const r=records.find(x=>x.id===el.getAttribute('data-rid'));if(r) showDetail(r);
+    });
+    let sx=0,sy=0,st=0;
+    box.addEventListener('touchstart',function(e){const t=e.touches[0];sx=t.clientX;sy=t.clientY;st=Date.now();},{passive:true});
+    box.addEventListener('touchend',function(e){
+      const t=e.changedTouches[0];const dx=t.clientX-sx,dy=t.clientY-sy;
+      if(Date.now()-st<600&&Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.5) moveDay(dx<0?1:-1);
+    },{passive:true});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',setup);else setup();
+})();
 
 function showDetail(r){
   if(!r) return;
@@ -1584,6 +1721,7 @@ async function fetchAbsences(force){
   if(document.getElementById('tab-cal1').style.display!=='none')renderCal('cal1');
   if(document.getElementById('tab-cal2').style.display!=='none')renderCal('cal2');
   if(document.getElementById('tab-cal3').style.display!=='none')renderWeekCal();
+  if(document.getElementById('tab-day').style.display!=='none')renderDayView();
 }
 async function delAbsence(id){const target=absences.find(a=>a.id===id);if(target&&!ADMINS.has(currentUser)&&target.person!==currentUser){alert('自分の名前の不在のみ削除できます。');return;}absences=absences.filter(a=>a.id!==id);try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteAbsence',id,key:API_KEY})});}catch(e){}safeLS('gyn_absences',JSON.stringify(absences));renderAbsences();}
 function renderAbsences(){
@@ -1667,6 +1805,7 @@ async function fetchShinkan(force){
   renderShinkans();
   if(document.getElementById('tab-cal2').style.display!=='none')renderCal('cal2');
   if(document.getElementById('tab-cal3').style.display!=='none')renderWeekCal();
+  if(document.getElementById('tab-day').style.display!=='none')renderDayView();
 }
 async function delShinkan(id){shinkans=shinkans.filter(s=>s.id!==id);try{await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'deleteShinkan',id,key:API_KEY})});}catch(e){}safeLS('gyn_shinkans',JSON.stringify(shinkans));renderShinkans();}
 function renderShinkans(){
