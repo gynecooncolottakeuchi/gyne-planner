@@ -201,6 +201,15 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 .memo-cnt.over{color:#c0392b;font-weight:700}
 .lp-date{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .lp-flash{outline:3px solid #3b7dd8 !important;outline-offset:-3px}
+.duty-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px}
+.duty-table th{font-size:11px;color:#666;font-weight:600;padding:6px 2px;border-bottom:2px solid #e0e0e0;text-align:center}
+.duty-table td{padding:3px 2px;border-bottom:1px solid #f0f0f0;text-align:center}
+.duty-table td.dday{font-weight:700;font-size:12px;white-space:nowrap}
+.duty-table tr.dhol td{background:#fdf6fb}
+.duty-table select{width:100%;padding:6px 2px;border:1px solid #ddd;border-radius:6px;font-size:14px;background:#fff;-webkit-appearance:none;text-align:center;text-align-last:center}
+.duty-table select.dwarn{background:#fff3b0;border-color:#e0a800}
+.duty-abs-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5;font-size:13px;flex-wrap:wrap}
+.duty-abs-row>span{white-space:nowrap}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:24px;font-size:13px;font-weight:600;color:#fff;z-index:9999;pointer-events:none;white-space:nowrap;box-shadow:0 2px 12px rgba(0,0,0,0.2)}
 </style>
 </head>
@@ -226,6 +235,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <button class="tab-btn" onclick="switchTab('calc')" data-tab="calc">症例登録</button>
     <button class="tab-btn" onclick="switchTab('absence')" data-tab="absence">不在入力</button>
     <button class="tab-btn" onclick="switchTab('shinkan')" data-tab="shinkan">婦人科新患担当</button>
+    <button class="tab-btn" onclick="switchTab('duty')" data-tab="duty">当直取込</button>
     <button class="tab-btn" onclick="switchTab('cal1')" data-tab="cal1">カレンダー①入退院日の提案</button>
     <button class="tab-btn" onclick="switchTab('cal2')" data-tab="cal2">月間予定</button>
     <button class="tab-btn" onclick="switchTab('cal3')" data-tab="cal3">週間予定</button>
@@ -447,6 +457,23 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
     <div id="shinkanList" class="card"><p style="font-size:13px;color:#aaa">登録されていません</p></div>
   </div>
 
+  <!-- 当直取込（竹内先生のみ） -->
+  <div id="tab-duty" class="content" style="display:none">
+    <div class="card">
+      <div class="section-label">当直表の取り込み</div>
+      <div class="form-grid">
+        <div class="field"><label>取り込む年月</label><select id="dutyYm" onchange="onDutyYmChange()"></select></div>
+        <div class="field" style="display:flex;align-items:flex-end"><div id="dutyMonthInfo" style="font-size:12px;color:#666;line-height:1.5"></div></div>
+      </div>
+      <div class="btn-row">
+        <label class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px">📷 写真から読み取る<input type="file" id="dutyPhoto" accept="image/*" style="display:none" onchange="onDutyPhoto(this)"></label>
+        <button class="btn" onclick="startDutyManual()">✏️ 手入力・登録済みを修正</button>
+      </div>
+      <div id="dutyStatus" style="margin-top:10px"></div>
+    </div>
+    <div id="dutyPreview"></div>
+  </div>
+
   <div id="tab-cal1" class="content cal-content" style="display:none">
     <div class="cal-controls">
       <button class="cal-nav-btn" onclick="moveMonth('cal1',-1)">◀</button>
@@ -631,7 +658,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 
 <script>
 
-const APP_VERSION='2026.11.03e';
+const APP_VERSION='2026.11.03f';
 // 通常表示は「前月1日以降」。それより前を見ようとしたときだけ全期間を読み込む
 const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGBnAEP7d9YM-54OmGqnFNYvee8e2ji1D5wKaR2skxE_Jzg/exec';
 const API_KEY='gyne_api_2024_fukuoka';
@@ -653,7 +680,8 @@ const HOLIDAYS=new Set(['2025-01-01','2025-01-13','2025-02-11','2025-02-23','202
   '2027-01-01','2027-01-11','2027-02-11','2027-02-23','2027-03-21','2027-03-22','2027-04-29','2027-05-03','2027-05-04','2027-05-05','2027-07-19','2027-08-11','2027-09-20','2027-09-23','2027-10-11','2027-11-03','2027-11-23']);
 const ABS_REASONS={'終日':['直明け','有給','夏季休暇','学会','リフレッシュ休暇','忌引き','あいさつ回り'],'午前':['有給','午前C/S','午前会議','講義','あいさつ回り'],'午後':['有給','午後C/S','午後会議','午後遺伝カウンセリング','午後胎児エコー','講義','あいさつ回り']};
 
-let records=[],logs=[],absences=[],shinkans=[],memos=[],currentUser='';
+let records=[],logs=[],absences=[],shinkans=[],memos=[],duties=[],currentUser='';
+let dutyDraft=null;
 let cal1Year,cal1Month,cal2Year,cal2Month,cal3BaseMonday;
 let isSyncing=false,statsUnlocked=false;
 let sessionTs=0,_restoreTs=0;   // ログイン時刻（6時間で強制再ログイン）
@@ -829,6 +857,9 @@ async function bootstrapLoad(showSpinner){
       shinkans=d.shinkans.map(x=>{const nd=parseDate(x.date);return Object.assign({},x,{date:nd?ymd(nd):x.date});});
       safeLS('gyn_shinkans',JSON.stringify(shinkans));
     }
+    if(d.duties&&Array.isArray(d.duties)){
+      duties=d.duties;safeLS('gyn_duties',JSON.stringify(duties));
+    }
     if(d.memos&&Array.isArray(d.memos)){
       memos=d.memos.map(x=>{const nd=parseDate(x.date);return Object.assign({},x,{date:nd?ymd(nd):x.date});});
       safeLS('gyn_memos',JSON.stringify(memos));
@@ -982,7 +1013,7 @@ function checkPw(){
     document.getElementById('shinkanDate').value=ymd(t);
     cal1Year=cal2Year=t.getFullYear();cal1Month=cal2Month=t.getMonth();
     cal3BaseMonday=getMonday(t);
-    fillSelects();loadLogs();loadAbsences();loadShinkans();loadMemos();
+    fillSelects();loadLogs();loadAbsences();loadShinkans();loadMemos();loadDuties();
     // 保存済みデータで即座に画面を作り、通信は裏で走らせる
     const _c=loadRecordsCache();
     if(_c&&_c.records&&_c.records.length){
@@ -992,7 +1023,7 @@ function checkPw(){
     bootstrapLoad(false);
     setTimeout(function(){addLoginLog(doc);},5000);
     ['calc','shinkan','edit'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=ADMINS.has(currentUser)?'':'none';});
-    ['log','stats','absstats','abslog','loginlog'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=currentUser===LOG_ADMIN?'':'none';});
+    ['log','stats','absstats','abslog','loginlog','duty'].forEach(tab=>{const btn=document.querySelector('[data-tab="'+tab+'"]');if(btn)btn.style.display=currentUser===LOG_ADMIN?'':'none';});
     updateCalcDelBtn();
     try{sessionStorage.setItem('gyn_session',JSON.stringify({user:doc,pw,ts:sessionTs,ver:APP_VERSION}));}catch(e){}
     switchTab('newsfeed');
@@ -1039,11 +1070,12 @@ function checkHolidayReminder(){
 
 function switchTab(t){
   if(!checkSessionExpiry()) return;
-  ['newsfeed','day','calc','absence','shinkan','cal1','cal2','cal3','list','edit','log','search','stats','absstats','abslog','loginlog'].forEach(name=>{document.getElementById('tab-'+name).style.display=t===name?'block':'none';});
+  ['newsfeed','day','calc','absence','shinkan','duty','cal1','cal2','cal3','list','edit','log','search','stats','absstats','abslog','loginlog'].forEach(name=>{document.getElementById('tab-'+name).style.display=t===name?'block':'none';});
   document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.toggle('active',btn.getAttribute('data-tab')===t));
   // スマホで選んだタブが見える位置までタブ列を寄せる
   try{const ab=document.querySelector('.tab-btn.active');if(ab)ab.scrollIntoView({inline:'center',block:'nearest'});}catch(e){}
   if(t==='day'){if(!dayDate)dayDate=today0();renderDayView();}
+  if(t==='duty') initDutyTab();
   if(t==='newsfeed'){
     const nf=document.getElementById('newsfeedContent');
     if(nf) nf.innerHTML='<div style="text-align:center;padding:30px;color:#888"><span class="spinner" style="display:inline-block"></span> 同期中...</div>';
@@ -1589,6 +1621,189 @@ function staffConflicts(dateStr,fields){
     if(m) out.push(f.label+'：'+f.val+'（'+m.type+'不在'+(m.reason?'・'+m.reason:'')+'）');
   });
   return out;
+}
+
+// ===== 当直表の取り込み（竹内先生のみ） =====
+const DUTY_FIELDS=[['sanD','産(日)'],['mfD','MF(日)'],['sanN','産(当)'],['mfN','MF(当)']];
+const DUTY_IMPORT_BY='当直表取込';
+const ABS_MARK_REASON={'休':'有給','夏':'夏季休暇','学会':'学会'};
+function loadDuties(){try{const s=safeLS('gyn_duties');if(s)duties=JSON.parse(s);}catch(e){}}
+function pad2(n){return String(n).padStart(2,'0');}
+function ymDays(ym){const y=+ym.slice(0,4),m=+ym.slice(5,7),n=new Date(y,m,0).getDate();const o=[];for(let i=1;i<=n;i++)o.push(ym+'-'+pad2(i));return o;}
+function ymLabel(ym){return ym.slice(0,4)+'年'+(+ym.slice(5,7))+'月';}
+function isOffDay(key){const d=parseDate(key);if(!d)return false;const w=d.getDay();return w===0||w===6||isHoliday(d);}
+function cleanName(v){return String(v==null?'':v).replace(/[\s　]/g,'').replace(/先生$/,'');}
+function dutyStatus(html){document.getElementById('dutyStatus').innerHTML=html||'';}
+function initDutyTab(){
+  if(currentUser!==LOG_ADMIN) return;
+  const sel=document.getElementById('dutyYm');
+  if(!sel.options.length){
+    const t=today0();
+    for(let k=-1;k<=6;k++){const d=new Date(t.getFullYear(),t.getMonth()+k,1);const ym=d.getFullYear()+'-'+pad2(d.getMonth()+1);
+      const o=document.createElement('option');o.value=ym;o.textContent=ymLabel(ym);sel.appendChild(o);}
+    const def=new Date(t.getFullYear(),t.getMonth()+(t.getDate()>=15?1:0),1);
+    sel.value=def.getFullYear()+'-'+pad2(def.getMonth()+1);
+  }
+  onDutyYmChange(true);
+}
+function onDutyYmChange(keepDraft){
+  const ym=document.getElementById('dutyYm').value;
+  const have=duties.filter(x=>String(x.date).indexOf(ym+'-')===0);
+  const info=document.getElementById('dutyMonthInfo');
+  if(have.length){const last=have[0];info.innerHTML='<span style="color:#1a6640;font-weight:700">✓ 登録済み（'+have.length+'日分）</span><br>'+esc(last.importedAt||'')+' '+esc(last.importedBy||'');}
+  else info.innerHTML='<span style="color:#999">この月はまだ登録されていません</span>';
+  if(!keepDraft||(dutyDraft&&dutyDraft.ym!==ym)){dutyDraft=null;document.getElementById('dutyPreview').innerHTML='';dutyStatus('');}
+}
+// 写真を長辺1568pxのJPEGに縮小（Claudeが読む最大サイズ。送る量も小さくなる）
+function shrinkImage(file){
+  return new Promise(function(res,rej){
+    const url=URL.createObjectURL(file);const img=new Image();
+    img.onload=function(){
+      const sc=Math.min(1,1568/Math.max(img.width,img.height));
+      const c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
+      const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(url);
+      const du=c.toDataURL('image/jpeg',0.85);
+      res({data:du.split(',')[1],kb:Math.round(du.length*0.75/1024)});
+    };
+    img.onerror=function(){URL.revokeObjectURL(url);rej(new Error('写真を開けませんでした'));};
+    img.src=url;
+  });
+}
+async function onDutyPhoto(input){
+  const file=input.files&&input.files[0];input.value='';
+  if(!file) return;
+  const ym=document.getElementById('dutyYm').value;
+  let img;
+  try{dutyStatus('<div class="alert alert-info">写真を縮小しています…</div>');img=await shrinkImage(file);}
+  catch(e){dutyStatus('<div class="alert alert-red">⚠ '+esc(e.message)+'</div>');return;}
+  const t0=Date.now();
+  const tick=setInterval(function(){dutyStatus('<div class="alert alert-info"><span class="spinner" style="display:inline-block;vertical-align:middle"></span> '+ymLabel(ym)+'の当直表を読み取り中… '+Math.round((Date.now()-t0)/1000)+'秒（20〜60秒かかります。画面を閉じないでください）</div>');},500);
+  let j=null,err='';
+  try{
+    const ctrl=new AbortController();const tm=setTimeout(function(){ctrl.abort();},150000);
+    const r=await fetch(GAS_URL,{method:'POST',signal:ctrl.signal,body:JSON.stringify({action:'readRoster',key:API_KEY,ym,image:img.data,mediaType:'image/jpeg',doctors:DOCTORS})});
+    clearTimeout(tm);j=await r.json();
+    if(j.error) err=j.error;
+  }catch(e){err=e.name==='AbortError'?'時間切れになりました（150秒）':'通信に失敗しました（'+(e.message||e.name)+'）';}
+  clearInterval(tick);
+  if(err||!j||!j.result){
+    dutyStatus('<div class="alert alert-red">⚠ 読み取りに失敗しました：'+esc(err||'結果が空でした')+'<br>もう一度試すか、「手入力」で入力してください。</div>');return;
+  }
+  buildDutyDraftFromAI(ym,j.result);
+  dutyStatus('<div class="alert alert-ok">✓ 読み取りました（'+Math.round((Date.now()-t0)/1000)+'秒・写真'+img.kb+'KB）。黄色の箇所を中心に、写真と見比べて確認してください。</div>');
+  renderDutyPreview();
+}
+function dutyExistsAbs(date,person){
+  return absences.some(a=>a.date===date&&a.person===person&&a.registeredBy!==DUTY_IMPORT_BY);
+}
+function buildDutyDraftFromAI(ym,r){
+  const map={};(r.days||[]).forEach(function(x){const d=parseInt(x.d);if(d)map[d]=x;});
+  const rows=ymDays(ym).map(function(date,i){const x=map[i+1]||{};return {date,sanD:cleanName(x.sanD),mfD:cleanName(x.mfD),sanN:cleanName(x.sanN),mfN:cleanName(x.mfN)};});
+  const unc={};(r.uncertain||[]).forEach(function(u){const d=parseInt(u.d);if(d&&u.field)unc[ym+'-'+pad2(d)+'|'+u.field]=u.note||'読み取りに自信がありません';});
+  const seen={},cands=[];
+  (r.absences||[]).forEach(function(a){
+    const d=parseInt(a.d),person=cleanName(a.person);if(!d||!person) return;
+    const date=ym+'-'+pad2(d);if(seen[date+person]) return;seen[date+person]=1;
+    const mark=String(a.mark||'').trim();const exists=dutyExistsAbs(date,person);
+    cands.push({date,person,mark,reason:ABS_MARK_REASON[mark]||mark,checked:!exists&&DOCTORS.includes(person),exists});
+  });
+  cands.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:DOCTORS.indexOf(a.person)-DOCTORS.indexOf(b.person));
+  dutyDraft={ym,rows,unc,cands,source:'photo'};
+}
+async function startDutyManual(){
+  const ym=document.getElementById('dutyYm').value;
+  dutyStatus('<div class="alert alert-info">登録済みデータを確認しています…</div>');
+  try{const d=await fetchJSON(GAS_URL+'?action=getDuties&t='+Date.now()+'&key='+API_KEY,{timeout:45000,retries:2});if(d.duties)duties=d.duties;}catch(e){}
+  const have={};duties.forEach(x=>{if(String(x.date).indexOf(ym+'-')===0)have[x.date]=x;});
+  const rows=ymDays(ym).map(date=>{const x=have[date]||{};return {date,sanD:x.sanD||'',mfD:x.mfD||'',sanN:x.sanN||'',mfN:x.mfN||''};});
+  // 以前この月に当直表から入れた不在は、そのまま残す候補として表示
+  const cands=absences.filter(a=>a.registeredBy===DUTY_IMPORT_BY&&String(a.date).indexOf(ym+'-')===0)
+    .map(a=>({date:a.date,person:a.person,mark:'',reason:a.reason,checked:true,exists:false}));
+  dutyDraft={ym,rows,unc:{},cands,source:'manual'};
+  dutyStatus(Object.keys(have).length?'<div class="alert alert-info">登録済みの内容を表示しています。修正して「登録」を押してください。</div>':'<div class="alert alert-info">空の表です。プルダウンで選んで「登録」を押してください。</div>');
+  renderDutyPreview();
+}
+function dutyCellWarn(row,f){
+  const v=row[f],off=isOffDay(row.date),w=[];
+  const u=dutyDraft.unc[row.date+'|'+f];if(u)w.push('要確認：'+u);
+  if(v&&!DOCTORS.includes(v))w.push('アプリにない氏名');
+  if((f==='sanN'||f==='mfN')&&!v)w.push('当直が空欄');
+  if((f==='sanD'||f==='mfD')&&off&&!v)w.push('休日の日直が空欄');
+  if((f==='sanD'||f==='mfD')&&!off&&v)w.push('平日に日直が入っています');
+  return w;
+}
+function renderDutyPreview(){
+  const box=document.getElementById('dutyPreview');if(!dutyDraft){box.innerHTML='';return;}
+  const dr=dutyDraft;let warnN=0;
+  let rowsH='';
+  dr.rows.forEach(function(row,i){
+    const d=parseDate(row.date),w=d.getDay(),off=isOffDay(row.date);
+    rowsH+='<tr class="'+(off?'dhol':'')+'"><td class="dday" style="color:'+(w===0||isHoliday(d)?'#e74c3c':w===6?'#3b7dd8':'#333')+'">'+d.getDate()+'<span style="font-weight:400">('+DAYS[w]+')</span></td>';
+    DUTY_FIELDS.forEach(function(fl){
+      const f=fl[0],v=row[f],warn=dutyCellWarn(row,f);if(warn.length)warnN++;
+      let opts='<option value=""></option>';
+      DOCTORS.forEach(n=>{opts+='<option'+(n===v?' selected':'')+'>'+n+'</option>';});
+      if(v&&!DOCTORS.includes(v)) opts+='<option selected value="'+esc(v)+'">'+esc(v)+'?</option>';
+      rowsH+='<td><select data-i="'+i+'" data-f="'+f+'" class="'+(warn.length?'dwarn':'')+'" title="'+esc(warn.join(' / '))+'" onchange="onDutyCell(this)">'+opts+'</select></td>';
+    });
+    rowsH+='</tr>';
+  });
+  let candH='';
+  if(dr.cands.length){
+    dr.cands.forEach(function(c,k){
+      const d=parseDate(c.date);const unknown=!DOCTORS.includes(c.person);
+      candH+='<label class="duty-abs-row"><input type="checkbox" data-k="'+k+'" onchange="dutyDraft.cands['+k+'].checked=this.checked"'+(c.checked?' checked':'')+(c.exists||unknown?' disabled':'')+'>'
+        +'<span style="font-weight:700;min-width:84px">'+(d.getMonth()+1)+'/'+d.getDate()+'（'+DAYS[d.getDay()]+'）</span>'
+        +'<span style="font-weight:700">'+esc(c.person)+'</span>'
+        +'<span class="abs-badge abs-all">終日・'+esc(c.reason||'')+'</span>'
+        +(c.mark?'<span style="color:#999;font-size:11px">表の「'+esc(c.mark)+'」</span>':'')
+        +(c.exists?'<span style="color:#1a6640;font-size:11px">不在入力済み</span>':'')
+        +(unknown?'<span style="color:#c0392b;font-size:11px">アプリにない氏名</span>':'')
+        +'</label>';
+    });
+  }else candH='<p style="font-size:12px;color:#aaa">ありません</p>';
+  box.innerHTML='<div class="card">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">'
+    +'<div style="font-size:15px;font-weight:700">'+ymLabel(dr.ym)+'の当直'+(dr.source==='photo'?'（写真から読み取り）':'（手入力）')+'</div>'
+    +'<div id="dutyWarnSum" style="font-size:12px;font-weight:700;color:'+(warnN?'#a66b00':'#1a6640')+'">'+(warnN?'⚠ 要確認 '+warnN+'か所（黄色）':'✓ 要確認の箇所はありません')+'</div></div>'
+    +'<div style="font-size:11px;color:#888;margin-bottom:6px">黄色にマウスを乗せる／長押しすると理由が出ます。休日の行は薄い色です。</div>'
+    +'<table class="duty-table"><colgroup><col style="width:17%"><col><col><col><col></colgroup><thead><tr><th>日</th><th>産婦人科(日)</th><th>MFICU(日)</th><th>産婦人科(当)</th><th>MFICU(当)</th></tr></thead><tbody>'+rowsH+'</tbody></table></div>'
+    +'<div class="card"><div class="section-label">不在として登録する候補（表の「休・夏・学会」）</div>'
+    +'<div style="font-size:11px;color:#888;margin-bottom:6px">チェックしたものを終日不在で登録します（休→有給、夏→夏季休暇、学会→学会）。同じ月を取り込み直すと、前回ここから入れた不在は入れ替わります。</div>'+candH+'</div>'
+    +'<div class="btn-row" style="margin-bottom:20px"><button class="btn btn-primary" style="flex:1;padding:12px" onclick="saveDutyDraft()">'+ymLabel(dr.ym)+'を登録（上書き）</button>'
+    +'<button class="btn" style="padding:12px" onclick="dutyDraft=null;renderDutyPreview();dutyStatus(\'\')">やめる</button></div>';
+}
+function onDutyCell(sel){
+  const i=+sel.getAttribute('data-i'),f=sel.getAttribute('data-f');
+  const row=dutyDraft.rows[i];row[f]=sel.value;delete dutyDraft.unc[row.date+'|'+f];
+  const w=dutyCellWarn(row,f);sel.className=w.length?'dwarn':'';sel.title=w.join(' / ');
+  const n=document.querySelectorAll('#dutyPreview select.dwarn').length;
+  const sum=document.getElementById('dutyWarnSum');
+  sum.textContent=n?'⚠ 要確認 '+n+'か所（黄色）':'✓ 要確認の箇所はありません';sum.style.color=n?'#a66b00':'#1a6640';
+}
+async function saveDutyDraft(){
+  if(currentUser!==LOG_ADMIN||!dutyDraft) return;
+  const dr=dutyDraft;
+  const nWarn=document.querySelectorAll('#dutyPreview select.dwarn').length;
+  const abs=dr.cands.filter(c=>c.checked&&!c.exists&&DOCTORS.includes(c.person)).map(c=>({date:c.date,person:c.person,reason:c.reason}));
+  const unknownN=dr.rows.reduce((s,r)=>s+DUTY_FIELDS.filter(fl=>r[fl[0]]&&!DOCTORS.includes(r[fl[0]])).length,0);
+  if(unknownN&&!confirm('アプリにない氏名が '+unknownN+' か所あります。このまま登録しますか？')) return;
+  if(!confirm(ymLabel(dr.ym)+'の当直を登録します。\n（この月の登録済みデータは上書きされます）\n\n不在の登録：'+abs.length+'件'+(nWarn?'\n要確認（黄色）：'+nWarn+'か所 残っています':'')+'\n\nよろしいですか？')) return;
+  dutyStatus('<div class="alert alert-info"><span class="spinner" style="display:inline-block;vertical-align:middle"></span> 登録しています…</div>');
+  let j=null;
+  try{
+    const r=await fetch(GAS_URL,{method:'POST',body:JSON.stringify({action:'saveDutyMonth',key:API_KEY,ym:dr.ym,by:currentUser,rows:dr.rows,absences:abs})});
+    j=await r.json();
+  }catch(e){}
+  if(!j||j.error||j.status!=='ok'){dutyStatus('<div class="alert alert-red">⚠ 登録に失敗しました'+(j&&j.error?'：'+esc(j.error):'')+'。もう一度押してください（入力内容は残っています）。</div>');return;}
+  addLog('当直取込','',ymLabel(dr.ym)+' 当直'+j.duties+'日・不在'+j.absencesAdded+'件');
+  dutyDraft=null;renderDutyPreview();
+  dutyStatus('<div class="alert alert-ok">✓ '+ymLabel(dr.ym)+'を登録しました（当直 '+j.duties+'日分、不在 '+j.absencesAdded+'件'+(j.absencesSkipped?'、入力済みのため '+j.absencesSkipped+'件は追加せず':'')+'）</div>');
+  toast('✓ 当直を登録しました',true);
+  try{const d=await fetchJSON(GAS_URL+'?action=getDuties&t='+Date.now()+'&key='+API_KEY,{timeout:45000,retries:2});if(d.duties){duties=d.duties;safeLS('gyn_duties',JSON.stringify(duties));}}catch(e){}
+  await fetchAbsences(true);
+  onDutyYmChange(true);
 }
 
 // ===== メモ（日付メモ・患者メモ） =====
