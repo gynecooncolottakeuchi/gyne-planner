@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="婦人科手術管理">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
 <title>外来入院手術業務管理システム｜婦人科</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -665,7 +671,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Helvetica Neue',Arial,sans-serif;b
 
 <script>
 
-const APP_VERSION='2026.11.03h';
+const APP_VERSION='2026.11.03i';
 // 通常表示は「前月1日以降」。それより前を見ようとしたときだけ全期間を読み込む
 const GAS_URL='https://script.google.com/macros/s/AKfycbzyaWsTdaeUIioGRwDLpOsMGBnAEP7d9YM-54OmGqnFNYvee8e2ji1D5wKaR2skxE_Jzg/exec';
 const API_KEY='gyne_api_2024_fukuoka';
@@ -927,10 +933,32 @@ async function fetchAndRender(showSpinner){
 }
 async function syncNow(){await bootstrapLoad(true);}
 
+// ===== 新しいバージョンのお知らせ（ホーム画面アプリには再読み込みボタンがないため） =====
+let _lastVerCheck=0;
+async function checkNewVersion(){
+  if(Date.now()-_lastVerCheck<10*60*1000) return;
+  _lastVerCheck=Date.now();
+  if(location.protocol.indexOf('http')!==0) return;
+  try{
+    const r=await fetch(location.pathname+'?vcheck='+Date.now(),{cache:'no-store'});
+    const m=(await r.text()).match(/APP_VERSION='([^']+)'/);
+    if(m&&m[1]!==APP_VERSION) showUpdateBar(m[1]);
+  }catch(e){}
+}
+function showUpdateBar(v){
+  if(document.getElementById('verBar')) return;
+  const b=document.createElement('div');b.id='verBar';
+  b.style.cssText='background:#1a6640;color:#fff;border-radius:8px;padding:10px 12px;margin:8px;font-size:13px;font-weight:700;text-align:center;cursor:pointer';
+  b.textContent='🆕 新しいバージョン（'+v+'）があります。ここをタップして更新してください';
+  b.onclick=function(){location.replace(location.pathname+'?v='+encodeURIComponent(v));};
+  const app=document.getElementById('app');if(app) app.insertBefore(b,app.firstChild);
+}
+
 // 画面に戻ったとき、失敗したままなら自動で取り直す
 document.addEventListener('visibilitychange',function(){
   if(document.hidden||!currentUser) return;
   if(!checkSessionExpiry()) return;
+  checkNewVersion();
   if(document.getElementById('staleBar')) setTimeout(function(){bootstrapLoad(false);},300);
 });
 
@@ -1035,6 +1063,7 @@ function checkPw(){
     try{sessionStorage.setItem('gyn_session',JSON.stringify({user:doc,pw,ts:sessionTs,ver:APP_VERSION}));}catch(e){}
     switchTab('newsfeed');
     setTimeout(checkHolidayReminder,1200);
+    setTimeout(checkNewVersion,4000);
   }else{document.getElementById('pwError').style.display='block';document.getElementById('pwInput').value='';}
 }
 function logout(){currentUser='';document.getElementById('lockScreen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('pwInput').value='';document.getElementById('loginDoctor').value='';document.getElementById('pwError').style.display='none';try{sessionStorage.removeItem('gyn_session');}catch(e){}}
